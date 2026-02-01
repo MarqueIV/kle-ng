@@ -635,7 +635,7 @@
                       :disabled="isDisabled"
                       class="form-control form-control-color key-color-input"
                       style="width: 24px; flex: none; border-radius: 0"
-                      title="Key Color"
+                      title="Key Color Picker"
                     />
                     <input
                       v-model="currentColor"
@@ -643,6 +643,7 @@
                       type="text"
                       class="form-control form-control-sm"
                       style="font-size: 0.65rem"
+                      title="Key Color"
                     />
                   </div>
                 </div>
@@ -656,7 +657,7 @@
                       :disabled="isDisabled"
                       class="form-control form-control-color text-color-input"
                       style="width: 24px; flex: none; border-radius: 0"
-                      title="Text Color"
+                      title="Text Color Picker"
                     />
                     <input
                       v-model="currentTextColor"
@@ -664,6 +665,7 @@
                       type="text"
                       class="form-control form-control-sm"
                       style="font-size: 0.65rem"
+                      title="Text Color"
                     />
                   </div>
                 </div>

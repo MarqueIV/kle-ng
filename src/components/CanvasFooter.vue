@@ -37,6 +37,7 @@
             :value-on-clear="0.25"
             :disable-wheel="true"
             size="compact"
+            title="Step size"
           >
             <template #suffix>U</template>
           </CustomNumberInput>
@@ -76,6 +77,7 @@
             :value-on-clear="100"
             :disable-wheel="true"
             size="compact"
+            title="Zoom level"
           >
             <template #suffix>%</template>
           </CustomNumberInput>
