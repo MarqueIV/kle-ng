@@ -1,14 +1,7 @@
 <template>
   <BaseHelpModal :is-visible="isVisible" title="PCB Generator - Help" @close="close">
-    <template #icon>
-      <BiCpu />
-    </template>
-
     <div class="help-section">
-      <h6 class="help-section-title">
-        <BiInfoCircle />
-        What is PCB Generator?
-      </h6>
+      <h6 class="help-section-title">What is PCB Generator?</h6>
       <div class="help-content">
         <p>
           The PCB Generator creates a <a href="https://kicad.org">KiCad</a> project files based on
@@ -20,10 +13,7 @@
     </div>
 
     <div class="help-section">
-      <h6 class="help-section-title">
-        <BiExclamationTriangle />
-        Prerequisites
-      </h6>
+      <h6 class="help-section-title">Prerequisites</h6>
       <div class="help-content">
         <img
           align="right"
@@ -54,10 +44,7 @@
     </div>
 
     <div class="help-section">
-      <h6 class="help-section-title">
-        <BiGear />
-        Generating a PCB
-      </h6>
+      <h6 class="help-section-title">Generating a PCB</h6>
       <div class="help-content">
         <img
           align="right"
@@ -88,10 +75,7 @@
     </div>
 
     <div class="help-section">
-      <h6 class="help-section-title">
-        <BiLightbulb />
-        Tips
-      </h6>
+      <h6 class="help-section-title">Tips</h6>
       <div class="help-content">
         <ul class="tips-list">
           <li><strong>Download expiration</strong> - Generated PCB files expire after 1 hour.</li>
@@ -117,10 +101,7 @@
 <script setup lang="ts">
 import BaseHelpModal from './BaseHelpModal.vue'
 
-import BiCpu from 'bootstrap-icons/icons/cpu.svg'
 import BiExclamationTriangle from 'bootstrap-icons/icons/exclamation-triangle.svg'
-import BiGear from 'bootstrap-icons/icons/gear.svg'
-import BiInfoCircle from 'bootstrap-icons/icons/info-circle.svg'
 import BiLightbulb from 'bootstrap-icons/icons/lightbulb.svg'
 
 interface Props {

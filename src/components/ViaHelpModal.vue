@@ -1,10 +1,7 @@
 <template>
   <BaseHelpModal :is-visible="isVisible" title="VIA Metadata - Help" @close="close">
     <div class="help-section">
-      <h6 class="help-section-title">
-        <BiInfoCircle />
-        What is VIA Metadata?
-      </h6>
+      <h6 class="help-section-title">What is VIA Metadata?</h6>
       <div class="help-content">
         <img
           align="right"
@@ -32,10 +29,7 @@
     </div>
 
     <div class="help-section">
-      <h6 class="help-section-title">
-        <BiBoxArrowInDown />
-        Importing VIA Layouts
-      </h6>
+      <h6 class="help-section-title">Importing VIA Layouts</h6>
       <div class="help-content">
         <p>
           To import a VIA layout file (e.g., from the
@@ -51,10 +45,7 @@
     </div>
 
     <div class="help-section">
-      <h6 class="help-section-title">
-        <BiBoxArrowUp />
-        Exporting to VIA Format
-      </h6>
+      <h6 class="help-section-title">Exporting to VIA Format</h6>
       <div class="help-content">
         <p>
           Layouts that contain VIA metadata can be exported back to VIA format for use with VIA/Vial
@@ -75,10 +66,7 @@
     </div>
 
     <div class="help-section">
-      <h6 class="help-section-title">
-        <BiCodeSquare />
-        Editing VIA Metadata
-      </h6>
+      <h6 class="help-section-title">Editing VIA Metadata</h6>
       <div class="help-content">
         <p>
           The VIA metadata is stored as JSON. The editor validates your input in real-time. Invalid
@@ -103,10 +91,7 @@
     </div>
 
     <div class="help-section">
-      <h6 class="help-section-title">
-        <BiLightbulb />
-        Tips
-      </h6>
+      <h6 class="help-section-title">Tips</h6>
       <div class="help-content">
         <ul class="tips-list">
           <li>Clearing the field will remove all VIA metadata from the layout</li>
@@ -123,12 +108,7 @@
 
 <script setup lang="ts">
 import BaseHelpModal from './BaseHelpModal.vue'
-import BiInfoCircle from 'bootstrap-icons/icons/info-circle.svg'
-import BiBoxArrowInDown from 'bootstrap-icons/icons/box-arrow-in-down.svg'
-import BiBoxArrowUp from 'bootstrap-icons/icons/box-arrow-up.svg'
-import BiCodeSquare from 'bootstrap-icons/icons/code-square.svg'
 import BiExclamationTriangleFill from 'bootstrap-icons/icons/exclamation-triangle-fill.svg'
-import BiLightbulb from 'bootstrap-icons/icons/lightbulb.svg'
 
 interface Props {
   isVisible: boolean

@@ -1,10 +1,7 @@
 <template>
   <BaseHelpModal :is-visible="isVisible" title="CSS Metadata - Help" @close="close">
     <div class="help-section">
-      <h6 class="help-section-title">
-        <BiInfoCircle />
-        What is CSS Metadata?
-      </h6>
+      <h6 class="help-section-title">What is CSS Metadata?</h6>
       <div class="help-content">
         <p>
           The original
@@ -24,10 +21,7 @@
     </div>
 
     <div class="help-section">
-      <h6 class="help-section-title">
-        <BiLightbulb />
-        Supported CSS Features
-      </h6>
+      <h6 class="help-section-title">Supported CSS Features</h6>
       <div class="help-content">
         <p>The kle-ng supports only a minimal subset of CSS:</p>
         <ol>
@@ -48,8 +42,6 @@
 
 <script setup lang="ts">
 import BaseHelpModal from './BaseHelpModal.vue'
-import BiInfoCircle from 'bootstrap-icons/icons/info-circle.svg'
-import BiLightbulb from 'bootstrap-icons/icons/lightbulb.svg'
 
 interface Props {
   isVisible: boolean
