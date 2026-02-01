@@ -1401,38 +1401,9 @@ defineExpose({
   font-size: 0.8rem;
 }
 
-.section-label {
-  font-size: 0.75rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  margin-bottom: 8px;
-  color: var(--bs-secondary-color);
-}
-
-.key-count {
-  background: var(--bs-tertiary-bg);
-  padding: 2px 6px;
-  border-radius: 3px;
-  font-size: 0.7rem;
-  font-weight: 600;
-  margin-left: 4px;
-}
-
 .active-group-info .alert {
   padding: 8px 12px;
   font-size: 0.875rem;
-}
-
-.empty-message {
-  padding: 12px;
-  text-align: center;
-  color: var(--bs-secondary-color);
-  font-size: 0.875rem;
-  font-style: italic;
-  background: var(--bs-tertiary-bg);
-  border-radius: 4px;
-  border: 1px dashed var(--bs-border-color);
 }
 
 .btn-draw-rows {

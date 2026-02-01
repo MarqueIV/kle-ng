@@ -416,11 +416,6 @@ onUnmounted(() => {
   border-left: 3px solid var(--bs-warning);
 }
 
-.movement-inputs .form-control {
-  text-align: center;
-  font-weight: 500;
-}
-
 /* Responsive adjustments */
 @media (max-width: 576px) {
   .move-exactly-panel {
@@ -430,11 +425,5 @@ onUnmounted(() => {
   .panel-body {
     padding: 10px;
   }
-}
-
-/* Highlight input when focused */
-.form-control:focus {
-  border-color: #007bff;
-  box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
 }
 </style>

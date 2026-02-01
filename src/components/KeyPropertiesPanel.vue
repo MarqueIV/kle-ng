@@ -1649,11 +1649,6 @@ const updateDefaultTextSizeValue = (value: number | undefined) => {
   padding: 0.25rem 0.5rem;
 }
 
-.form-select-sm {
-  font-size: 0.75rem;
-  padding: 0.25rem 0.5rem;
-}
-
 .form-control-color {
   padding: 0.125rem;
   border: 1px solid var(--bs-border-color);
@@ -1686,19 +1681,6 @@ const updateDefaultTextSizeValue = (value: number | undefined) => {
   min-height: 24px;
 }
 
-.text-size-input {
-  width: 100% !important;
-  min-width: 0 !important;
-  max-width: none !important;
-  text-align: center;
-  font-size: 0.7rem !important;
-  padding: 0.125rem 0.25rem !important;
-  min-height: 24px;
-  flex: 1;
-  border: 1px solid var(--bs-border-color);
-  font-weight: 500;
-}
-
 .text-size-grid-layout {
   display: grid;
   grid-template-columns: 1fr 1fr 1fr;
@@ -1712,12 +1694,6 @@ const updateDefaultTextSizeValue = (value: number | undefined) => {
   display: flex;
   align-items: center;
   justify-content: center;
-}
-
-.front-label-group {
-  display: flex;
-  align-items: center;
-  gap: 2px;
 }
 
 @media (max-width: 767.98px) {
@@ -1746,14 +1722,6 @@ const updateDefaultTextSizeValue = (value: number | undefined) => {
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr);
     gap: 2px;
   }
-
-  .text-size-input {
-    font-size: 0.65rem !important;
-    padding: 0.1rem 0.2rem !important;
-    min-height: 20px;
-    min-width: 0 !important;
-    width: 100% !important;
-  }
 }
 
 @media (max-width: 575.98px) {
@@ -1774,12 +1742,6 @@ const updateDefaultTextSizeValue = (value: number | undefined) => {
   .text-size-grid-layout {
     gap: 1px;
   }
-
-  .text-size-input {
-    font-size: 0.6rem !important;
-    padding: 0.05rem 0.15rem !important;
-    min-height: 18px;
-  }
 }
 
 @media (max-width: 400px) {
@@ -1790,12 +1752,6 @@ const updateDefaultTextSizeValue = (value: number | undefined) => {
   .labels-grid .form-control {
     font-size: 0.55rem;
     padding: 0.05rem 0.1rem;
-    min-height: 16px;
-  }
-
-  .text-size-input {
-    font-size: 0.55rem !important;
-    padding: 0.05rem 0.1rem !important;
     min-height: 16px;
   }
 }

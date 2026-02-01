@@ -276,11 +276,4 @@ const handleRowLeave = () => {
 .sortable-header.sorted {
   background-color: var(--bs-primary-bg-subtle);
 }
-
-/* Responsive adjustments */
-@media (max-width: 576px) {
-  .table-wrapper {
-    max-height: 300px;
-  }
-}
 </style>

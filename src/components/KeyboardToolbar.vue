@@ -970,20 +970,6 @@ const shareLayout = async () => {
   }
 }
 
-.gap-3 {
-  gap: 1rem !important;
-}
-
-.status-display {
-  white-space: nowrap;
-}
-
-.key-count {
-  display: inline-block;
-  width: 3ch;
-  text-align: right;
-}
-
 .keyboard-toolbar .btn-outline-primary {
   border-width: 2px;
 }

@@ -72,12 +72,6 @@ onUnmounted(() => {
   flex-direction: column;
 }
 
-.panel-header {
-  margin-bottom: 1rem;
-  padding-bottom: 0.75rem;
-  border-bottom: 1px solid var(--bs-border-color);
-}
-
 .results-container {
   display: flex;
   align-items: center;

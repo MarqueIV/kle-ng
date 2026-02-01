@@ -2003,17 +2003,6 @@ defineExpose({})
   animation: slideIn 0.2s ease-out;
 }
 
-@keyframes slideUp {
-  from {
-    opacity: 0;
-    transform: translateX(-50%) translateY(10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(-50%) translateY(0);
-  }
-}
-
 .matrix-renumbering-status .status-label {
   font-weight: 600;
   font-family: 'Courier New', monospace;

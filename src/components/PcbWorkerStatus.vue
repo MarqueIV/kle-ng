@@ -167,11 +167,6 @@ const hasIdleCapacity = computed(() => workerStatus.value && workerStatus.value.
   word-break: break-word;
 }
 
-.info-separator {
-  color: currentColor;
-  opacity: 0.5;
-}
-
 .status-bar .btn-link {
   color: inherit;
   opacity: 0.8;

@@ -332,23 +332,4 @@ onUnmounted(() => {
   border-radius: 4px;
   border-left: 3px solid var(--bs-primary);
 }
-
-.angle-input .form-control {
-  text-align: center;
-  font-weight: 500;
-}
-
-/* Responsive adjustments */
-@media (max-width: 576px) {
-  .modal-dialog {
-    margin: 10px;
-    max-width: none;
-  }
-}
-
-/* Highlight current angle input when focused */
-.angle-input .form-control:focus {
-  border-color: var(--bs-primary);
-  box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
-}
 </style>

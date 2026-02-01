@@ -466,15 +466,6 @@ const keysBySizeAndColor = computed(() => {
   border-bottom: 1px solid var(--bs-border-color);
 }
 
-/* Dimension Display Styles */
-.control-label {
-  display: block;
-  font-size: 0.7rem;
-  color: var(--bs-secondary-color);
-  margin-bottom: 2px;
-  font-weight: 500;
-}
-
 /* Extra small button size */
 .btn-xs {
   --bs-btn-padding-y: 0.15rem;

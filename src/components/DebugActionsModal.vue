@@ -280,20 +280,6 @@ button:hover {
   border-color: #0056b3;
 }
 
-button:active {
-  transform: scale(0.98);
-}
-
-button.active {
-  background: #28a745;
-  border-color: #28a745;
-}
-
-button.active:hover {
-  background: #218838;
-  border-color: #218838;
-}
-
 .clear-btn {
   background: #dc3545;
   border-color: #dc3545;
