@@ -333,27 +333,9 @@ onUnmounted(() => {
   border-left: 3px solid var(--bs-primary);
 }
 
-.angle-buttons .btn {
-  font-size: 0.8rem;
-  padding: 4px 8px;
-  border-width: 1px;
-}
-
-.angle-buttons .btn:hover {
-  transform: translateY(-1px);
-}
-
 .angle-input .form-control {
   text-align: center;
   font-weight: 500;
-}
-
-.fine-controls .btn {
-  font-size: 0.8rem;
-}
-
-.fine-controls .btn i {
-  font-size: 0.9rem;
 }
 
 /* Responsive adjustments */
@@ -361,11 +343,6 @@ onUnmounted(() => {
   .modal-dialog {
     margin: 10px;
     max-width: none;
-  }
-
-  .angle-buttons .btn {
-    font-size: 0.7rem;
-    padding: 3px 6px;
   }
 }
 

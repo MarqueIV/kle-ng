@@ -630,14 +630,6 @@ const stopResize = () => {
   border-radius: 4px;
 }
 
-.collapse-btn i,
-.help-btn i,
-.settings-btn i {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
 /* Drag States */
 .draggable-container.dragging {
   opacity: 0.7;

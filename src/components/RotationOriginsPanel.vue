@@ -80,7 +80,7 @@
             </div>
           </div>
 
-          <div v-if="!useKeyCenters" class="small text-muted mt-2">
+          <div v-if="!useKeyCenters" class="d-flex align-items-center small text-muted mt-2 gap-2">
             <BiLightbulb />
             Enter coordinates for a shared rotation origin point
           </div>
@@ -89,7 +89,7 @@
         <!-- Preview section -->
         <div v-if="hasPreview" class="preview-section mb-3">
           <div class="preview-indicator">
-            <BiEye class="me-1" />
+            <BiEye />
             Preview active - rotate keys to see changes
           </div>
         </div>
@@ -333,11 +333,6 @@ const handleClose = () => {
   color: var(--bs-emphasis-color);
 }
 
-.info-banner i {
-  color: var(--bs-primary);
-  flex-shrink: 0;
-}
-
 .controls-section {
   background: var(--bs-tertiary-bg);
   border: 1px solid var(--bs-border-color);
@@ -393,11 +388,6 @@ const handleClose = () => {
   align-items: center;
   font-size: 0.875rem;
   color: var(--bs-emphasis-color);
-}
-
-.preview-indicator i {
-  color: var(--bs-info);
-  flex-shrink: 0;
 }
 
 .action-buttons {
