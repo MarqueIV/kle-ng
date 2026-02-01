@@ -185,7 +185,7 @@ export class CanvasTestHelper {
 
     // Click the color picker for this label position
     const colorPickerButton = this.page
-      .locator('.labels-grid .label-color-picker')
+      .locator('.labels-grid .vue-color-picker-wrapper')
       .nth(positions[position])
     await colorPickerButton.click()
 

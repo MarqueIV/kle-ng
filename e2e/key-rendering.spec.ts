@@ -470,7 +470,7 @@ test.describe('Key Rendering Tests', () => {
       await helper.setLabelColor('centerRight', '#ff8800')
       await helper.setLabelColor('bottomRight', '#8800ff')
 
-      const frontColorPickers = helper.page.locator('.labels-grid .label-color-picker')
+      const frontColorPickers = helper.page.locator('.labels-grid .vue-color-picker-wrapper')
       const frontColorPickersCount = await frontColorPickers.count()
 
       if (frontColorPickersCount >= 12) {

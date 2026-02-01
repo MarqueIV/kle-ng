@@ -396,7 +396,6 @@
                       @change="updateLabelColor(0)"
                       @input="updateLabelColorPreview(0)"
                       :disabled="isDisabled"
-                      class="label-color-picker"
                       style="width: 16px; height: 16px; flex: none; border-radius: 0"
                       title="Top Left Color"
                     />
@@ -414,7 +413,6 @@
                       @change="updateLabelColor(1)"
                       @input="updateLabelColorPreview(1)"
                       :disabled="isDisabled"
-                      class="label-color-picker"
                       style="width: 16px; height: 16px; flex: none; border-radius: 0"
                       title="Top Center Color"
                     />
@@ -432,7 +430,6 @@
                       @change="updateLabelColor(2)"
                       @input="updateLabelColorPreview(2)"
                       :disabled="isDisabled"
-                      class="label-color-picker"
                       style="width: 16px; height: 16px; flex: none; border-radius: 0"
                       title="Top Right Color"
                     />
@@ -452,7 +449,6 @@
                       @change="updateLabelColor(3)"
                       @input="updateLabelColorPreview(3)"
                       :disabled="isDisabled"
-                      class="label-color-picker"
                       style="width: 16px; height: 16px; flex: none; border-radius: 0"
                       title="Center Left Color"
                     />
@@ -470,7 +466,6 @@
                       @change="updateLabelColor(4)"
                       @input="updateLabelColorPreview(4)"
                       :disabled="isDisabled"
-                      class="label-color-picker"
                       style="width: 16px; height: 16px; flex: none; border-radius: 0"
                       title="Center Color"
                     />
@@ -488,7 +483,6 @@
                       @change="updateLabelColor(5)"
                       @input="updateLabelColorPreview(5)"
                       :disabled="isDisabled"
-                      class="label-color-picker"
                       style="width: 16px; height: 16px; flex: none; border-radius: 0"
                       title="Center Right Color"
                     />
@@ -508,7 +502,6 @@
                       @change="updateLabelColor(6)"
                       @input="updateLabelColorPreview(6)"
                       :disabled="isDisabled"
-                      class="label-color-picker"
                       style="width: 16px; height: 16px; flex: none; border-radius: 0"
                       title="Bottom Left Color"
                     />
@@ -526,7 +519,6 @@
                       @change="updateLabelColor(7)"
                       @input="updateLabelColorPreview(7)"
                       :disabled="isDisabled"
-                      class="label-color-picker"
                       style="width: 16px; height: 16px; flex: none; border-radius: 0"
                       title="Bottom Center Color"
                     />
@@ -544,7 +536,6 @@
                       @change="updateLabelColor(8)"
                       @input="updateLabelColorPreview(8)"
                       :disabled="isDisabled"
-                      class="label-color-picker"
                       style="width: 16px; height: 16px; flex: none; border-radius: 0"
                       title="Bottom Right Color"
                     />
@@ -579,7 +570,6 @@
                       @change="updateLabelColor(9)"
                       @input="updateLabelColorPreview(9)"
                       :disabled="isDisabled"
-                      class="label-color-picker"
                       style="width: 16px; height: 16px; flex: none; border-radius: 0"
                       title="Top Left Color"
                     />
@@ -597,7 +587,6 @@
                       @change="updateLabelColor(10)"
                       @input="updateLabelColorPreview(10)"
                       :disabled="isDisabled"
-                      class="label-color-picker"
                       style="width: 16px; height: 16px; flex: none; border-radius: 0"
                       title="Top Center Color"
                     />
@@ -615,7 +604,6 @@
                       @change="updateLabelColor(11)"
                       @input="updateLabelColorPreview(11)"
                       :disabled="isDisabled"
-                      class="label-color-picker"
                       style="width: 16px; height: 16px; flex: none; border-radius: 0"
                       title="Top Right Color"
                     />
@@ -1698,16 +1686,6 @@ const updateDefaultTextSizeValue = (value: number | undefined) => {
   min-height: 24px;
 }
 
-.label-color-picker {
-  width: 16px;
-  height: 16px;
-  border: none;
-  border-radius: 2px;
-  cursor: pointer;
-  flex-shrink: 0;
-  padding: 0;
-}
-
 .text-size-input {
   width: 100% !important;
   min-width: 0 !important;
@@ -1736,38 +1714,10 @@ const updateDefaultTextSizeValue = (value: number | undefined) => {
   justify-content: center;
 }
 
-.label-color-picker::-webkit-color-swatch-wrapper {
-  padding: 0;
-}
-
-.label-color-picker::-webkit-color-swatch {
-  border: none;
-  border-radius: 2px;
-}
-
 .front-label-group {
   display: flex;
   align-items: center;
   gap: 2px;
-}
-
-.label-color-picker-small {
-  width: 16px;
-  height: 16px;
-  border: none;
-  border-radius: 2px;
-  cursor: pointer;
-  padding: 0;
-  flex-shrink: 0;
-}
-
-.label-color-picker-small::-webkit-color-swatch-wrapper {
-  padding: 0;
-}
-
-.label-color-picker-small::-webkit-color-swatch {
-  border: none;
-  border-radius: 2px;
 }
 
 @media (max-width: 767.98px) {
@@ -1790,12 +1740,6 @@ const updateDefaultTextSizeValue = (value: number | undefined) => {
     min-height: 20px;
     min-width: 0;
     width: 100%;
-  }
-
-  .label-color-picker {
-    width: 14px;
-    height: 14px;
-    flex-shrink: 0;
   }
 
   .text-size-grid-layout {
@@ -1827,11 +1771,6 @@ const updateDefaultTextSizeValue = (value: number | undefined) => {
     min-height: 18px;
   }
 
-  .label-color-picker {
-    width: 12px;
-    height: 12px;
-  }
-
   .text-size-grid-layout {
     gap: 1px;
   }
@@ -1852,11 +1791,6 @@ const updateDefaultTextSizeValue = (value: number | undefined) => {
     font-size: 0.55rem;
     padding: 0.05rem 0.1rem;
     min-height: 16px;
-  }
-
-  .label-color-picker {
-    width: 10px;
-    height: 10px;
   }
 
   .text-size-input {
