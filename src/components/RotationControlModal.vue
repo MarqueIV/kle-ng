@@ -346,11 +346,6 @@ onUnmounted(() => {
   }
 }
 
-/* Animation for button press feedback */
-.btn:active {
-  transform: translateY(1px);
-}
-
 /* Highlight current angle input when focused */
 .angle-input .form-control:focus {
   border-color: var(--bs-primary);

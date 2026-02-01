@@ -432,11 +432,6 @@ onUnmounted(() => {
   }
 }
 
-/* Animation for button press feedback */
-.btn:active {
-  transform: translateY(1px);
-}
-
 /* Highlight input when focused */
 .form-control:focus {
   border-color: #007bff;

@@ -1443,11 +1443,6 @@ defineExpose({
   background: var(--bs-primary) !important;
 }
 
-/* Animation for button press feedback */
-.btn:active {
-  transform: translateY(1px);
-}
-
 /* Drawing type toggle button group */
 .btn-group > .btn {
   flex: 1;

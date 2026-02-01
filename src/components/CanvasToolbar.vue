@@ -622,7 +622,6 @@ onUnmounted(() => {
   background: var(--bs-secondary-bg);
   border-color: var(--bs-secondary-bg);
   color: var(--bs-secondary-color);
-  transform: translateY(-1px);
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
@@ -668,13 +667,6 @@ onUnmounted(() => {
   max-height: 16px;
   border-radius: 0px 0px 6px 6px;
   border-top: none;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.dropdown-btn:hover {
-  transform: none; /* Override the translateY for the smaller button */
 }
 
 /* Special Keys Dropdown */
