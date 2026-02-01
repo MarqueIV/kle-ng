@@ -58,24 +58,20 @@
           <div class="row g-2">
             <div class="col-6">
               <label class="form-label small">X Position</label>
-              <input
-                type="number"
-                class="form-control form-control-sm"
-                v-model.number="manualX"
+              <CustomNumberInput
+                v-model="manualX"
                 :disabled="useKeyCenters"
-                step="0.25"
-                placeholder="X"
+                :step="0.25"
+                title="X Position"
               />
             </div>
             <div class="col-6">
               <label class="form-label small">Y Position</label>
-              <input
-                type="number"
-                class="form-control form-control-sm"
-                v-model.number="manualY"
+              <CustomNumberInput
+                v-model="manualY"
                 :disabled="useKeyCenters"
-                step="0.25"
-                placeholder="Y"
+                :step="0.25"
+                title="Y Position"
               />
             </div>
           </div>
@@ -83,14 +79,6 @@
           <div v-if="!useKeyCenters" class="d-flex align-items-center small text-muted mt-2 gap-2">
             <BiLightbulb />
             Enter coordinates for a shared rotation origin point
-          </div>
-        </div>
-
-        <!-- Preview section -->
-        <div v-if="hasPreview" class="preview-section mb-3">
-          <div class="preview-indicator">
-            <BiEye />
-            Preview active - rotate keys to see changes
           </div>
         </div>
 
@@ -134,11 +122,11 @@
 import { ref, computed, watch, nextTick } from 'vue'
 import { useKeyboardStore } from '@/stores/keyboard'
 import { useDraggablePanel } from '@/composables/useDraggablePanel'
+import CustomNumberInput from './CustomNumberInput.vue'
 import BiGripVertical from 'bootstrap-icons/icons/grip-vertical.svg'
 import BiArrowRepeat from 'bootstrap-icons/icons/arrow-repeat.svg'
 import BiInfoCircle from 'bootstrap-icons/icons/info-circle.svg'
 import BiLightbulb from 'bootstrap-icons/icons/lightbulb.svg'
-import BiEye from 'bootstrap-icons/icons/eye.svg'
 import BiXCircle from 'bootstrap-icons/icons/x-circle.svg'
 import BiCheckCircle from 'bootstrap-icons/icons/check-circle.svg'
 
@@ -164,7 +152,6 @@ const keyboardStore = useKeyboardStore()
 const useKeyCenters = ref(true)
 const manualX = ref(0)
 const manualY = ref(0)
-const hasPreview = ref(false)
 
 // Dragging functionality
 const { position, panelRef, handleMouseDown, handleHeaderMouseDown, initializePosition } =
@@ -198,7 +185,6 @@ watch(
       useKeyCenters.value = true
       manualX.value = 0
       manualY.value = 0
-      hasPreview.value = false
 
       // Position panel on the right side
       initializePosition({ x: window.innerWidth - 420, y: 100 })
@@ -222,12 +208,10 @@ const handleApply = () => {
     )
   }
 
-  hasPreview.value = false
   emit('close')
 }
 
 const handleCancel = () => {
-  hasPreview.value = false
   emit('close')
 }
 
@@ -376,20 +360,6 @@ const handleClose = () => {
   color: var(--bs-secondary-color);
 }
 
-.preview-section {
-  background: var(--bs-info-bg-subtle);
-  border: 1px solid var(--bs-info-border-subtle);
-  border-radius: 4px;
-  padding: 8px 12px;
-}
-
-.preview-indicator {
-  display: flex;
-  align-items: center;
-  font-size: 0.875rem;
-  color: var(--bs-emphasis-color);
-}
-
 .action-buttons {
   display: flex;
   gap: 8px;
@@ -399,10 +369,6 @@ const handleClose = () => {
   border-top: 1px solid var(--bs-border-color);
   padding-top: 10px;
   margin-top: 2px;
-}
-
-.help-text small {
-  color: var(--bs-secondary-color);
 }
 
 .help-text ul {
