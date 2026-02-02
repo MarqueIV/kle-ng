@@ -7,12 +7,7 @@
 
 import type MakerJs from 'makerjs'
 import type { Key } from '@adamws/kle-serial'
-import type {
-  CutoutType,
-  PlateGenerationResult,
-  PlateBoundingBox,
-  KeyCutoutPosition,
-} from '@/types/plate'
+import type { CutoutType, PlateGenerationResult, KeyCutoutPosition } from '@/types/plate'
 import { getMakerJs } from '@/utils/makerjs-loader'
 import { getKeyCenter } from '@/utils/keyboard-geometry'
 import { positionCutout, getCutoutGenerator } from './cutout-generator'
@@ -86,45 +81,11 @@ function keyToCutoutPosition(
 }
 
 /**
- * Calculate the bounding box of all cutout positions.
- * Accounts for the size of each cutout, not just their centers.
- */
-function calculateBoundingBox(cutouts: KeyCutoutPosition[]): PlateBoundingBox {
-  if (cutouts.length === 0) {
-    return { minX: 0, minY: 0, maxX: 0, maxY: 0, width: 0, height: 0 }
-  }
-
-  let minX = Infinity
-  let minY = Infinity
-  let maxX = -Infinity
-  let maxY = -Infinity
-
-  for (const cutout of cutouts) {
-    // Account for cutout size (half width/height from center)
-    // Note: This is an approximation for rotated cutouts
-    const halfDiagonal = Math.sqrt(cutout.width ** 2 + cutout.height ** 2) / 2
-    minX = Math.min(minX, cutout.centerX - halfDiagonal)
-    minY = Math.min(minY, cutout.centerY - halfDiagonal)
-    maxX = Math.max(maxX, cutout.centerX + halfDiagonal)
-    maxY = Math.max(maxY, cutout.centerY + halfDiagonal)
-  }
-
-  return {
-    minX,
-    minY,
-    maxX,
-    maxY,
-    width: maxX - minX,
-    height: maxY - minY,
-  }
-}
-
-/**
  * Build a plate from a keyboard layout.
  *
  * @param keys - Array of keys from the keyboard layout
  * @param options - Build options including cutout type and spacing
- * @returns PlateGenerationResult with SVG, DXF, and bounding box
+ * @returns PlateGenerationResult with SVG and DXF
  * @throws PlateBuilderError if generation fails
  */
 export async function buildPlate(
@@ -150,9 +111,6 @@ export async function buildPlate(
   const cutoutPositions = validKeys.map((key) =>
     keyToCutoutPosition(key, cutoutType, spacingX, spacingY),
   )
-
-  // Calculate bounding box
-  const boundingBox = calculateBoundingBox(cutoutPositions)
 
   // Create cutout models
   const cutoutModels: Record<string, MakerJs.IModel> = {}
@@ -188,7 +146,5 @@ export async function buildPlate(
   return {
     svgContent,
     dxfContent,
-    boundingBox,
-    cutoutCount: validKeys.length,
   }
 }

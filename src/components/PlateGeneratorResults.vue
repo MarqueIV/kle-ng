@@ -16,19 +16,6 @@ const isSuccess = computed(() => generationState.value.status === 'success')
 const isIdle = computed(() => generationState.value.status === 'idle')
 
 const result = computed(() => generationState.value.result)
-
-// Format dimensions for display
-const dimensionsText = computed(() => {
-  if (!result.value) return ''
-  const { width, height } = result.value.boundingBox
-  return `${width.toFixed(1)}mm x ${height.toFixed(1)}mm`
-})
-
-const cutoutCountText = computed(() => {
-  if (!result.value) return ''
-  const count = result.value.cutoutCount
-  return `${count} cutout${count !== 1 ? 's' : ''}`
-})
 </script>
 
 <template>
@@ -49,17 +36,12 @@ const cutoutCountText = computed(() => {
         <!-- Inline SVG Preview -->
         <div class="svg-preview" v-html="result.svgContent"></div>
       </div>
-      <!-- Dimensions Info -->
-      <div class="dimensions-info mt-2 text-center">
-        <span class="badge bg-secondary me-2">{{ dimensionsText }}</span>
-        <span class="badge bg-secondary">{{ cutoutCountText }}</span>
-      </div>
     </div>
 
     <!-- Idle State -->
     <div v-else-if="isIdle" class="idle-wrapper">
-      <BiInfoCircle class="text-muted mb-2" />
-      <p class="text-muted small text-center mb-0">
+      <BiInfoCircle class="mb-2" />
+      <p class="small text-center mb-0">
         Click "Generate Plate" to create switch cutouts from your keyboard layout.
       </p>
     </div>
@@ -113,10 +95,6 @@ const cutoutCountText = computed(() => {
   max-width: 100%;
   height: auto;
   display: block;
-}
-
-.dimensions-info {
-  padding: 0.5rem 0;
 }
 
 .idle-wrapper {

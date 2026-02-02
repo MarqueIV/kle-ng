@@ -32,24 +32,6 @@ export interface KeyCutoutPosition {
 }
 
 /**
- * Bounding box dimensions for the generated plate
- */
-export interface PlateBoundingBox {
-  /** Minimum X coordinate in mm */
-  minX: number
-  /** Minimum Y coordinate in mm */
-  minY: number
-  /** Maximum X coordinate in mm */
-  maxX: number
-  /** Maximum Y coordinate in mm */
-  maxY: number
-  /** Width of the bounding box in mm */
-  width: number
-  /** Height of the bounding box in mm */
-  height: number
-}
-
-/**
  * Result of plate generation containing all export formats
  */
 export interface PlateGenerationResult {
@@ -57,10 +39,6 @@ export interface PlateGenerationResult {
   svgContent: string
   /** DXF content as a string */
   dxfContent: string
-  /** Bounding box dimensions */
-  boundingBox: PlateBoundingBox
-  /** Number of cutouts generated */
-  cutoutCount: number
 }
 
 /**
