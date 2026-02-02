@@ -7,6 +7,7 @@ import KeyboardMetadataPanel from './components/KeyboardMetadataPanel.vue'
 import SummaryPanel from './components/SummaryPanel.vue'
 import JsonEditorPanel from './components/JsonEditorPanel.vue'
 import PcbGeneratorPanel from './components/PcbGeneratorPanel.vue'
+import PlateGeneratorPanel from './components/PlateGeneratorPanel.vue'
 import AppFooter from './components/AppFooter.vue'
 import CanvasToolbar from './components/CanvasToolbar.vue'
 import CanvasFooter from './components/CanvasFooter.vue'
@@ -62,7 +63,7 @@ onUnmounted(() => {
   window.removeEventListener('beforeunload', handleBeforeUnload)
 })
 
-const sectionOrder = ref(['canvas', 'properties', 'json', 'pcb'])
+const sectionOrder = ref(['canvas', 'properties', 'json', 'pcb', 'plate'])
 const draggedSection = ref<string | null>(null)
 const dragOverSection = ref<string | null>(null)
 const isDraggingSection = ref(false)
@@ -76,6 +77,7 @@ const collapsedSections = ref<Record<string, boolean>>({
   canvas: false,
   json: false,
   pcb: false,
+  plate: false,
 })
 
 onMounted(() => {
@@ -84,11 +86,17 @@ onMounted(() => {
     try {
       const parsedOrder = JSON.parse(savedOrder)
       if (Array.isArray(parsedOrder)) {
-        // Backward compatibility: if saved order has 3 items (old version), append 'pcb'
-        if (parsedOrder.length === 3 && !parsedOrder.includes('pcb')) {
-          sectionOrder.value = [...parsedOrder, 'pcb']
-        } else if (parsedOrder.length === 4) {
-          sectionOrder.value = parsedOrder
+        // Backward compatibility: add missing sections
+        const order = [...parsedOrder]
+        if (!order.includes('pcb')) {
+          order.push('pcb')
+        }
+        if (!order.includes('plate')) {
+          order.push('plate')
+        }
+        // Only use saved order if it has the expected sections
+        if (order.length === 5) {
+          sectionOrder.value = order
         }
       }
     } catch (error) {
@@ -240,6 +248,11 @@ const sections = computed(() => ({
     id: 'pcb',
     title: 'PCB Generator',
     component: 'PcbGeneratorPanel',
+  },
+  plate: {
+    id: 'plate',
+    title: 'Plate Generator',
+    component: 'PlateGeneratorPanel',
   },
 }))
 
@@ -524,6 +537,14 @@ const stopResize = () => {
             class="card-body p-0"
           >
             <PcbGeneratorPanel />
+          </div>
+
+          <!-- Plate Generator Section -->
+          <div
+            v-else-if="section.id === 'plate' && !collapsedSections[section.id]"
+            class="card-body p-0"
+          >
+            <PlateGeneratorPanel />
           </div>
         </div>
       </div>

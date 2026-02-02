@@ -32,6 +32,7 @@
     "js-yaml": "^4.1.1",
     "json5": "^2.2.3",
     "lz-string": "^1.5.0",
+    "makerjs": "^0.19.2",
     "pinia": "^3.0.4",
     "polygon-clipping": "^0.15.7",
     "vue": "^3.5.27"
