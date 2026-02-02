@@ -1,8 +1,14 @@
 import { Key, Keyboard, Serial } from '@adamws/kle-serial'
 import Decimal from 'decimal.js'
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-// @ts-ignore - ergogen is a JavaScript library without type definitions
-import ergogen from 'ergogen'
+// @ts-ignore - ergogen modules are JavaScript libraries without type definitions
+import prepare from 'ergogen/src/prepare'
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore
+import units_lib from 'ergogen/src/units'
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore
+import points_lib from 'ergogen/src/points'
 import yaml from 'js-yaml'
 import LZString from 'lz-string'
 
@@ -56,15 +62,29 @@ export async function ergogenGetPoints(config: unknown): Promise<ErgogenPoints> 
     ergogenConfig.units = configWithPoints.units
   }
 
-  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-  // @ts-ignore - ergogen.process() accepts second parameter but types are incomplete
-  const results = await ergogen.process(ergogenConfig, { debug: true })
+  // Manually process the config using only the required ergogen modules
+  // This mimics the minimal parts of ergogen.process() that we need
+  // and saves us some bundle size
 
-  if (!results.points) {
+  // Step 1: Preprocess the config
+  let processedConfig = prepare.unnest(ergogenConfig)
+  processedConfig = prepare.inherit(processedConfig)
+  processedConfig = prepare.parameterize(processedConfig)
+
+  // Step 2: Parse units
+  const units = units_lib.parse(processedConfig)
+
+  // Step 3: Parse points
+  if (!processedConfig.points) {
+    throw new Error('Config does not contain points after preprocessing')
+  }
+  const points = points_lib.parse(processedConfig.points, units)
+
+  if (!points || Object.keys(points).length === 0) {
     throw new Error('Ergogen processing did not generate any points')
   }
 
-  return results.points as ErgogenPoints
+  return points as ErgogenPoints
 }
 
 /**
