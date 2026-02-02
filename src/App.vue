@@ -19,6 +19,7 @@ import ThemeToggle from './components/ThemeToggle.vue'
 import GitHubStarPopup from './components/GitHubStarPopup.vue'
 import { useKeyboardStore } from '@/stores/keyboard'
 import { useTheme } from '@/composables/useTheme'
+import { preloadErgogenModule } from '@/utils/ergogen-loader'
 
 import BiChevronDown from 'bootstrap-icons/icons/chevron-down.svg'
 import BiChevronUp from 'bootstrap-icons/icons/chevron-up.svg'
@@ -121,6 +122,9 @@ onMounted(() => {
     // If no saved height, ensure initial height meets minimum requirement
     layoutEditorHeight.value = Math.max(layoutEditorHeight.value, minLayoutEditorHeight)
   }
+
+  // Preload ergogen module after initial render to reduce critical bundle size
+  preloadErgogenModule()
 })
 
 // Save section order to localStorage

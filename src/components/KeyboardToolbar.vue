@@ -190,7 +190,7 @@ import { isViaFormat, convertViaToKle, convertKleToVia } from '@/utils/via-impor
 import { isQmkFormat, convertQmkToKle } from '@/utils/qmk-import'
 import { stringifyWithRounding } from '@/utils/serialization'
 import { decodeLayoutFromUrl, fetchGistLayout, loadErgogenKeyboard } from '@/utils/url-sharing'
-import { parseErgogenConfig, encodeKeyboardToErgogenUrl } from '@/utils/ergogen-converter'
+import { parseErgogenConfig, encodeKeyboardToErgogenUrl } from '@/utils/ergogen-loader'
 import LZString from 'lz-string'
 
 import BiBoxArrowUpRight from 'bootstrap-icons/icons/box-arrow-up-right.svg'
@@ -401,7 +401,7 @@ const downloadViaJson = () => {
   URL.revokeObjectURL(url)
 }
 
-const exportToErgogenWebGui = () => {
+const exportToErgogenWebGui = async () => {
   try {
     if (keyboardStore.keys.length === 0) {
       toast.showError('Cannot export empty keyboard layout', 'Export Failed')
@@ -414,7 +414,7 @@ const exportToErgogenWebGui = () => {
     keyboard.meta = JSON.parse(JSON.stringify(keyboardStore.metadata))
 
     // Encode to ergogen.xyz URL
-    const ergogenUrl = encodeKeyboardToErgogenUrl(keyboard)
+    const ergogenUrl = await encodeKeyboardToErgogenUrl(keyboard)
 
     // Open the URL in a new tab
     window.open(ergogenUrl, '_blank', 'noopener,noreferrer')

@@ -1,6 +1,6 @@
 import * as LZString from 'lz-string'
 import { Serial, Keyboard } from '@adamws/kle-serial'
-import { parseErgogenConfig } from './ergogen-converter'
+import { parseErgogenConfig } from './ergogen-loader'
 
 /**
  * Result of ergogen URL extraction
