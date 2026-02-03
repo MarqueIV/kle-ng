@@ -20,6 +20,8 @@ export interface PlateBuilderOptions {
   cutoutType: CutoutType
   /** Fillet (corner rounding) radius in mm (default: 0) */
   filletRadius?: number
+  /** Size adjustment in mm. Positive = shrink, negative = expand (default: 0) */
+  sizeAdjust?: number
   /** Horizontal spacing between key units in mm (default: 19.05) */
   spacingX?: number
   /** Vertical spacing between key units in mm (default: 19.05) */
@@ -124,6 +126,7 @@ export async function buildPlate(
   const {
     cutoutType,
     filletRadius = 0,
+    sizeAdjust = 0,
     spacingX = DEFAULT_SPACING_X,
     spacingY = DEFAULT_SPACING_Y,
   } = options
@@ -151,7 +154,7 @@ export async function buildPlate(
   for (let i = 0; i < cutoutPositions.length; i++) {
     const position = cutoutPositions[i]
     if (position) {
-      const cutoutModel = await positionCutout(position, cutoutType, filletRadius)
+      const cutoutModel = await positionCutout(position, cutoutType, filletRadius, sizeAdjust)
       cutoutModels[`cutout_${i}`] = cutoutModel
     }
   }

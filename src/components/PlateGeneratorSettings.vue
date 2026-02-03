@@ -6,6 +6,7 @@ import {
   getCutoutOptions,
   getCutoutGenerator,
   validateFilletRadius,
+  validateSizeAdjust,
 } from '@/utils/plate/cutout-generator'
 import CustomNumberInput from './CustomNumberInput.vue'
 
@@ -26,6 +27,17 @@ const maxFilletRadius = computed(
 
 const filletInputClass = computed(() =>
   filletError.value ? 'form-control form-control-sm is-invalid' : 'form-control form-control-sm',
+)
+
+// Size adjustment validation
+const sizeAdjustError = computed(() =>
+  validateSizeAdjust(settings.value.cutoutType, settings.value.sizeAdjust),
+)
+
+const sizeAdjustInputClass = computed(() =>
+  sizeAdjustError.value
+    ? 'form-control form-control-sm is-invalid'
+    : 'form-control form-control-sm',
 )
 </script>
 
@@ -59,7 +71,7 @@ const filletInputClass = computed(() =>
         <CustomNumberInput
           id="filletRadius"
           v-model="settings.filletRadius"
-          :step="0.1"
+          :step="0.01"
           :min="0"
           :max="maxFilletRadius"
           :class="filletInputClass"
@@ -74,6 +86,25 @@ const filletInputClass = computed(() =>
         <div v-else class="form-text small">
           Corner rounding for cutouts (0 = sharp corners, max {{ maxFilletRadius }}mm)
         </div>
+      </div>
+
+      <!-- Size Adjustment -->
+      <div class="mb-2">
+        <label for="sizeAdjust" class="form-label form-label-sm">Size Adjustment</label>
+        <CustomNumberInput
+          id="sizeAdjust"
+          v-model="settings.sizeAdjust"
+          :step="0.001"
+          :class="sizeAdjustInputClass"
+          size="default"
+          title="Cutout size adjustment in millimeters"
+        >
+          <template #suffix>mm</template>
+        </CustomNumberInput>
+        <div v-if="sizeAdjustError" class="invalid-feedback d-block">
+          {{ sizeAdjustError }}
+        </div>
+        <div v-else class="form-text small">Positive = shrink, negative = expand</div>
       </div>
     </div>
   </div>

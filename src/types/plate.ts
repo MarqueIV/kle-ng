@@ -19,6 +19,8 @@ export interface PlateSettings {
   cutoutType: CutoutType
   /** Fillet (corner rounding) radius in mm for cutouts. 0 = sharp corners. */
   filletRadius: number
+  /** Size adjustment in mm. Positive = shrink cutouts, negative = expand. */
+  sizeAdjust: number
 }
 
 /**

@@ -20,7 +20,7 @@ export interface CutoutGenerator {
   /** Maximum allowed fillet radius (min(width, height) / 2) */
   maxFilletRadius: number
   /** Create the cutout model centered at origin */
-  createModel(makerjs: typeof MakerJs, filletRadius: number): MakerJs.IModel
+  createModel(makerjs: typeof MakerJs, filletRadius: number, sizeAdjust?: number): MakerJs.IModel
 }
 
 abstract class RectangleCutout implements CutoutGenerator {
@@ -31,11 +31,17 @@ abstract class RectangleCutout implements CutoutGenerator {
     return Math.min(this.width, this.height) / 2
   }
 
-  createModel(makerjs: typeof MakerJs, filletRadius: number): MakerJs.IModel {
+  createModel(
+    makerjs: typeof MakerJs,
+    filletRadius: number,
+    sizeAdjust: number = 0,
+  ): MakerJs.IModel {
+    const w = this.width - sizeAdjust * 2
+    const h = this.height - sizeAdjust * 2
     if (filletRadius > 0) {
-      return new makerjs.models.RoundRectangle(this.width, this.height, filletRadius)
+      return new makerjs.models.RoundRectangle(w, h, filletRadius)
     }
-    return new makerjs.models.Rectangle(this.width, this.height)
+    return new makerjs.models.Rectangle(w, h)
   }
 }
 
@@ -137,6 +143,26 @@ export function validateFilletRadius(cutoutType: CutoutType, radius: number): st
 }
 
 /**
+ * Validate a size adjustment value for a given cutout type.
+ * Positive values (shrink) must not exceed half of the smallest cutout dimension.
+ * Negative values (expand) are always valid.
+ * Returns an error message if invalid, or null if valid.
+ */
+export function validateSizeAdjust(cutoutType: CutoutType, sizeAdjust: number): string | null {
+  if (sizeAdjust <= 0) {
+    return null
+  }
+  const generator = cutoutGenerators[cutoutType]
+  if (generator) {
+    const maxShrink = Math.min(generator.width, generator.height) / 2
+    if (sizeAdjust >= maxShrink) {
+      return `Size adjustment must be less than ${maxShrink}mm (half of the smallest cutout dimension).`
+    }
+  }
+  return null
+}
+
+/**
  * Get a cutout generator by type
  */
 export function getCutoutGenerator(type: CutoutType): CutoutGenerator {
@@ -165,16 +191,19 @@ export async function positionCutout(
   cutout: KeyCutoutPosition,
   cutoutType: CutoutType,
   filletRadius: number = 0,
+  sizeAdjust: number = 0,
 ): Promise<MakerJs.IModel> {
   const makerjs = await getMakerJs()
   const generator = getCutoutGenerator(cutoutType)
 
-  // Create the base cutout model (centered at origin of the rectangle's corner)
-  let model = generator.createModel(makerjs, filletRadius)
+  // Create the base cutout model with size adjustment applied
+  let model = generator.createModel(makerjs, filletRadius, sizeAdjust)
 
   // Center the model at the origin (rectangle is created from 0,0 corner)
-  // We need to offset by half width and height to center it
-  model = makerjs.model.move(model, [-generator.width / 2, -generator.height / 2])
+  // Use adjusted dimensions for centering
+  const adjustedWidth = generator.width - sizeAdjust * 2
+  const adjustedHeight = generator.height - sizeAdjust * 2
+  model = makerjs.model.move(model, [-adjustedWidth / 2, -adjustedHeight / 2])
 
   // Apply rotation around the origin (which is now the center of the cutout)
   if (cutout.rotationAngle !== 0) {
