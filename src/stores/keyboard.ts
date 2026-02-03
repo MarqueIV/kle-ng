@@ -29,6 +29,7 @@ import {
   type MirrorAxis,
 } from '../utils/keyboard-transformations'
 import { useFontStore } from './font'
+import { usePlateGeneratorStore } from './plateGenerator'
 import { svgCache } from '../utils/caches/SVGCache'
 import { parseCache } from '../utils/caches/ParseCache'
 import { imageCache } from '../utils/caches/ImageCache'
@@ -203,6 +204,9 @@ export const useKeyboardStore = defineStore('keyboard', () => {
     if (typeof window !== 'undefined') {
       window.dispatchEvent(new CustomEvent('keys-modified'))
     }
+
+    // Notify plate generator of layout change
+    usePlateGeneratorStore().requestRegenerate()
   }
 
   /**
@@ -500,6 +504,9 @@ export const useKeyboardStore = defineStore('keyboard', () => {
     if (typeof window !== 'undefined') {
       window.dispatchEvent(new CustomEvent('keys-modified'))
     }
+
+    // Notify plate generator of layout change
+    usePlateGeneratorStore().requestRegenerate()
   }
 
   const redo = () => {
@@ -517,6 +524,9 @@ export const useKeyboardStore = defineStore('keyboard', () => {
     if (typeof window !== 'undefined') {
       window.dispatchEvent(new CustomEvent('keys-modified'))
     }
+
+    // Notify plate generator of layout change
+    usePlateGeneratorStore().requestRegenerate()
   }
 
   const updateKeyProperty = (key: Key, property: keyof Key, value: unknown) => {

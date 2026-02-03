@@ -20,6 +20,9 @@ export const usePlateGeneratorStore = defineStore('plateGenerator', () => {
   // Settings state
   const settings = ref<PlateSettings>({ ...defaultSettings })
 
+  // Auto-refresh state (persisted separately from plate settings)
+  const autoRefresh = ref(false)
+
   // Generation state
   const generationState = ref<GenerationState>({
     status: 'idle',
@@ -141,6 +144,9 @@ export const usePlateGeneratorStore = defineStore('plateGenerator', () => {
         // Merge with defaults to ensure new fields have default values
         // (backward compatibility for users with old localStorage data)
         settings.value = { ...defaultSettings, ...parsed }
+        if (typeof parsed.autoRefresh === 'boolean') {
+          autoRefresh.value = parsed.autoRefresh
+        }
       } catch (error) {
         console.warn('Failed to load plate settings:', error)
       }
@@ -148,7 +154,10 @@ export const usePlateGeneratorStore = defineStore('plateGenerator', () => {
   }
 
   function saveSettings(): void {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(settings.value))
+    localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({ ...settings.value, autoRefresh: autoRefresh.value }),
+    )
   }
 
   // Manual debounce helper
@@ -176,14 +185,33 @@ export const usePlateGeneratorStore = defineStore('plateGenerator', () => {
   }, 300)
   watch(settings, debouncedRegenerate, { deep: true })
 
+  // Persist autoRefresh changes
+  watch(autoRefresh, debouncedSave)
+
+  /**
+   * Called by the keyboard store when the layout changes (saveState, undo, redo).
+   * Triggers plate regeneration if auto-refresh is enabled and settings are valid.
+   */
+  const requestRegenerate = useDebounceFn(() => {
+    if (
+      autoRefresh.value &&
+      !validateFilletRadius(settings.value.cutoutType, settings.value.filletRadius) &&
+      !validateSizeAdjust(settings.value.cutoutType, settings.value.sizeAdjust)
+    ) {
+      generatePlate()
+    }
+  }, 500)
+
   // Load settings on store creation
   loadSettings()
 
   return {
     settings,
+    autoRefresh,
     generationState,
     generatePlate,
     resetGeneration,
+    requestRegenerate,
     downloadSvg,
     downloadDxf,
   }

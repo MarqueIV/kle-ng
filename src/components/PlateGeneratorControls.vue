@@ -5,7 +5,7 @@ import { useKeyboardStore } from '@/stores/keyboard'
 import { storeToRefs } from 'pinia'
 
 const plateStore = usePlateGeneratorStore()
-const { generationState } = storeToRefs(plateStore)
+const { generationState, autoRefresh } = storeToRefs(plateStore)
 
 const keyboardStore = useKeyboardStore()
 
@@ -17,7 +17,7 @@ const isLoading = computed(
   () => generationState.value.status === 'loading' || generationState.value.status === 'generating',
 )
 
-const isGenerateDisabled = computed(() => isLoading.value || !hasKeys.value)
+const isGenerateDisabled = computed(() => isLoading.value || !hasKeys.value || autoRefresh.value)
 
 const buttonTooltip = computed(() => {
   if (!hasKeys.value) {
@@ -25,6 +25,9 @@ const buttonTooltip = computed(() => {
   }
   if (isLoading.value) {
     return 'Generation in progress...'
+  }
+  if (autoRefresh.value) {
+    return 'Auto Refresh is enabled. Plate regenerates automatically on layout changes.'
   }
   return 'Generate plate cutouts from current layout'
 })
@@ -67,10 +70,10 @@ function handleDismissError() {
     </div>
 
     <!-- Control Buttons -->
-    <div class="d-grid gap-2">
+    <div class="d-flex align-items-center gap-2">
       <button
         type="button"
-        class="btn btn-primary btn-sm"
+        class="btn btn-primary btn-sm flex-fill"
         :disabled="isGenerateDisabled"
         @click="handleGeneratePlate"
         :title="buttonTooltip"
@@ -80,6 +83,18 @@ function handleDismissError() {
         </span>
         Generate Plate
       </button>
+      <div
+        class="form-check form-check-inline flex-fill mb-0"
+        title="Automatically regenerate plate when the layout changes"
+      >
+        <input
+          id="plateAutoRefresh"
+          v-model="autoRefresh"
+          class="form-check-input"
+          type="checkbox"
+        />
+        <label class="form-check-label small" for="plateAutoRefresh">Auto Refresh</label>
+      </div>
     </div>
 
     <!-- Status Message -->
@@ -88,7 +103,7 @@ function handleDismissError() {
     </div>
 
     <!-- Empty Layout Warning -->
-    <div v-if="!hasKeys" class="alert alert-warning py-2 mt-2 mb-0" role="alert">
+    <div v-if="!hasKeys && !autoRefresh" class="alert alert-warning py-2 mt-2 mb-0" role="alert">
       <small> Layout is empty. Add keys to your layout before generating a plate. </small>
     </div>
   </div>
