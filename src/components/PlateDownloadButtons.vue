@@ -23,10 +23,10 @@ function handleDownloadDxf() {
 
 <template>
   <div class="plate-download-buttons">
-    <div v-if="showButtons" class="d-grid gap-2">
+    <div v-if="showButtons" class="d-flex gap-2">
       <button
         type="button"
-        class="btn btn-sm btn-outline-primary d-flex align-items-center justify-content-center gap-2"
+        class="btn btn-sm btn-outline-primary flex-fill d-flex align-items-center justify-content-center gap-2"
         @click="handleDownloadSvg"
         aria-label="Download plate as SVG file"
         title="Download SVG for use in vector editors like Inkscape or Adobe Illustrator"
@@ -36,7 +36,7 @@ function handleDownloadDxf() {
       </button>
       <button
         type="button"
-        class="btn btn-sm btn-outline-primary d-flex align-items-center justify-content-center gap-2"
+        class="btn btn-sm btn-outline-primary flex-fill d-flex align-items-center justify-content-center gap-2"
         @click="handleDownloadDxf"
         aria-label="Download plate as DXF file"
         title="Download DXF for use in CAD software or laser cutting services (units: millimeters)"
