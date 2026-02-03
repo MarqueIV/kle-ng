@@ -10,6 +10,7 @@ import type { Key } from '@adamws/kle-serial'
 import type { CutoutType, PlateGenerationResult, KeyCutoutPosition } from '@/types/plate'
 import { getMakerJs } from '@/utils/makerjs-loader'
 import { getKeyCenter } from '@/utils/keyboard-geometry'
+import { D } from '@/utils/decimal-math'
 import { positionCutout, getCutoutGenerator } from './cutout-generator'
 
 /**
@@ -78,33 +79,37 @@ function extendSvgViewBox(svg: string, padding: number): string {
  * - Ghost keys (visual placeholders)
  */
 function filterValidKeys(keys: Key[]): Key[] {
-  return keys.filter((key) => !key.decal && !key.ghost)
+  return keys
+    .filter((key) => !key.decal && !key.ghost)
+    .sort((a, b) => {
+      const dy = D.sub(a.y, b.y)
+      return dy !== 0 ? dy : D.sub(a.x, b.x)
+    })
 }
 
 /**
  * Convert a KLE key to a cutout position with coordinate transformation.
  *
- * Coordinate transformation:
- * - KLE: +Y down, origin top-left
- * - Maker.js: +Y up, origin bottom-left
+ * Positions are computed relative to originCenter (the first key's center),
+ * with the origin key's top-left cutout corner placed at (0, 0).
  *
- * Transform: makerY = -layoutY, rotation = -key.rotation_angle
+ * Coordinate transformation:
+ * - KLE: +Y down, clockwise rotation
+ * - Maker.js: +Y up, counter-clockwise rotation
  */
 function keyToCutoutPosition(
   key: Key,
   cutoutType: CutoutType,
   spacingX: number,
   spacingY: number,
+  originCenter: { x: number; y: number },
 ): KeyCutoutPosition {
   const generator = getCutoutGenerator(cutoutType)
   const center = getKeyCenter(key)
 
   return {
-    // Convert layout units to mm
-    centerX: center.x * spacingX,
-    // Invert Y-axis for maker.js coordinate system
-    centerY: -center.y * spacingY,
-    // Negate rotation for maker.js (clockwise vs counter-clockwise)
+    centerX: D.sub(D.mul(D.sub(center.x, originCenter.x), spacingX), D.div(generator.width, 2)),
+    centerY: D.sub(D.mul(D.sub(originCenter.y, center.y), spacingY), D.div(generator.height, 2)),
     rotationAngle: -(key.rotation_angle || 0),
     width: generator.width,
     height: generator.height,
@@ -144,9 +149,12 @@ export async function buildPlate(
     )
   }
 
+  // Use the first key's center as the origin so its cutout center lands at (0, 0)
+  const originCenter = getKeyCenter(validKeys[0]!)
+
   // Convert keys to cutout positions
   const cutoutPositions = validKeys.map((key) =>
-    keyToCutoutPosition(key, cutoutType, spacingX, spacingY),
+    keyToCutoutPosition(key, cutoutType, spacingX, spacingY, originCenter),
   )
 
   // Create cutout models
@@ -165,14 +173,31 @@ export async function buildPlate(
     units: makerjs.unitType.Millimeter,
   }
 
-  // Generate SVG for preview - preserveAspectRatio ensures uniform scaling (no stroke distortion)
-  const svgPreviewRaw = makerjs.exporter.toSVG(plateModel, {
+  // Add origin cross marker to the preview model (not included in exports)
+  const previewModel: MakerJs.IModel = {
+    models: { plate: plateModel },
+    units: makerjs.unitType.Millimeter,
+  }
+  const crossSize = 3
+  previewModel.paths = {
+    originH: new makerjs.paths.Line([-crossSize, 0], [crossSize, 0]),
+    originV: new makerjs.paths.Line([0, -crossSize], [0, crossSize]),
+  }
+  // Tag origin lines with a layer so we can style them differently
+  previewModel.paths.originH!.layer = 'origin'
+  previewModel.paths.originV!.layer = 'origin'
+
+  // Generate SVG for preview
+  const svgPreviewRaw = makerjs.exporter.toSVG(previewModel, {
     units: makerjs.unitType.Millimeter,
     stroke: 'currentColor',
     strokeWidth: '0.5mm',
     fill: 'none',
     useSvgPathOnly: true,
     svgAttrs: { width: '100%', height: '100%' },
+    layerOptions: {
+      origin: { stroke: 'red', strokeWidth: '0.3mm' },
+    },
   })
 
   // Extend viewBox with padding to prevent edge strokes from being clipped
