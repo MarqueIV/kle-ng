@@ -59,7 +59,7 @@ const filletInputClass = computed(() =>
         <CustomNumberInput
           id="filletRadius"
           v-model="settings.filletRadius"
-          :step="0.5"
+          :step="0.1"
           :min="0"
           :max="maxFilletRadius"
           :class="filletInputClass"

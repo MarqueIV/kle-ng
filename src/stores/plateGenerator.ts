@@ -12,7 +12,7 @@ const STORAGE_KEY = 'kle-ng-plate-settings'
  */
 const defaultSettings: PlateSettings = {
   cutoutType: 'cherry-mx-basic',
-  filletRadius: 0,
+  filletRadius: 0.5,
 }
 
 export const usePlateGeneratorStore = defineStore('plateGenerator', () => {
