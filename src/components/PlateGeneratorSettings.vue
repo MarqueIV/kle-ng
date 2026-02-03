@@ -1,13 +1,32 @@
 <script setup lang="ts">
+import { computed } from 'vue'
 import { usePlateGeneratorStore } from '@/stores/plateGenerator'
 import { storeToRefs } from 'pinia'
-import { getCutoutOptions } from '@/utils/plate/cutout-generator'
+import {
+  getCutoutOptions,
+  getCutoutGenerator,
+  validateFilletRadius,
+} from '@/utils/plate/cutout-generator'
+import CustomNumberInput from './CustomNumberInput.vue'
 
 const plateStore = usePlateGeneratorStore()
 const { settings } = storeToRefs(plateStore)
 
 // Get cutout options for dropdown
 const cutoutOptions = getCutoutOptions()
+
+// Fillet radius validation
+const filletError = computed(() =>
+  validateFilletRadius(settings.value.cutoutType, settings.value.filletRadius),
+)
+
+const maxFilletRadius = computed(
+  () => getCutoutGenerator(settings.value.cutoutType).maxFilletRadius,
+)
+
+const filletInputClass = computed(() =>
+  filletError.value ? 'form-control form-control-sm is-invalid' : 'form-control form-control-sm',
+)
 </script>
 
 <template>
@@ -31,6 +50,29 @@ const cutoutOptions = getCutoutOptions()
         </select>
         <div class="form-text small">
           {{ cutoutOptions.find((o) => o.value === settings.cutoutType)?.description }}
+        </div>
+      </div>
+
+      <!-- Fillet Radius -->
+      <div class="mb-2">
+        <label for="filletRadius" class="form-label form-label-sm">Fillet Radius</label>
+        <CustomNumberInput
+          id="filletRadius"
+          v-model="settings.filletRadius"
+          :step="0.5"
+          :min="0"
+          :max="maxFilletRadius"
+          :class="filletInputClass"
+          size="default"
+          title="Corner rounding radius in millimeters"
+        >
+          <template #suffix>mm</template>
+        </CustomNumberInput>
+        <div v-if="filletError" class="invalid-feedback d-block">
+          {{ filletError }}
+        </div>
+        <div v-else class="form-text small">
+          Corner rounding for cutouts (0 = sharp corners, max {{ maxFilletRadius }}mm)
         </div>
       </div>
     </div>

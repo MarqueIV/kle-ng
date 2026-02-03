@@ -2,6 +2,7 @@ import { defineStore } from 'pinia'
 import { ref, watch } from 'vue'
 import type { PlateSettings, GenerationState } from '@/types/plate'
 import { buildPlate, PlateBuilderError } from '@/utils/plate/plate-builder'
+import { validateFilletRadius } from '@/utils/plate/cutout-generator'
 import { useKeyboardStore } from '@/stores/keyboard'
 
 const STORAGE_KEY = 'kle-ng-plate-settings'
@@ -11,6 +12,7 @@ const STORAGE_KEY = 'kle-ng-plate-settings'
  */
 const defaultSettings: PlateSettings = {
   cutoutType: 'cherry-mx-basic',
+  filletRadius: 0,
 }
 
 export const usePlateGeneratorStore = defineStore('plateGenerator', () => {
@@ -48,6 +50,7 @@ export const usePlateGeneratorStore = defineStore('plateGenerator', () => {
       // Build the plate
       const result = await buildPlate(keyboardStore.keys, {
         cutoutType: settings.value.cutoutType,
+        filletRadius: settings.value.filletRadius,
         spacingX,
         spacingY,
       })
@@ -158,6 +161,17 @@ export const usePlateGeneratorStore = defineStore('plateGenerator', () => {
   // Watch settings for changes with debouncing (500ms) to prevent excessive writes
   const debouncedSave = useDebounceFn(saveSettings, 500)
   watch(settings, debouncedSave, { deep: true })
+
+  // Auto-refresh: regenerate plate when cutout settings change (only if already generated)
+  const debouncedRegenerate = useDebounceFn(() => {
+    if (
+      generationState.value.status === 'success' &&
+      !validateFilletRadius(settings.value.cutoutType, settings.value.filletRadius)
+    ) {
+      generatePlate()
+    }
+  }, 300)
+  watch(settings, debouncedRegenerate, { deep: true })
 
   // Load settings on store creation
   loadSettings()

@@ -13,6 +13,8 @@ export type CutoutType = 'cherry-mx-basic'
  */
 export interface PlateSettings {
   cutoutType: CutoutType
+  /** Fillet (corner rounding) radius in mm for cutouts. 0 = sharp corners. */
+  filletRadius: number
 }
 
 /**

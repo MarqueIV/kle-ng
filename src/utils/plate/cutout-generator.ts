@@ -17,8 +17,10 @@ export interface CutoutGenerator {
   width: number
   /** Height of the cutout in mm */
   height: number
+  /** Maximum allowed fillet radius (min(width, height) / 2) */
+  maxFilletRadius: number
   /** Create the cutout model centered at origin */
-  createModel(makerjs: typeof MakerJs): MakerJs.IModel
+  createModel(makerjs: typeof MakerJs, filletRadius: number): MakerJs.IModel
 }
 
 /**
@@ -28,9 +30,12 @@ export interface CutoutGenerator {
 export class CherryMxBasicCutout implements CutoutGenerator {
   readonly width = 14
   readonly height = 14
+  readonly maxFilletRadius = Math.min(this.width, this.height) / 2
 
-  createModel(makerjs: typeof MakerJs): MakerJs.IModel {
-    // Create a rectangle centered at origin
+  createModel(makerjs: typeof MakerJs, filletRadius: number): MakerJs.IModel {
+    if (filletRadius > 0) {
+      return new makerjs.models.RoundRectangle(this.width, this.height, filletRadius)
+    }
     return new makerjs.models.Rectangle(this.width, this.height)
   }
 }
@@ -53,6 +58,21 @@ export function getCutoutOptions(): CutoutOption[] {
       description: 'Standard square cutout for Cherry MX switches',
     },
   ]
+}
+
+/**
+ * Validate a fillet radius value for a given cutout type.
+ * Returns an error message if invalid, or null if valid.
+ */
+export function validateFilletRadius(cutoutType: CutoutType, radius: number): string | null {
+  if (radius < 0) {
+    return 'Fillet radius cannot be negative.'
+  }
+  const generator = cutoutGenerators[cutoutType]
+  if (generator && radius > generator.maxFilletRadius) {
+    return `Fillet radius cannot exceed ${generator.maxFilletRadius}mm (half of the smallest cutout dimension).`
+  }
+  return null
 }
 
 /**
@@ -83,12 +103,13 @@ export function getCutoutGenerator(type: CutoutType): CutoutGenerator {
 export async function positionCutout(
   cutout: KeyCutoutPosition,
   cutoutType: CutoutType,
+  filletRadius: number = 0,
 ): Promise<MakerJs.IModel> {
   const makerjs = await getMakerJs()
   const generator = getCutoutGenerator(cutoutType)
 
   // Create the base cutout model (centered at origin of the rectangle's corner)
-  let model = generator.createModel(makerjs)
+  let model = generator.createModel(makerjs, filletRadius)
 
   // Center the model at the origin (rectangle is created from 0,0 corner)
   // We need to offset by half width and height to center it

@@ -18,6 +18,8 @@ import { positionCutout, getCutoutGenerator } from './cutout-generator'
 export interface PlateBuilderOptions {
   /** Type of cutout to generate */
   cutoutType: CutoutType
+  /** Fillet (corner rounding) radius in mm (default: 0) */
+  filletRadius?: number
   /** Horizontal spacing between key units in mm (default: 19.05) */
   spacingX?: number
   /** Vertical spacing between key units in mm (default: 19.05) */
@@ -119,7 +121,12 @@ export async function buildPlate(
   keys: Key[],
   options: PlateBuilderOptions,
 ): Promise<PlateGenerationResult> {
-  const { cutoutType, spacingX = DEFAULT_SPACING_X, spacingY = DEFAULT_SPACING_Y } = options
+  const {
+    cutoutType,
+    filletRadius = 0,
+    spacingX = DEFAULT_SPACING_X,
+    spacingY = DEFAULT_SPACING_Y,
+  } = options
 
   // Load maker.js
   const makerjs = await getMakerJs()
@@ -144,7 +151,7 @@ export async function buildPlate(
   for (let i = 0; i < cutoutPositions.length; i++) {
     const position = cutoutPositions[i]
     if (position) {
-      const cutoutModel = await positionCutout(position, cutoutType)
+      const cutoutModel = await positionCutout(position, cutoutType, filletRadius)
       cutoutModels[`cutout_${i}`] = cutoutModel
     }
   }
