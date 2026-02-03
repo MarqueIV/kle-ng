@@ -4,9 +4,13 @@
 
 /**
  * Available cutout types for switch plates.
- * Can be extended with additional types like 'alps', 'choc-v1', etc.
  */
-export type CutoutType = 'cherry-mx-basic'
+export type CutoutType =
+  | 'cherry-mx-basic'
+  | 'alps-skcm'
+  | 'alps-skcp'
+  | 'kailh-choc-cpg1350'
+  | 'kailh-choc-cpg1232'
 
 /**
  * Settings for plate generation

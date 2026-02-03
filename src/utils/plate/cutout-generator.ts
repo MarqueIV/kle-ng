@@ -23,14 +23,13 @@ export interface CutoutGenerator {
   createModel(makerjs: typeof MakerJs, filletRadius: number): MakerJs.IModel
 }
 
-/**
- * Cherry MX Basic cutout (14mm x 14mm square)
- * Standard cutout for Cherry MX switches
- */
-export class CherryMxBasicCutout implements CutoutGenerator {
-  readonly width = 14
-  readonly height = 14
-  readonly maxFilletRadius = Math.min(this.width, this.height) / 2
+abstract class RectangleCutout implements CutoutGenerator {
+  abstract readonly width: number
+  abstract readonly height: number
+
+  get maxFilletRadius(): number {
+    return Math.min(this.width, this.height) / 2
+  }
 
   createModel(makerjs: typeof MakerJs, filletRadius: number): MakerJs.IModel {
     if (filletRadius > 0) {
@@ -40,11 +39,53 @@ export class CherryMxBasicCutout implements CutoutGenerator {
   }
 }
 
+export class CherryMxBasicCutout extends RectangleCutout {
+  readonly width = 14
+  readonly height = 14
+}
+
+export class AlpsSKCMCutout extends RectangleCutout {
+  readonly width = 15.5
+  readonly height = 12.8
+}
+
+export class AlpsSKCPCutout extends RectangleCutout {
+  readonly width = 16
+  readonly height = 16
+}
+
+export class KailhChocCPG1350 extends RectangleCutout {
+  /**
+   * Commentary from ai03 plate generator:
+   *
+   * 'Kailh MX datasheet specifies 13.95+-0.05mm for the part that clips into the plate
+   * On the Choc datasheet, the equivalent dimen is marked 13.8mm with a tolerance of 0.2mm
+   * Therefore, upper bound is 14mm and cutout size should be 14 x 14'
+   */
+  readonly width = 14
+  readonly height = 14
+}
+
+export class KailhChocCPG1232 extends RectangleCutout {
+  /**
+   * Commentary from ai03 plate generator:
+   *
+   * 'Switch size according to datasheet = 13.5 +- 0.2 x 12.5 +- 0.2
+   * Derived cutout size: 13.7 x 12.7'
+   */
+  readonly width = 13.7
+  readonly height = 12.7
+}
+
 /**
  * Registry of cutout generators by type
  */
 export const cutoutGenerators: Record<CutoutType, CutoutGenerator> = {
   'cherry-mx-basic': new CherryMxBasicCutout(),
+  'alps-skcm': new AlpsSKCMCutout(),
+  'alps-skcp': new AlpsSKCPCutout(),
+  'kailh-choc-cpg1350': new KailhChocCPG1350(),
+  'kailh-choc-cpg1232': new KailhChocCPG1232(),
 }
 
 /**
@@ -56,6 +97,26 @@ export function getCutoutOptions(): CutoutOption[] {
       value: 'cherry-mx-basic',
       label: 'Cherry MX Basic (14mm x 14mm)',
       description: 'Standard square cutout for Cherry MX switches',
+    },
+    {
+      value: 'alps-skcm',
+      label: 'Alps SKCM/L (15.5mm x 12.8mm)',
+      description: '...',
+    },
+    {
+      value: 'alps-skcp',
+      label: 'Alps SKCP (16mm x 16mm)',
+      description: '...',
+    },
+    {
+      value: 'kailh-choc-cpg1350',
+      label: 'Kailh Choc CPG1350 (14mm x 14mm)',
+      description: '...',
+    },
+    {
+      value: 'kailh-choc-cpg1232',
+      label: 'Kailh Choc CPG1232 (13.7mm x 12.7mm)',
+      description: '...',
     },
   ]
 }
