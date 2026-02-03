@@ -35,8 +35,10 @@ export interface KeyCutoutPosition {
  * Result of plate generation containing all export formats
  */
 export interface PlateGenerationResult {
-  /** SVG content as a string */
-  svgContent: string
+  /** SVG content for preview (uses 100% dimensions to avoid scaling artifacts) */
+  svgPreview: string
+  /** SVG content for download (uses mm units for CAD software) */
+  svgDownload: string
   /** DXF content as a string */
   dxfContent: string
 }

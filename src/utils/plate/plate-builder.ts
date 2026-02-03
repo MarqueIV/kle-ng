@@ -41,6 +41,33 @@ export class PlateBuilderError extends Error {
 }
 
 /**
+ * Extend the viewBox of an SVG by adding padding on all sides.
+ * This prevents strokes at the edges from being clipped.
+ *
+ * @param svg - The SVG string to modify
+ * @param padding - Padding to add on each side (in the same units as viewBox)
+ * @returns SVG string with extended viewBox
+ */
+function extendSvgViewBox(svg: string, padding: number): string {
+  const viewBoxMatch = svg.match(/viewBox="([^"]+)"/)
+  if (!viewBoxMatch || !viewBoxMatch[1]) return svg
+
+  const parts = viewBoxMatch[1].split(/\s+/).map(Number)
+  if (parts.length !== 4) return svg
+
+  const [minX, minY, width, height] = parts as [number, number, number, number]
+
+  const newMinX = minX - padding
+  const newMinY = minY - padding
+  const newWidth = width + padding * 2
+  const newHeight = height + padding * 2
+
+  const newViewBox = `${newMinX} ${newMinY} ${newWidth} ${newHeight}`
+
+  return svg.replace(/viewBox="[^"]+"/, `viewBox="${newViewBox}"`)
+}
+
+/**
  * Filter keys to only include those that should have cutouts.
  * Excludes:
  * - Decal keys (decoration only)
@@ -128,11 +155,24 @@ export async function buildPlate(
     units: makerjs.unitType.Millimeter,
   }
 
-  // Generate SVG with styling for manufacturing
-  const svgContent = makerjs.exporter.toSVG(plateModel, {
+  // Generate SVG for preview - preserveAspectRatio ensures uniform scaling (no stroke distortion)
+  const svgPreviewRaw = makerjs.exporter.toSVG(plateModel, {
     units: makerjs.unitType.Millimeter,
-    stroke: '#000000',
-    strokeWidth: '0.1mm',
+    stroke: 'currentColor',
+    strokeWidth: '0.5mm',
+    fill: 'none',
+    useSvgPathOnly: true,
+    svgAttrs: { width: '100%', height: '100%' },
+  })
+
+  // Extend viewBox with padding to prevent edge strokes from being clipped
+  const svgPreview = extendSvgViewBox(svgPreviewRaw, 1)
+
+  // Generate SVG for download - uses actual mm units for CAD software
+  const svgDownload = makerjs.exporter.toSVG(plateModel, {
+    units: makerjs.unitType.Millimeter,
+    stroke: '#000',
+    strokeWidth: '0.25mm',
     fill: 'none',
     useSvgPathOnly: true,
   })
@@ -144,7 +184,8 @@ export async function buildPlate(
   })
 
   return {
-    svgContent,
+    svgPreview,
+    svgDownload,
     dxfContent,
   }
 }

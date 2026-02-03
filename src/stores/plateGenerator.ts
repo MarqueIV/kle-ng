@@ -99,7 +99,7 @@ export const usePlateGeneratorStore = defineStore('plateGenerator', () => {
     const result = generationState.value.result
     if (!result) return
 
-    downloadFile(result.svgContent, 'keyboard-plate.svg', 'image/svg+xml')
+    downloadFile(result.svgDownload, 'keyboard-plate.svg', 'image/svg+xml')
   }
 
   /**

@@ -31,12 +31,11 @@ const result = computed(() => generationState.value.result)
     </div>
 
     <!-- Success State with SVG Preview -->
-    <div v-else-if="isSuccess && result" class="success-wrapper">
-      <div class="svg-preview-container">
-        <!-- Inline SVG Preview -->
-        <div class="svg-preview" v-html="result.svgContent"></div>
-      </div>
-    </div>
+    <div
+      v-else-if="isSuccess && result"
+      class="svg-preview-container"
+      v-html="result.svgPreview"
+    ></div>
 
     <!-- Idle State -->
     <div v-else-if="isIdle" class="idle-wrapper">
@@ -50,13 +49,8 @@ const result = computed(() => generationState.value.result)
 
 <style scoped>
 .plate-generator-results {
-  padding: 0;
   width: 100%;
-  height: 100%;
-  min-height: 200px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  min-height: 250px;
 }
 
 .loading-wrapper {
@@ -65,35 +59,23 @@ const result = computed(() => generationState.value.result)
   align-items: center;
   justify-content: center;
   padding: 2rem;
+  min-height: 250px;
 }
 
-.success-wrapper {
-  width: 100%;
-  padding: 1rem;
-}
-
+/* SVG preview container - fixed height like reference project */
 .svg-preview-container {
-  width: 100%;
-  max-height: 400px;
-  overflow: auto;
+  height: 30vh;
+  min-height: 250px;
+  padding: 1rem;
   border: 1px solid var(--bs-border-color);
   border-radius: 0.375rem;
-  background: var(--bs-body-bg);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 1rem;
+  background: var(--bs-tertiary-bg);
 }
 
-.svg-preview {
-  max-width: 100%;
-  height: auto;
-}
-
-/* Style the generated SVG */
-.svg-preview :deep(svg) {
-  max-width: 100%;
-  height: auto;
+/* SVG fills container and maintains aspect ratio via viewBox */
+.svg-preview-container :deep(svg) {
+  width: 100%;
+  height: 100%;
   display: block;
 }
 
@@ -103,6 +85,7 @@ const result = computed(() => generationState.value.result)
   align-items: center;
   justify-content: center;
   padding: 2rem;
+  min-height: 250px;
   color: var(--bs-secondary-color);
 }
 
