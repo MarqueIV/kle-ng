@@ -156,7 +156,7 @@ export function validateFilletRadius(cutoutType: CutoutType, radius: number): st
  * - none: 0 (no stabilizer)
  */
 export function getMaxStabilizerFilletRadius(stabilizerType: StabilizerType): number {
-  if (stabilizerType === 'mx-spec') return 0.4
+  if (stabilizerType === 'mx-spec' || stabilizerType === 'mx-spec-narrow') return 0.4
   if (stabilizerType === 'mx-basic') return 3.5
   return 0
 }
@@ -239,7 +239,13 @@ export function getStabilizerOptions(): StabilizerOption[] {
       value: 'mx-spec',
       label: 'Cherry MX Spec (6.65mm x 12.29mm)',
       description:
-        'Spec-accurate Cherry MX stabilizer cutouts with wire channel and plate mount clip cuts',
+        'Spec-accurate Cherry MX stabilizer cutout with wire channel and plate mount clip cuts',
+    },
+    {
+      value: 'mx-spec-narrow',
+      label: 'Cherry MX Spec Narrow (6.65mm x 12.29mm)',
+      description:
+        'Almost spec-accurate Cherry MX stabilizer cutout but with narrow wire channel for all key sizes',
     },
     {
       value: 'none',
@@ -334,8 +340,8 @@ export function createStabilizerMxBasicModel(
  *
  * Each stabilizer consists of two complex-profile cutouts with:
  * - Main housing body (~6.65mm x 12.29mm)
- * - Bottom wire clip extension (~3.05mm x 1.17mm)
- * - Left-side cross-mount notch (~0.86mm x 2.79mm)
+ * - Bottom clip notch (~3.05mm x 1.17mm)
+ * - Side notch (~0.86mm x 2.79mm)
  * - Horizontal wire channel connecting the two cutouts
  *
  * Based on Cherry MX stabilizer spec sheet dimensions.
@@ -354,6 +360,7 @@ export function createStabilizerMxSpecModel(
   keyHeight: number,
   filletRadius: number,
   sizeAdjust: number,
+  narrowChannel: boolean = false,
 ): MakerJs.IModel | null {
   let keySize = keyWidth
   const isVertical = keyHeight > keyWidth
@@ -390,7 +397,7 @@ export function createStabilizerMxSpecModel(
   let pW: [number, number], pX: [number, number]
   let pY: [number, number], pZ: [number, number]
 
-  if (keySize >= 3) {
+  if (narrowChannel || keySize >= 3) {
     pW = [D.sub(3.3274, k), D.sub(2.3, k)]
     pZ = [D.sub(3.3274, k), D.add(-2.3, k)]
     pX = [spacing, D.sub(2.3, k)]

@@ -186,15 +186,25 @@ export async function buildPlate(
       if (stabilizerType !== 'none' && key) {
         const keyWidth = key.width || 1
         const keyHeight = key.height || 1
-        const createStab =
-          stabilizerType === 'mx-spec' ? createStabilizerMxSpecModel : createStabilizerMxBasicModel
-        const stabModel = createStab(
-          makerjs,
-          keyWidth,
-          keyHeight,
-          stabilizerFilletRadius,
-          sizeAdjust,
-        )
+        let stabModel: MakerJs.IModel | null
+        if (stabilizerType === 'mx-spec' || stabilizerType === 'mx-spec-narrow') {
+          stabModel = createStabilizerMxSpecModel(
+            makerjs,
+            keyWidth,
+            keyHeight,
+            stabilizerFilletRadius,
+            sizeAdjust,
+            stabilizerType === 'mx-spec-narrow',
+          )
+        } else {
+          stabModel = createStabilizerMxBasicModel(
+            makerjs,
+            keyWidth,
+            keyHeight,
+            stabilizerFilletRadius,
+            sizeAdjust,
+          )
+        }
         if (stabModel) {
           // The stabilizer assembly is centered at its local origin (0,0).
           // position.centerX/Y is where makerjs.model.move places the switch

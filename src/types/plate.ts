@@ -15,7 +15,7 @@ export type CutoutType =
 /**
  * Available stabilizer cutout types.
  */
-export type StabilizerType = 'mx-basic' | 'mx-spec' | 'none'
+export type StabilizerType = 'mx-basic' | 'mx-spec' | 'mx-spec-narrow' | 'none'
 
 /**
  * Settings for plate generation
