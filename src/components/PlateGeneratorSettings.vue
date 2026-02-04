@@ -4,6 +4,7 @@ import { usePlateGeneratorStore } from '@/stores/plateGenerator'
 import { storeToRefs } from 'pinia'
 import {
   getCutoutOptions,
+  getStabilizerOptions,
   getCutoutGenerator,
   validateFilletRadius,
   validateSizeAdjust,
@@ -15,6 +16,9 @@ const { settings } = storeToRefs(plateStore)
 
 // Get cutout options for dropdown
 const cutoutOptions = getCutoutOptions()
+
+// Get stabilizer options for dropdown
+const stabilizerOptions = getStabilizerOptions()
 
 // Fillet radius validation
 const filletError = computed(() =>
@@ -49,7 +53,7 @@ const sizeAdjustInputClass = computed(() =>
 
       <!-- Cutout Type -->
       <div class="mb-2">
-        <label for="cutoutType" class="form-label form-label-sm">Cutout Type</label>
+        <label for="cutoutType" class="form-label form-label-sm">Switch Cutout Type</label>
         <select
           id="cutoutType"
           v-model="settings.cutoutType"
@@ -62,6 +66,24 @@ const sizeAdjustInputClass = computed(() =>
         </select>
         <div class="form-text small">
           {{ cutoutOptions.find((o) => o.value === settings.cutoutType)?.description }}
+        </div>
+      </div>
+
+      <!-- Stabilizer Type -->
+      <div class="mb-2">
+        <label for="stabilizerType" class="form-label form-label-sm">Stabilizer Cutout Type</label>
+        <select
+          id="stabilizerType"
+          v-model="settings.stabilizerType"
+          class="form-select form-select-sm"
+          aria-label="Select stabilizer cutout type"
+        >
+          <option v-for="option in stabilizerOptions" :key="option.value" :value="option.value">
+            {{ option.label }}
+          </option>
+        </select>
+        <div class="form-text small">
+          {{ stabilizerOptions.find((o) => o.value === settings.stabilizerType)?.description }}
         </div>
       </div>
 

@@ -6,8 +6,9 @@
  */
 
 import type MakerJs from 'makerjs'
-import type { CutoutType, CutoutOption, KeyCutoutPosition } from '@/types/plate'
+import type { CutoutType, CutoutOption, KeyCutoutPosition, StabilizerOption } from '@/types/plate'
 import { getMakerJs } from '@/utils/makerjs-loader'
+import { D } from '@/utils/decimal-math'
 
 /**
  * Interface for cutout generators
@@ -171,6 +172,118 @@ export function getCutoutGenerator(type: CutoutType): CutoutGenerator {
     throw new Error(`Unknown cutout type: ${type}`)
   }
   return generator
+}
+
+/**
+ * Get the stabilizer spacing (in mm) for a given key size in units.
+ * Returns null if key size < 2 (no stabilizer needed).
+ */
+export function getStabilizerSpacing(keySize: number): number | null {
+  if (keySize >= 8) return 66.675
+  if (keySize >= 7) return 57.15
+  if (keySize >= 6.25) return 50
+  if (keySize >= 6) return 47.625
+  if (keySize >= 3) return 19.05
+  if (keySize >= 2) return 11.938
+  return null
+}
+
+/**
+ * Get stabilizer type options for dropdown menus
+ */
+export function getStabilizerOptions(): StabilizerOption[] {
+  return [
+    {
+      value: 'mx-basic',
+      label: 'Cherry MX Basic (7mm x 15mm)',
+      description: 'Standard Cherry MX stabilizer cutouts for keys >= 2U',
+    },
+    {
+      value: 'none',
+      label: 'None',
+      description: 'No stabilizer cutouts',
+    },
+  ]
+}
+
+/**
+ * Create a stabilizer cutout model for a key.
+ *
+ * Each stabilizer consists of two 7mm x 15mm rectangular cutouts positioned
+ * symmetrically at ±spacing from the key center. The cutouts are vertically
+ * offset with y range from -9mm to +6mm (center at y = -1.5mm).
+ *
+ * For vertical keys (height > width), the assembly is rotated -90 degrees.
+ *
+ * @param makerjs - The maker.js library
+ * @param keyWidth - Key width in keyboard units
+ * @param keyHeight - Key height in keyboard units
+ * @param filletRadius - Fillet radius in mm
+ * @param sizeAdjust - Size adjustment in mm (positive = shrink)
+ * @returns A maker.js model with two stabilizer cutouts, or null if key < 2U
+ */
+export function createStabilizerModel(
+  makerjs: typeof MakerJs,
+  keyWidth: number,
+  keyHeight: number,
+  filletRadius: number,
+  sizeAdjust: number,
+): MakerJs.IModel | null {
+  // Determine effective key size (use larger dimension for vertical keys)
+  let keySize = keyWidth
+  const isVertical = keyHeight > keyWidth
+  if (isVertical) {
+    keySize = keyHeight
+  }
+
+  const spacing = getStabilizerSpacing(keySize)
+  if (spacing === null) return null
+
+  const stabWidth = 7
+  const stabHeight = 15
+
+  // Clamp fillet radius to max for stabilizer dimensions
+  const maxFillet = D.div(D.min(stabWidth, stabHeight), 2)
+  const clampedFillet = D.min(filletRadius, maxFillet)
+
+  // Adjusted dimensions after size adjustment
+  const w = D.sub(stabWidth, D.mul(sizeAdjust, 2))
+  const h = D.sub(stabHeight, D.mul(sizeAdjust, 2))
+
+  // Create a single stabilizer cutout rectangle positioned at the given x offset.
+  // Uses a single move() call because makerjs.model.move SETS the origin (not additive).
+  function createSingleCutout(xOffset: number): MakerJs.IModel {
+    let cutout: MakerJs.IModel
+    if (clampedFillet > 0) {
+      cutout = new makerjs.models.RoundRectangle(w, h, clampedFillet)
+    } else {
+      cutout = new makerjs.models.Rectangle(w, h)
+    }
+    // Rectangle bottom-left at (0,0). Single move to:
+    // x: center horizontally on xOffset → -w/2 + xOffset
+    // y: bottom at -9 + sizeAdjust (top at +6 - sizeAdjust)
+    const moveX = D.add(D.div(w, -2), xOffset)
+    const moveY = D.add(-9, sizeAdjust)
+    cutout = makerjs.model.move(cutout, [moveX, moveY])
+    return cutout
+  }
+
+  const leftCutout = createSingleCutout(-spacing)
+  const rightCutout = createSingleCutout(spacing)
+
+  let stabModel: MakerJs.IModel = {
+    models: {
+      left: leftCutout,
+      right: rightCutout,
+    },
+  }
+
+  // Rotate -90 degrees for vertical keys
+  if (isVertical) {
+    stabModel = makerjs.model.rotate(stabModel, -90)
+  }
+
+  return stabModel
 }
 
 /**

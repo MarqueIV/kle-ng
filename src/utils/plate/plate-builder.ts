@@ -7,11 +7,16 @@
 
 import type MakerJs from 'makerjs'
 import type { Key } from '@adamws/kle-serial'
-import type { CutoutType, PlateGenerationResult, KeyCutoutPosition } from '@/types/plate'
+import type {
+  CutoutType,
+  PlateGenerationResult,
+  KeyCutoutPosition,
+  StabilizerType,
+} from '@/types/plate'
 import { getMakerJs } from '@/utils/makerjs-loader'
 import { getKeyCenter } from '@/utils/keyboard-geometry'
 import { D } from '@/utils/decimal-math'
-import { positionCutout, getCutoutGenerator } from './cutout-generator'
+import { positionCutout, getCutoutGenerator, createStabilizerModel } from './cutout-generator'
 
 /**
  * Options for building a plate
@@ -19,6 +24,8 @@ import { positionCutout, getCutoutGenerator } from './cutout-generator'
 export interface PlateBuilderOptions {
   /** Type of cutout to generate */
   cutoutType: CutoutType
+  /** Type of stabilizer cutout to generate (default: 'none') */
+  stabilizerType?: StabilizerType
   /** Fillet (corner rounding) radius in mm (default: 0) */
   filletRadius?: number
   /** Size adjustment in mm. Positive = shrink, negative = expand (default: 0) */
@@ -130,6 +137,7 @@ export async function buildPlate(
 ): Promise<PlateGenerationResult> {
   const {
     cutoutType,
+    stabilizerType = 'none',
     filletRadius = 0,
     sizeAdjust = 0,
     spacingX = DEFAULT_SPACING_X,
@@ -161,9 +169,38 @@ export async function buildPlate(
   const cutoutModels: Record<string, MakerJs.IModel> = {}
   for (let i = 0; i < cutoutPositions.length; i++) {
     const position = cutoutPositions[i]
+    const key = validKeys[i]
     if (position) {
       const cutoutModel = await positionCutout(position, cutoutType, filletRadius, sizeAdjust)
       cutoutModels[`cutout_${i}`] = cutoutModel
+
+      // Create stabilizer cutout if enabled
+      if (stabilizerType !== 'none' && key) {
+        const keyWidth = key.width || 1
+        const keyHeight = key.height || 1
+        const stabModel = createStabilizerModel(
+          makerjs,
+          keyWidth,
+          keyHeight,
+          filletRadius,
+          sizeAdjust,
+        )
+        if (stabModel) {
+          // The stabilizer assembly is centered at its local origin (0,0).
+          // position.centerX/Y is where makerjs.model.move places the switch
+          // cutout's bottom-left corner (Rectangle referenced from bottom-left).
+          // The key's true center is offset by +width/2, +height/2 from that.
+          const keyCenterX = D.add(position.centerX, D.div(position.width, 2))
+          const keyCenterY = D.add(position.centerY, D.div(position.height, 2))
+
+          let positionedStab = stabModel
+          if (position.rotationAngle !== 0) {
+            positionedStab = makerjs.model.rotate(positionedStab, position.rotationAngle, [0, 0])
+          }
+          positionedStab = makerjs.model.move(positionedStab, [keyCenterX, keyCenterY])
+          cutoutModels[`stabilizer_${i}`] = positionedStab
+        }
+      }
     }
   }
 

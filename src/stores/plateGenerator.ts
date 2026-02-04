@@ -12,6 +12,7 @@ const STORAGE_KEY = 'kle-ng-plate-settings'
  */
 const defaultSettings: PlateSettings = {
   cutoutType: 'cherry-mx-basic',
+  stabilizerType: 'mx-basic',
   filletRadius: 0.5,
   sizeAdjust: 0,
 }
@@ -54,6 +55,7 @@ export const usePlateGeneratorStore = defineStore('plateGenerator', () => {
       // Build the plate
       const result = await buildPlate(keyboardStore.keys, {
         cutoutType: settings.value.cutoutType,
+        stabilizerType: settings.value.stabilizerType,
         filletRadius: settings.value.filletRadius,
         sizeAdjust: settings.value.sizeAdjust,
         spacingX,

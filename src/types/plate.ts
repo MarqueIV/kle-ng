@@ -13,10 +13,17 @@ export type CutoutType =
   | 'kailh-choc-cpg1232'
 
 /**
+ * Available stabilizer cutout types.
+ */
+export type StabilizerType = 'mx-basic' | 'none'
+
+/**
  * Settings for plate generation
  */
 export interface PlateSettings {
   cutoutType: CutoutType
+  /** Stabilizer cutout type. 'none' disables stabilizer cutouts. */
+  stabilizerType: StabilizerType
   /** Fillet (corner rounding) radius in mm for cutouts. 0 = sharp corners. */
   filletRadius: number
   /** Size adjustment in mm. Positive = shrink cutouts, negative = expand. */
@@ -70,6 +77,15 @@ export interface GenerationState {
  */
 export interface CutoutOption {
   value: CutoutType
+  label: string
+  description: string
+}
+
+/**
+ * Option for stabilizer type dropdown
+ */
+export interface StabilizerOption {
+  value: StabilizerType
   label: string
   description: string
 }
