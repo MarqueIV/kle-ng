@@ -214,8 +214,13 @@ export const usePlateGeneratorStore = defineStore('plateGenerator', () => {
   }, 300)
   watch(settings, debouncedRegenerate, { deep: true })
 
-  // Persist autoRefresh changes
-  watch(autoRefresh, debouncedSave)
+  // Persist autoRefresh changes and trigger generation when enabled
+  watch(autoRefresh, (enabled) => {
+    debouncedSave()
+    if (enabled && generationState.value.status !== 'success' && !hasSettingsErrors()) {
+      generatePlate()
+    }
+  })
 
   /**
    * Called by the keyboard store when the layout changes (saveState, undo, redo).
