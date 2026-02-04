@@ -144,6 +144,22 @@ export function validateFilletRadius(cutoutType: CutoutType, radius: number): st
 }
 
 /**
+ * Validate a stabilizer fillet radius value.
+ * Stabilizer cutouts are always 7mm x 15mm, so max fillet radius is 3.5mm.
+ * Returns an error message if invalid, or null if valid.
+ */
+export function validateStabilizerFilletRadius(radius: number): string | null {
+  if (radius < 0) {
+    return 'Stabilizer fillet radius cannot be negative.'
+  }
+  const maxRadius = 3.5 // min(7, 15) / 2
+  if (radius > maxRadius) {
+    return `Stabilizer fillet radius cannot exceed ${maxRadius}mm (half of the smallest stabilizer dimension).`
+  }
+  return null
+}
+
+/**
  * Validate a size adjustment value for a given cutout type.
  * Positive values (shrink) must not exceed half of the smallest cutout dimension.
  * Negative values (expand) are always valid.

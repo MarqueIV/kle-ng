@@ -7,6 +7,7 @@ import {
   getStabilizerOptions,
   getCutoutGenerator,
   validateFilletRadius,
+  validateStabilizerFilletRadius,
   validateSizeAdjust,
 } from '@/utils/plate/cutout-generator'
 import CustomNumberInput from './CustomNumberInput.vue'
@@ -20,7 +21,7 @@ const cutoutOptions = getCutoutOptions()
 // Get stabilizer options for dropdown
 const stabilizerOptions = getStabilizerOptions()
 
-// Fillet radius validation
+// Fillet radius validation (switch)
 const filletError = computed(() =>
   validateFilletRadius(settings.value.cutoutType, settings.value.filletRadius),
 )
@@ -31,6 +32,17 @@ const maxFilletRadius = computed(
 
 const filletInputClass = computed(() =>
   filletError.value ? 'form-control form-control-sm is-invalid' : 'form-control form-control-sm',
+)
+
+// Fillet radius validation (stabilizer)
+const stabilizerFilletError = computed(() =>
+  validateStabilizerFilletRadius(settings.value.stabilizerFilletRadius),
+)
+
+const stabilizerFilletInputClass = computed(() =>
+  stabilizerFilletError.value
+    ? 'form-control form-control-sm is-invalid'
+    : 'form-control form-control-sm',
 )
 
 // Size adjustment validation
@@ -89,24 +101,48 @@ const sizeAdjustInputClass = computed(() =>
 
       <!-- Fillet Radius -->
       <div class="mb-2">
-        <label for="filletRadius" class="form-label form-label-sm">Fillet Radius</label>
-        <CustomNumberInput
-          id="filletRadius"
-          v-model="settings.filletRadius"
-          :step="0.01"
-          :min="0"
-          :max="maxFilletRadius"
-          :class="filletInputClass"
-          size="default"
-          title="Corner rounding radius in millimeters"
-        >
-          <template #suffix>mm</template>
-        </CustomNumberInput>
+        <label class="form-label form-label-sm">Fillet Radius</label>
+        <div class="d-flex gap-2">
+          <div class="flex-grow-1">
+            <label for="filletRadius" class="form-label form-label-sm fillet-sub-label"
+              >Switch</label
+            >
+            <CustomNumberInput
+              id="filletRadius"
+              v-model="settings.filletRadius"
+              :step="0.01"
+              :min="0"
+              :max="maxFilletRadius"
+              :class="filletInputClass"
+              size="default"
+              title="Corner rounding radius for switch cutouts in millimeters"
+            >
+              <template #suffix>mm</template>
+            </CustomNumberInput>
+          </div>
+          <div class="flex-grow-1">
+            <label for="stabilizerFilletRadius" class="form-label form-label-sm fillet-sub-label"
+              >Stabilizer</label
+            >
+            <CustomNumberInput
+              id="stabilizerFilletRadius"
+              v-model="settings.stabilizerFilletRadius"
+              :step="0.01"
+              :min="0"
+              :max="3.5"
+              :class="stabilizerFilletInputClass"
+              size="default"
+              title="Corner rounding radius for stabilizer cutouts in millimeters"
+            >
+              <template #suffix>mm</template>
+            </CustomNumberInput>
+          </div>
+        </div>
         <div v-if="filletError" class="invalid-feedback d-block">
           {{ filletError }}
         </div>
-        <div v-else class="form-text small">
-          Corner rounding for cutouts (0 = sharp corners, max {{ maxFilletRadius }}mm)
+        <div v-if="stabilizerFilletError" class="invalid-feedback d-block">
+          {{ stabilizerFilletError }}
         </div>
       </div>
 
@@ -152,6 +188,12 @@ const sizeAdjustInputClass = computed(() =>
   font-size: 0.875rem;
   font-weight: 600;
   color: var(--bs-emphasis-color);
+}
+
+.fillet-sub-label {
+  font-weight: 400;
+  font-size: 0.8rem;
+  margin-bottom: 0.1rem;
 }
 
 /* Ensure consistent spacing */

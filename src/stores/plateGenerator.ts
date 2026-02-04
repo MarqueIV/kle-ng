@@ -2,7 +2,11 @@ import { defineStore } from 'pinia'
 import { ref, watch } from 'vue'
 import type { PlateSettings, GenerationState } from '@/types/plate'
 import { buildPlate, PlateBuilderError } from '@/utils/plate/plate-builder'
-import { validateFilletRadius, validateSizeAdjust } from '@/utils/plate/cutout-generator'
+import {
+  validateFilletRadius,
+  validateStabilizerFilletRadius,
+  validateSizeAdjust,
+} from '@/utils/plate/cutout-generator'
 import { useKeyboardStore } from '@/stores/keyboard'
 
 const STORAGE_KEY = 'kle-ng-plate-settings'
@@ -14,6 +18,7 @@ const defaultSettings: PlateSettings = {
   cutoutType: 'cherry-mx-basic',
   stabilizerType: 'mx-basic',
   filletRadius: 0.5,
+  stabilizerFilletRadius: 0.5,
   sizeAdjust: 0,
 }
 
@@ -57,6 +62,7 @@ export const usePlateGeneratorStore = defineStore('plateGenerator', () => {
         cutoutType: settings.value.cutoutType,
         stabilizerType: settings.value.stabilizerType,
         filletRadius: settings.value.filletRadius,
+        stabilizerFilletRadius: settings.value.stabilizerFilletRadius,
         sizeAdjust: settings.value.sizeAdjust,
         spacingX,
         spacingY,
@@ -180,6 +186,7 @@ export const usePlateGeneratorStore = defineStore('plateGenerator', () => {
     if (
       generationState.value.status === 'success' &&
       !validateFilletRadius(settings.value.cutoutType, settings.value.filletRadius) &&
+      !validateStabilizerFilletRadius(settings.value.stabilizerFilletRadius) &&
       !validateSizeAdjust(settings.value.cutoutType, settings.value.sizeAdjust)
     ) {
       generatePlate()
@@ -198,6 +205,7 @@ export const usePlateGeneratorStore = defineStore('plateGenerator', () => {
     if (
       autoRefresh.value &&
       !validateFilletRadius(settings.value.cutoutType, settings.value.filletRadius) &&
+      !validateStabilizerFilletRadius(settings.value.stabilizerFilletRadius) &&
       !validateSizeAdjust(settings.value.cutoutType, settings.value.sizeAdjust)
     ) {
       generatePlate()

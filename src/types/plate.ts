@@ -24,8 +24,10 @@ export interface PlateSettings {
   cutoutType: CutoutType
   /** Stabilizer cutout type. 'none' disables stabilizer cutouts. */
   stabilizerType: StabilizerType
-  /** Fillet (corner rounding) radius in mm for cutouts. 0 = sharp corners. */
+  /** Fillet (corner rounding) radius in mm for switch cutouts. 0 = sharp corners. */
   filletRadius: number
+  /** Fillet (corner rounding) radius in mm for stabilizer cutouts. 0 = sharp corners. */
+  stabilizerFilletRadius: number
   /** Size adjustment in mm. Positive = shrink cutouts, negative = expand. */
   sizeAdjust: number
 }

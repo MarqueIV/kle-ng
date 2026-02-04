@@ -24,10 +24,12 @@ import { positionCutout, getCutoutGenerator, createStabilizerModel } from './cut
 export interface PlateBuilderOptions {
   /** Type of cutout to generate */
   cutoutType: CutoutType
-  /** Type of stabilizer cutout to generate (default: 'none') */
+  /** Type of stabilizer cutout to generate */
   stabilizerType?: StabilizerType
-  /** Fillet (corner rounding) radius in mm (default: 0) */
+  /** Fillet (corner rounding) radius in mm for switch cutouts */
   filletRadius?: number
+  /** Fillet (corner rounding) radius in mm for stabilizer cutouts */
+  stabilizerFilletRadius?: number
   /** Size adjustment in mm. Positive = shrink, negative = expand (default: 0) */
   sizeAdjust?: number
   /** Horizontal spacing between key units in mm (default: 19.05) */
@@ -139,6 +141,7 @@ export async function buildPlate(
     cutoutType,
     stabilizerType = 'none',
     filletRadius = 0,
+    stabilizerFilletRadius = 0,
     sizeAdjust = 0,
     spacingX = DEFAULT_SPACING_X,
     spacingY = DEFAULT_SPACING_Y,
@@ -182,7 +185,7 @@ export async function buildPlate(
           makerjs,
           keyWidth,
           keyHeight,
-          filletRadius,
+          stabilizerFilletRadius,
           sizeAdjust,
         )
         if (stabModel) {
