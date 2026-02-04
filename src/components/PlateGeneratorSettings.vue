@@ -8,6 +8,7 @@ import {
   getCutoutGenerator,
   validateFilletRadius,
   validateStabilizerFilletRadius,
+  getMaxStabilizerFilletRadius,
   validateSizeAdjust,
 } from '@/utils/plate/cutout-generator'
 import CustomNumberInput from './CustomNumberInput.vue'
@@ -36,7 +37,14 @@ const filletInputClass = computed(() =>
 
 // Fillet radius validation (stabilizer)
 const stabilizerFilletError = computed(() =>
-  validateStabilizerFilletRadius(settings.value.stabilizerFilletRadius),
+  validateStabilizerFilletRadius(
+    settings.value.stabilizerType,
+    settings.value.stabilizerFilletRadius,
+  ),
+)
+
+const maxStabilizerFilletRadius = computed(() =>
+  getMaxStabilizerFilletRadius(settings.value.stabilizerType),
 )
 
 const stabilizerFilletInputClass = computed(() =>
@@ -129,7 +137,7 @@ const sizeAdjustInputClass = computed(() =>
               v-model="settings.stabilizerFilletRadius"
               :step="0.01"
               :min="0"
-              :max="3.5"
+              :max="maxStabilizerFilletRadius"
               :class="stabilizerFilletInputClass"
               size="default"
               title="Corner rounding radius for stabilizer cutouts in millimeters"

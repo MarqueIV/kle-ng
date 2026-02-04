@@ -186,7 +186,10 @@ export const usePlateGeneratorStore = defineStore('plateGenerator', () => {
     if (
       generationState.value.status === 'success' &&
       !validateFilletRadius(settings.value.cutoutType, settings.value.filletRadius) &&
-      !validateStabilizerFilletRadius(settings.value.stabilizerFilletRadius) &&
+      !validateStabilizerFilletRadius(
+        settings.value.stabilizerType,
+        settings.value.stabilizerFilletRadius,
+      ) &&
       !validateSizeAdjust(settings.value.cutoutType, settings.value.sizeAdjust)
     ) {
       generatePlate()
@@ -205,7 +208,10 @@ export const usePlateGeneratorStore = defineStore('plateGenerator', () => {
     if (
       autoRefresh.value &&
       !validateFilletRadius(settings.value.cutoutType, settings.value.filletRadius) &&
-      !validateStabilizerFilletRadius(settings.value.stabilizerFilletRadius) &&
+      !validateStabilizerFilletRadius(
+        settings.value.stabilizerType,
+        settings.value.stabilizerFilletRadius,
+      ) &&
       !validateSizeAdjust(settings.value.cutoutType, settings.value.sizeAdjust)
     ) {
       generatePlate()

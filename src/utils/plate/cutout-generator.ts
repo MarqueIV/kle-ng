@@ -6,7 +6,13 @@
  */
 
 import type MakerJs from 'makerjs'
-import type { CutoutType, CutoutOption, KeyCutoutPosition, StabilizerOption } from '@/types/plate'
+import type {
+  CutoutType,
+  CutoutOption,
+  KeyCutoutPosition,
+  StabilizerType,
+  StabilizerOption,
+} from '@/types/plate'
 import { getMakerJs } from '@/utils/makerjs-loader'
 import { D } from '@/utils/decimal-math'
 
@@ -144,17 +150,32 @@ export function validateFilletRadius(cutoutType: CutoutType, radius: number): st
 }
 
 /**
- * Validate a stabilizer fillet radius value.
- * Stabilizer cutouts are always 7mm x 15mm, so max fillet radius is 3.5mm.
+ * Get the maximum allowed stabilizer fillet radius for a given stabilizer type.
+ * - mx-basic: 3.5mm (min(7, 15) / 2)
+ * - mx-spec: 0.4mm (limited by the smallest feature — the cross-mount notch)
+ * - none: 0 (no stabilizer)
+ */
+export function getMaxStabilizerFilletRadius(stabilizerType: StabilizerType): number {
+  if (stabilizerType === 'mx-spec') return 0.4
+  if (stabilizerType === 'mx-basic') return 3.5
+  return 0
+}
+
+/**
+ * Validate a stabilizer fillet radius value for a given stabilizer type.
  * Returns an error message if invalid, or null if valid.
  */
-export function validateStabilizerFilletRadius(radius: number): string | null {
+export function validateStabilizerFilletRadius(
+  stabilizerType: StabilizerType,
+  radius: number,
+): string | null {
+  if (stabilizerType === 'none') return null
   if (radius < 0) {
     return 'Stabilizer fillet radius cannot be negative.'
   }
-  const maxRadius = 3.5 // min(7, 15) / 2
+  const maxRadius = getMaxStabilizerFilletRadius(stabilizerType)
   if (radius > maxRadius) {
-    return `Stabilizer fillet radius cannot exceed ${maxRadius}mm (half of the smallest stabilizer dimension).`
+    return `Stabilizer fillet radius cannot exceed ${maxRadius}mm for this stabilizer type.`
   }
   return null
 }
@@ -212,7 +233,13 @@ export function getStabilizerOptions(): StabilizerOption[] {
     {
       value: 'mx-basic',
       label: 'Cherry MX Basic (7mm x 15mm)',
-      description: 'Standard Cherry MX stabilizer cutouts for keys >= 2U',
+      description: 'Typical Cherry MX stabilizer cutout suited for most occasions',
+    },
+    {
+      value: 'mx-spec',
+      label: 'Cherry MX Spec (6.65mm x 12.29mm)',
+      description:
+        'Spec-accurate Cherry MX stabilizer cutouts with wire channel and plate mount clip cuts',
     },
     {
       value: 'none',
@@ -238,7 +265,7 @@ export function getStabilizerOptions(): StabilizerOption[] {
  * @param sizeAdjust - Size adjustment in mm (positive = shrink)
  * @returns A maker.js model with two stabilizer cutouts, or null if key < 2U
  */
-export function createStabilizerModel(
+export function createStabilizerMxBasicModel(
   makerjs: typeof MakerJs,
   keyWidth: number,
   keyHeight: number,
@@ -291,6 +318,155 @@ export function createStabilizerModel(
     models: {
       left: leftCutout,
       right: rightCutout,
+    },
+  }
+
+  // Rotate -90 degrees for vertical keys
+  if (isVertical) {
+    stabModel = makerjs.model.rotate(stabModel, -90)
+  }
+
+  return stabModel
+}
+
+/**
+ * Create a spec-accurate Cherry MX stabilizer cutout model for a key.
+ *
+ * Each stabilizer consists of two complex-profile cutouts with:
+ * - Main housing body (~6.65mm x 12.29mm)
+ * - Bottom wire clip extension (~3.05mm x 1.17mm)
+ * - Left-side cross-mount notch (~0.86mm x 2.79mm)
+ * - Horizontal wire channel connecting the two cutouts
+ *
+ * Based on Cherry MX stabilizer spec sheet dimensions.
+ * Reference: yet-another-keyboard-builder StabilizerMXSpec.js
+ *
+ * @param makerjs - The maker.js library
+ * @param keyWidth - Key width in keyboard units
+ * @param keyHeight - Key height in keyboard units
+ * @param filletRadius - Fillet radius in mm
+ * @param sizeAdjust - Size adjustment in mm (positive = shrink)
+ * @returns A maker.js model with two stabilizer cutouts, or null if key < 2U
+ */
+export function createStabilizerMxSpecModel(
+  makerjs: typeof MakerJs,
+  keyWidth: number,
+  keyHeight: number,
+  filletRadius: number,
+  sizeAdjust: number,
+): MakerJs.IModel | null {
+  let keySize = keyWidth
+  const isVertical = keyHeight > keyWidth
+  if (isVertical) {
+    keySize = keyHeight
+  }
+
+  const spacing = getStabilizerSpacing(keySize)
+  if (spacing === null) return null
+
+  // sizeAdjust works like kerf: positive = shrink cutouts
+  const k = sizeAdjust
+
+  // Left cutout points (clockwise from top-left)
+  // Main housing body
+  const pA: [number, number] = [D.add(-3.3274, k), D.sub(5.6896, k)]
+  const pB: [number, number] = [D.sub(3.3274, k), D.sub(5.6896, k)]
+  const pC: [number, number] = [D.sub(3.3274, k), D.add(-6.604, k)]
+  // Bottom wire clip extension
+  const pD: [number, number] = [D.sub(1.524, k), D.add(-6.604, k)]
+  const pE: [number, number] = [D.sub(1.524, k), D.add(-7.7724, k)]
+  const pF: [number, number] = [D.add(-1.524, k), D.add(-7.7724, k)]
+  const pG: [number, number] = [D.add(-1.524, k), D.add(-6.604, k)]
+  const pH: [number, number] = [D.add(-3.3274, k), D.add(-6.604, k)]
+  // Cross-mount notch on left side
+  const pI: [number, number] = [D.add(-3.3274, k), D.add(-0.508, k)]
+  const pJ: [number, number] = [D.add(-4.191, k), D.add(-0.508, k)]
+  const pK: [number, number] = [D.add(-4.191, k), D.sub(2.286, k)]
+  const pL: [number, number] = [D.add(-3.3274, k), D.sub(2.286, k)]
+
+  // Horizontal wire channel points (vary by key size)
+  // For keys >= 3U the channel is narrower (4.6mm tall)
+  // For keys < 3U the channel is wider (10.69mm tall) to allow bar insertion
+  let pW: [number, number], pX: [number, number]
+  let pY: [number, number], pZ: [number, number]
+
+  if (keySize >= 3) {
+    pW = [D.sub(3.3274, k), D.sub(2.3, k)]
+    pZ = [D.sub(3.3274, k), D.add(-2.3, k)]
+    pX = [spacing, D.sub(2.3, k)]
+    pY = [spacing, D.add(-2.3, k)]
+  } else {
+    pW = [D.sub(3.3274, k), D.sub(4.8768, k)]
+    pZ = [D.sub(3.3274, k), D.add(-5.8166, k)]
+    pX = [spacing, D.sub(4.8768, k)]
+    pY = [spacing, D.add(-5.8166, k)]
+  }
+
+  // Build left cutout as line segments
+  const leftCutout: MakerJs.IModel = {
+    paths: {
+      line1: new makerjs.paths.Line(pA, pB),
+      line2a: new makerjs.paths.Line(pB, pW),
+      line2b: new makerjs.paths.Line(pW, pX),
+      line2c: new makerjs.paths.Line(pY, pZ),
+      line2d: new makerjs.paths.Line(pZ, pC),
+      line3: new makerjs.paths.Line(pC, pD),
+      line4: new makerjs.paths.Line(pD, pE),
+      line5: new makerjs.paths.Line(pE, pF),
+      line6: new makerjs.paths.Line(pF, pG),
+      line7: new makerjs.paths.Line(pG, pH),
+      line8: new makerjs.paths.Line(pH, pI),
+      line9: new makerjs.paths.Line(pI, pJ),
+      line10: new makerjs.paths.Line(pJ, pK),
+      line11: new makerjs.paths.Line(pK, pL),
+      line12: new makerjs.paths.Line(pL, pA),
+    },
+  }
+
+  // Build right cutout — clone left, then mirror on X axis
+  const rightCutout = makerjs.model.mirror(makerjs.model.clone(leftCutout), true, false)
+
+  // Apply fillets to all corners
+  if (filletRadius > 0) {
+    const maxFillet = getMaxStabilizerFilletRadius('mx-spec')
+    const f = Math.min(filletRadius, maxFillet)
+
+    const filletPairs: [string, string, string][] = [
+      ['line1', 'line2a', 'fillet1'],
+      ['line2a', 'line2b', 'fillet1a'],
+      ['line2c', 'line2d', 'fillet1b'],
+      ['line2d', 'line3', 'fillet2'],
+      ['line3', 'line4', 'fillet3'],
+      ['line4', 'line5', 'fillet4'],
+      ['line5', 'line6', 'fillet5'],
+      ['line6', 'line7', 'fillet6'],
+      ['line7', 'line8', 'fillet7'],
+      ['line8', 'line9', 'fillet8'],
+      ['line9', 'line10', 'fillet9'],
+      ['line10', 'line11', 'fillet10'],
+      ['line11', 'line12', 'fillet11'],
+      ['line12', 'line1', 'fillet12'],
+    ]
+
+    for (const cutout of [leftCutout, rightCutout]) {
+      const paths = cutout.paths!
+      for (const [a, b, name] of filletPairs) {
+        const arc = makerjs.path.fillet(paths[a]!, paths[b]!, f)
+        if (arc) {
+          paths[name] = arc
+        }
+      }
+    }
+  }
+
+  // Position cutouts at stabilizer spacing
+  const positionedLeft = makerjs.model.move(leftCutout, [-spacing, 0])
+  const positionedRight = makerjs.model.move(rightCutout, [spacing, 0])
+
+  let stabModel: MakerJs.IModel = {
+    models: {
+      left: positionedLeft,
+      right: positionedRight,
     },
   }
 

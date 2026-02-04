@@ -16,7 +16,12 @@ import type {
 import { getMakerJs } from '@/utils/makerjs-loader'
 import { getKeyCenter } from '@/utils/keyboard-geometry'
 import { D } from '@/utils/decimal-math'
-import { positionCutout, getCutoutGenerator, createStabilizerModel } from './cutout-generator'
+import {
+  positionCutout,
+  getCutoutGenerator,
+  createStabilizerMxBasicModel,
+  createStabilizerMxSpecModel,
+} from './cutout-generator'
 
 /**
  * Options for building a plate
@@ -181,7 +186,9 @@ export async function buildPlate(
       if (stabilizerType !== 'none' && key) {
         const keyWidth = key.width || 1
         const keyHeight = key.height || 1
-        const stabModel = createStabilizerModel(
+        const createStab =
+          stabilizerType === 'mx-spec' ? createStabilizerMxSpecModel : createStabilizerMxBasicModel
+        const stabModel = createStab(
           makerjs,
           keyWidth,
           keyHeight,
