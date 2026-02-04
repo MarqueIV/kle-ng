@@ -11,6 +11,7 @@ export type CutoutType =
   | 'alps-skcp'
   | 'kailh-choc-cpg1350'
   | 'kailh-choc-cpg1232'
+  | 'custom-rectangle'
 
 /**
  * Available stabilizer cutout types.
@@ -30,6 +31,10 @@ export interface PlateSettings {
   stabilizerFilletRadius: number
   /** Size adjustment in mm. Positive = shrink cutouts, negative = expand. */
   sizeAdjust: number
+  /** Custom cutout width in mm (used when cutoutType is 'custom-rectangle'). */
+  customCutoutWidth: number
+  /** Custom cutout height in mm (used when cutoutType is 'custom-rectangle'). */
+  customCutoutHeight: number
 }
 
 /**

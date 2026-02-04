@@ -10,11 +10,14 @@ import {
   validateStabilizerFilletRadius,
   getMaxStabilizerFilletRadius,
   validateSizeAdjust,
+  validateCustomCutoutDimension,
 } from '@/utils/plate/cutout-generator'
+import { useKeyboardStore } from '@/stores/keyboard'
 import CustomNumberInput from './CustomNumberInput.vue'
 
 const plateStore = usePlateGeneratorStore()
 const { settings } = storeToRefs(plateStore)
+const keyboardStore = useKeyboardStore()
 
 // Get cutout options for dropdown
 const cutoutOptions = getCutoutOptions()
@@ -24,11 +27,21 @@ const stabilizerOptions = getStabilizerOptions()
 
 // Fillet radius validation (switch)
 const filletError = computed(() =>
-  validateFilletRadius(settings.value.cutoutType, settings.value.filletRadius),
+  validateFilletRadius(
+    settings.value.cutoutType,
+    settings.value.filletRadius,
+    settings.value.customCutoutWidth,
+    settings.value.customCutoutHeight,
+  ),
 )
 
 const maxFilletRadius = computed(
-  () => getCutoutGenerator(settings.value.cutoutType).maxFilletRadius,
+  () =>
+    getCutoutGenerator(
+      settings.value.cutoutType,
+      settings.value.customCutoutWidth,
+      settings.value.customCutoutHeight,
+    ).maxFilletRadius,
 )
 
 const filletInputClass = computed(() =>
@@ -53,9 +66,42 @@ const stabilizerFilletInputClass = computed(() =>
     : 'form-control form-control-sm',
 )
 
+// Custom cutout dimension validation
+const spacingX = computed(() => keyboardStore.metadata.spacing_x || 19.05)
+const spacingY = computed(() => keyboardStore.metadata.spacing_y || 19.05)
+
+const customWidthError = computed(() =>
+  settings.value.cutoutType === 'custom-rectangle'
+    ? validateCustomCutoutDimension(settings.value.customCutoutWidth, spacingX.value, 'width')
+    : null,
+)
+
+const customHeightError = computed(() =>
+  settings.value.cutoutType === 'custom-rectangle'
+    ? validateCustomCutoutDimension(settings.value.customCutoutHeight, spacingY.value, 'height')
+    : null,
+)
+
+const customWidthInputClass = computed(() =>
+  customWidthError.value
+    ? 'form-control form-control-sm is-invalid'
+    : 'form-control form-control-sm',
+)
+
+const customHeightInputClass = computed(() =>
+  customHeightError.value
+    ? 'form-control form-control-sm is-invalid'
+    : 'form-control form-control-sm',
+)
+
 // Size adjustment validation
 const sizeAdjustError = computed(() =>
-  validateSizeAdjust(settings.value.cutoutType, settings.value.sizeAdjust),
+  validateSizeAdjust(
+    settings.value.cutoutType,
+    settings.value.sizeAdjust,
+    settings.value.customCutoutWidth,
+    settings.value.customCutoutHeight,
+  ),
 )
 
 const sizeAdjustInputClass = computed(() =>
@@ -86,6 +132,52 @@ const sizeAdjustInputClass = computed(() =>
         </select>
         <div class="form-text small">
           {{ cutoutOptions.find((o) => o.value === settings.cutoutType)?.description }}
+        </div>
+      </div>
+
+      <!-- Custom Cutout Dimensions -->
+      <div v-if="settings.cutoutType === 'custom-rectangle'" class="mb-2">
+        <div class="d-flex gap-2">
+          <div class="flex-grow-1">
+            <label for="customCutoutWidth" class="form-label form-label-sm fillet-sub-label"
+              >Width</label
+            >
+            <CustomNumberInput
+              id="customCutoutWidth"
+              v-model="settings.customCutoutWidth"
+              :step="0.01"
+              :min="0.01"
+              :max="spacingX"
+              :class="customWidthInputClass"
+              size="default"
+              title="Custom cutout width in millimeters"
+            >
+              <template #suffix>mm</template>
+            </CustomNumberInput>
+          </div>
+          <div class="flex-grow-1">
+            <label for="customCutoutHeight" class="form-label form-label-sm fillet-sub-label"
+              >Height</label
+            >
+            <CustomNumberInput
+              id="customCutoutHeight"
+              v-model="settings.customCutoutHeight"
+              :step="0.01"
+              :min="0.01"
+              :max="spacingY"
+              :class="customHeightInputClass"
+              size="default"
+              title="Custom cutout height in millimeters"
+            >
+              <template #suffix>mm</template>
+            </CustomNumberInput>
+          </div>
+        </div>
+        <div v-if="customWidthError" class="invalid-feedback d-block">
+          {{ customWidthError }}
+        </div>
+        <div v-if="customHeightError" class="invalid-feedback d-block">
+          {{ customHeightError }}
         </div>
       </div>
 

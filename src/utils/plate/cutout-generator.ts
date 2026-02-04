@@ -90,10 +90,21 @@ export class KailhChocCPG1232 extends RectangleCutout {
   readonly height = 12.7
 }
 
+export class CustomRectangleCutout extends RectangleCutout {
+  readonly width: number
+  readonly height: number
+
+  constructor(width: number, height: number) {
+    super()
+    this.width = width
+    this.height = height
+  }
+}
+
 /**
- * Registry of cutout generators by type
+ * Registry of cutout generators by type (excludes custom-rectangle which has dynamic dimensions)
  */
-export const cutoutGenerators: Record<CutoutType, CutoutGenerator> = {
+const cutoutGenerators: Record<string, CutoutGenerator> = {
   'cherry-mx-basic': new CherryMxBasicCutout(),
   'alps-skcm': new AlpsSKCMCutout(),
   'alps-skcp': new AlpsSKCPCutout(),
@@ -131,19 +142,30 @@ export function getCutoutOptions(): CutoutOption[] {
       label: 'Kailh Choc CPG1232 (13.7mm x 12.7mm)',
       description: '...',
     },
+    {
+      value: 'custom-rectangle',
+      label: 'Custom Rectangle',
+      description: 'Custom rectangular cutout with user-defined dimensions',
+    },
   ]
 }
 
 /**
  * Validate a fillet radius value for a given cutout type.
+ * For custom-rectangle, pass the custom dimensions.
  * Returns an error message if invalid, or null if valid.
  */
-export function validateFilletRadius(cutoutType: CutoutType, radius: number): string | null {
+export function validateFilletRadius(
+  cutoutType: CutoutType,
+  radius: number,
+  customWidth?: number,
+  customHeight?: number,
+): string | null {
   if (radius < 0) {
     return 'Fillet radius cannot be negative.'
   }
-  const generator = cutoutGenerators[cutoutType]
-  if (generator && radius > generator.maxFilletRadius) {
+  const generator = getCutoutGenerator(cutoutType, customWidth, customHeight)
+  if (radius > generator.maxFilletRadius) {
     return `Fillet radius cannot exceed ${generator.maxFilletRadius}mm (half of the smallest cutout dimension).`
   }
   return null
@@ -184,31 +206,61 @@ export function validateStabilizerFilletRadius(
  * Validate a size adjustment value for a given cutout type.
  * Positive values (shrink) must not exceed half of the smallest cutout dimension.
  * Negative values (expand) are always valid.
+ * For custom-rectangle, pass the custom dimensions.
  * Returns an error message if invalid, or null if valid.
  */
-export function validateSizeAdjust(cutoutType: CutoutType, sizeAdjust: number): string | null {
+export function validateSizeAdjust(
+  cutoutType: CutoutType,
+  sizeAdjust: number,
+  customWidth?: number,
+  customHeight?: number,
+): string | null {
   if (sizeAdjust <= 0) {
     return null
   }
-  const generator = cutoutGenerators[cutoutType]
-  if (generator) {
-    const maxShrink = Math.min(generator.width, generator.height) / 2
-    if (sizeAdjust >= maxShrink) {
-      return `Size adjustment must be less than ${maxShrink}mm (half of the smallest cutout dimension).`
-    }
+  const generator = getCutoutGenerator(cutoutType, customWidth, customHeight)
+  const maxShrink = Math.min(generator.width, generator.height) / 2
+  if (sizeAdjust >= maxShrink) {
+    return `Size adjustment must be less than ${maxShrink}mm (half of the smallest cutout dimension).`
   }
   return null
 }
 
 /**
- * Get a cutout generator by type
+ * Get a cutout generator by type.
+ * For 'custom-rectangle', pass the custom dimensions.
  */
-export function getCutoutGenerator(type: CutoutType): CutoutGenerator {
+export function getCutoutGenerator(
+  type: CutoutType,
+  customWidth?: number,
+  customHeight?: number,
+): CutoutGenerator {
+  if (type === 'custom-rectangle') {
+    return new CustomRectangleCutout(customWidth ?? 14, customHeight ?? 14)
+  }
   const generator = cutoutGenerators[type]
   if (!generator) {
     throw new Error(`Unknown cutout type: ${type}`)
   }
   return generator
+}
+
+/**
+ * Validate a custom cutout dimension (width or height).
+ * Returns an error message if invalid, or null if valid.
+ */
+export function validateCustomCutoutDimension(
+  value: number,
+  maxValue: number,
+  label: string,
+): string | null {
+  if (value <= 0) {
+    return `Custom cutout ${label} must be greater than 0.`
+  }
+  if (value > maxValue) {
+    return `Custom cutout ${label} cannot exceed ${maxValue}mm (key spacing).`
+  }
+  return null
 }
 
 /**
@@ -504,9 +556,11 @@ export async function positionCutout(
   cutoutType: CutoutType,
   filletRadius: number = 0,
   sizeAdjust: number = 0,
+  customWidth?: number,
+  customHeight?: number,
 ): Promise<MakerJs.IModel> {
   const makerjs = await getMakerJs()
-  const generator = getCutoutGenerator(cutoutType)
+  const generator = getCutoutGenerator(cutoutType, customWidth, customHeight)
 
   // Create the base cutout model with size adjustment applied
   let model = generator.createModel(makerjs, filletRadius, sizeAdjust)

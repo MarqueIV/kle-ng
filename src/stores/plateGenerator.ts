@@ -6,6 +6,7 @@ import {
   validateFilletRadius,
   validateStabilizerFilletRadius,
   validateSizeAdjust,
+  validateCustomCutoutDimension,
 } from '@/utils/plate/cutout-generator'
 import { useKeyboardStore } from '@/stores/keyboard'
 
@@ -20,6 +21,8 @@ const defaultSettings: PlateSettings = {
   filletRadius: 0.5,
   stabilizerFilletRadius: 0.5,
   sizeAdjust: 0,
+  customCutoutWidth: 14,
+  customCutoutHeight: 14,
 }
 
 export const usePlateGeneratorStore = defineStore('plateGenerator', () => {
@@ -64,6 +67,8 @@ export const usePlateGeneratorStore = defineStore('plateGenerator', () => {
         filletRadius: settings.value.filletRadius,
         stabilizerFilletRadius: settings.value.stabilizerFilletRadius,
         sizeAdjust: settings.value.sizeAdjust,
+        customCutoutWidth: settings.value.customCutoutWidth,
+        customCutoutHeight: settings.value.customCutoutHeight,
         spacingX,
         spacingY,
       })
@@ -181,17 +186,29 @@ export const usePlateGeneratorStore = defineStore('plateGenerator', () => {
   const debouncedSave = useDebounceFn(saveSettings, 500)
   watch(settings, debouncedSave, { deep: true })
 
+  /**
+   * Check whether all settings are valid for regeneration.
+   */
+  function hasSettingsErrors(): boolean {
+    const s = settings.value
+    const cw = s.customCutoutWidth
+    const ch = s.customCutoutHeight
+    if (validateFilletRadius(s.cutoutType, s.filletRadius, cw, ch)) return true
+    if (validateStabilizerFilletRadius(s.stabilizerType, s.stabilizerFilletRadius)) return true
+    if (validateSizeAdjust(s.cutoutType, s.sizeAdjust, cw, ch)) return true
+    if (s.cutoutType === 'custom-rectangle') {
+      const keyboardStore = useKeyboardStore()
+      const sx = keyboardStore.metadata.spacing_x || 19.05
+      const sy = keyboardStore.metadata.spacing_y || 19.05
+      if (validateCustomCutoutDimension(cw, sx, 'width')) return true
+      if (validateCustomCutoutDimension(ch, sy, 'height')) return true
+    }
+    return false
+  }
+
   // Auto-refresh: regenerate plate when cutout settings change (only if already generated)
   const debouncedRegenerate = useDebounceFn(() => {
-    if (
-      generationState.value.status === 'success' &&
-      !validateFilletRadius(settings.value.cutoutType, settings.value.filletRadius) &&
-      !validateStabilizerFilletRadius(
-        settings.value.stabilizerType,
-        settings.value.stabilizerFilletRadius,
-      ) &&
-      !validateSizeAdjust(settings.value.cutoutType, settings.value.sizeAdjust)
-    ) {
+    if (generationState.value.status === 'success' && !hasSettingsErrors()) {
       generatePlate()
     }
   }, 300)
@@ -205,15 +222,7 @@ export const usePlateGeneratorStore = defineStore('plateGenerator', () => {
    * Triggers plate regeneration if auto-refresh is enabled and settings are valid.
    */
   const requestRegenerate = useDebounceFn(() => {
-    if (
-      autoRefresh.value &&
-      !validateFilletRadius(settings.value.cutoutType, settings.value.filletRadius) &&
-      !validateStabilizerFilletRadius(
-        settings.value.stabilizerType,
-        settings.value.stabilizerFilletRadius,
-      ) &&
-      !validateSizeAdjust(settings.value.cutoutType, settings.value.sizeAdjust)
-    ) {
+    if (autoRefresh.value && !hasSettingsErrors()) {
       generatePlate()
     }
   }, 500)

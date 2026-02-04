@@ -41,6 +41,10 @@ export interface PlateBuilderOptions {
   spacingX?: number
   /** Vertical spacing between key units in mm (default: 19.05) */
   spacingY?: number
+  /** Custom cutout width in mm (for custom-rectangle type) */
+  customCutoutWidth?: number
+  /** Custom cutout height in mm (for custom-rectangle type) */
+  customCutoutHeight?: number
 }
 
 /**
@@ -117,8 +121,10 @@ function keyToCutoutPosition(
   spacingX: number,
   spacingY: number,
   originCenter: { x: number; y: number },
+  customWidth?: number,
+  customHeight?: number,
 ): KeyCutoutPosition {
-  const generator = getCutoutGenerator(cutoutType)
+  const generator = getCutoutGenerator(cutoutType, customWidth, customHeight)
   const center = getKeyCenter(key)
 
   return {
@@ -150,6 +156,8 @@ export async function buildPlate(
     sizeAdjust = 0,
     spacingX = DEFAULT_SPACING_X,
     spacingY = DEFAULT_SPACING_Y,
+    customCutoutWidth,
+    customCutoutHeight,
   } = options
 
   // Load maker.js
@@ -170,7 +178,15 @@ export async function buildPlate(
 
   // Convert keys to cutout positions
   const cutoutPositions = validKeys.map((key) =>
-    keyToCutoutPosition(key, cutoutType, spacingX, spacingY, originCenter),
+    keyToCutoutPosition(
+      key,
+      cutoutType,
+      spacingX,
+      spacingY,
+      originCenter,
+      customCutoutWidth,
+      customCutoutHeight,
+    ),
   )
 
   // Create cutout models
@@ -179,7 +195,14 @@ export async function buildPlate(
     const position = cutoutPositions[i]
     const key = validKeys[i]
     if (position) {
-      const cutoutModel = await positionCutout(position, cutoutType, filletRadius, sizeAdjust)
+      const cutoutModel = await positionCutout(
+        position,
+        cutoutType,
+        filletRadius,
+        sizeAdjust,
+        customCutoutWidth,
+        customCutoutHeight,
+      )
       cutoutModels[`cutout_${i}`] = cutoutModel
 
       // Create stabilizer cutout if enabled
