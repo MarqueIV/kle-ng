@@ -42,15 +42,15 @@ onMounted(() => {
             </button>
           </div>
 
-          <!-- Tab Content -->
-          <div class="tab-content">
+          <!-- Tab Content - Grid stacks both panes to maintain max height -->
+          <div class="tab-content-grid">
             <!-- Cutouts Tab -->
-            <div v-show="activeTab === 'cutouts'" class="tab-pane-content">
+            <div class="tab-pane-content" :class="{ 'tab-pane-hidden': activeTab !== 'cutouts' }">
               <PlateGeneratorSettings />
             </div>
 
             <!-- Outline Tab -->
-            <div v-show="activeTab === 'outline'" class="tab-pane-content">
+            <div class="tab-pane-content" :class="{ 'tab-pane-hidden': activeTab !== 'outline' }">
               <PlateOutlineSettings />
             </div>
           </div>
@@ -152,11 +152,18 @@ onMounted(() => {
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
 }
 
-.tab-content {
-  min-height: 0;
+/* CSS Grid stacks both tab panes in same cell - height is max of both */
+.tab-content-grid {
+  display: grid;
 }
 
 .tab-pane-content {
-  height: 100%;
+  grid-column: 1;
+  grid-row: 1;
+}
+
+.tab-pane-hidden {
+  opacity: 0;
+  pointer-events: none;
 }
 </style>
