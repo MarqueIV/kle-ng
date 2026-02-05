@@ -14,6 +14,7 @@ import type {
   StabilizerType,
   OutlineSettings,
   MountingHolesSettings,
+  CustomHolesSettings,
 } from '@/types/plate'
 import { getMakerJs } from '@/utils/makerjs-loader'
 import { getKeyCenter } from '@/utils/keyboard-geometry'
@@ -54,6 +55,8 @@ export interface PlateBuilderOptions {
   outline?: OutlineSettings
   /** Mounting holes settings */
   mountingHoles?: MountingHolesSettings
+  /** Custom holes settings */
+  customHoles?: CustomHolesSettings
 }
 
 /**
@@ -256,6 +259,38 @@ function createCornerMountingHoles(
 }
 
 /**
+ * Create custom holes at specified positions.
+ *
+ * @param makerjs - The maker.js module
+ * @param customHoles - Custom holes settings
+ * @param spacingX - Horizontal spacing between key units in mm
+ * @param spacingY - Vertical spacing between key units in mm
+ * @returns Record of custom hole models
+ */
+function createCustomHoles(
+  makerjs: typeof MakerJs,
+  customHoles: CustomHolesSettings,
+  spacingX: number,
+  spacingY: number,
+): Record<string, MakerJs.IModel> {
+  const holes: Record<string, MakerJs.IModel> = {}
+
+  for (const hole of customHoles.holes) {
+    const holeRadius = hole.diameter / 2
+    // Convert from keyboard units (U) to mm
+    const x = hole.offsetX * spacingX
+    // Y axis is inverted in maker.js (positive Y is up)
+    const y = -hole.offsetY * spacingY
+
+    const holeModel = new makerjs.models.Ellipse(holeRadius, holeRadius)
+    holeModel.origin = [x, y]
+    holes[`customHole_${hole.id}`] = holeModel
+  }
+
+  return holes
+}
+
+/**
  * Merge overlapping cutouts into simplified paths using maker.js combineUnion.
  * This reduces complexity when stabilizer cutouts overlap with switch cutouts.
  *
@@ -329,6 +364,7 @@ export async function buildPlate(
     mergeCutouts = false,
     outline,
     mountingHoles,
+    customHoles,
   } = options
 
   // Load maker.js
@@ -459,6 +495,12 @@ export async function buildPlate(
   if (mountingHoles?.enabled && outline?.enabled) {
     const holeModels = createCornerMountingHoles(makerjs, bounds, outlineMargins, mountingHoles)
     Object.assign(plateModel.models!, holeModels)
+  }
+
+  // Add custom holes
+  if (customHoles?.enabled && customHoles.holes.length > 0) {
+    const customHoleModels = createCustomHoles(makerjs, customHoles, spacingX, spacingY)
+    Object.assign(plateModel.models!, customHoleModels)
   }
 
   // Create outline model if enabled

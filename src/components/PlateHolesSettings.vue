@@ -2,9 +2,35 @@
 import { usePlateGeneratorStore } from '@/stores/plateGenerator'
 import { storeToRefs } from 'pinia'
 import CustomNumberInput from './CustomNumberInput.vue'
+import type { CustomHole } from '@/types/plate'
 
 const plateStore = usePlateGeneratorStore()
 const { settings } = storeToRefs(plateStore)
+
+function generateHoleId(): string {
+  return `hole_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+}
+
+function addCustomHole(): void {
+  const newHole: CustomHole = {
+    id: generateHoleId(),
+    diameter: 3,
+    offsetX: 0,
+    offsetY: 0,
+  }
+  settings.value.customHoles.holes.push(newHole)
+}
+
+function removeCustomHole(id: string): void {
+  const index = settings.value.customHoles.holes.findIndex((h) => h.id === id)
+  if (index !== -1) {
+    settings.value.customHoles.holes.splice(index, 1)
+  }
+}
+
+function removeAllCustomHoles(): void {
+  settings.value.customHoles.holes = []
+}
 </script>
 
 <template>
@@ -67,6 +93,105 @@ const { settings } = storeToRefs(plateStore)
         </div>
         <div class="form-text small">Requires outline to be enabled (for corner positions)</div>
       </div>
+
+      <!-- Custom Holes Section -->
+      <div class="section-divider"></div>
+
+      <div class="mb-2">
+        <div class="custom-holes-header">
+          <div class="form-check">
+            <input
+              id="enableCustomHoles"
+              v-model="settings.customHoles.enabled"
+              class="form-check-input"
+              type="checkbox"
+            />
+            <label class="form-check-label form-label-sm" for="enableCustomHoles"
+              >Custom Holes</label
+            >
+          </div>
+          <div class="custom-holes-buttons">
+            <button
+              type="button"
+              class="btn btn-sm btn-outline-primary"
+              :disabled="!settings.customHoles.enabled"
+              @click="addCustomHole"
+            >
+              Add
+            </button>
+            <button
+              type="button"
+              class="btn btn-sm btn-outline-danger"
+              :disabled="!settings.customHoles.enabled || settings.customHoles.holes.length === 0"
+              @click="removeAllCustomHoles"
+            >
+              Remove All
+            </button>
+          </div>
+        </div>
+        <div class="form-text small">Add holes at arbitrary positions</div>
+      </div>
+
+      <!-- Custom Holes List -->
+      <div
+        v-if="settings.customHoles.holes.length > 0"
+        class="custom-holes-list"
+        :class="{ disabled: !settings.customHoles.enabled }"
+      >
+        <div v-for="hole in settings.customHoles.holes" :key="hole.id" class="custom-hole-item">
+          <div class="hole-inputs">
+            <div class="hole-input-group">
+              <label class="form-label form-label-sm sub-label">Diameter</label>
+              <CustomNumberInput
+                v-model="hole.diameter"
+                :step="0.5"
+                :min="0.5"
+                :disabled="!settings.customHoles.enabled"
+                class="form-control form-control-sm"
+                size="compact"
+                title="Hole diameter in millimeters"
+              >
+                <template #suffix>mm</template>
+              </CustomNumberInput>
+            </div>
+            <div class="hole-input-group">
+              <label class="form-label form-label-sm sub-label">X Offset</label>
+              <CustomNumberInput
+                v-model="hole.offsetX"
+                :step="0.25"
+                :disabled="!settings.customHoles.enabled"
+                class="form-control form-control-sm"
+                size="compact"
+                title="X offset from origin in keyboard units (U)"
+              >
+                <template #suffix>U</template>
+              </CustomNumberInput>
+            </div>
+            <div class="hole-input-group">
+              <label class="form-label form-label-sm sub-label">Y Offset</label>
+              <CustomNumberInput
+                v-model="hole.offsetY"
+                :step="0.25"
+                :disabled="!settings.customHoles.enabled"
+                class="form-control form-control-sm"
+                size="compact"
+                title="Y offset from origin in keyboard units (U)"
+              >
+                <template #suffix>U</template>
+              </CustomNumberInput>
+            </div>
+            <button
+              type="button"
+              class="btn btn-sm btn-outline-danger remove-hole-btn"
+              :disabled="!settings.customHoles.enabled"
+              title="Remove this hole"
+              @click="removeCustomHole(hole.id)"
+            >
+              &times;
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 </template>
@@ -107,5 +232,68 @@ const { settings } = storeToRefs(plateStore)
 /* Ensure consistent spacing */
 .mb-2:last-child {
   margin-bottom: 0 !important;
+}
+
+.section-divider {
+  border-top: 1px solid var(--bs-border-color);
+  margin: 0.75rem 0;
+}
+
+.custom-holes-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.custom-holes-buttons {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.custom-holes-list {
+  max-height: 200px;
+  overflow-y: auto;
+  border: 1px solid var(--bs-border-color);
+  border-radius: 0.25rem;
+  padding: 0.5rem;
+}
+
+.custom-holes-list.disabled {
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+.custom-hole-item {
+  padding: 0.5rem 0;
+  border-bottom: 1px solid var(--bs-border-color-translucent);
+}
+
+.custom-hole-item:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.custom-hole-item:first-child {
+  padding-top: 0;
+}
+
+.hole-inputs {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr auto;
+  gap: 0.5rem;
+  align-items: end;
+}
+
+.hole-input-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.remove-hole-btn {
+  padding: 0.2rem 0.5rem;
+  line-height: 1;
+  font-size: 1rem;
+  align-self: end;
+  margin-bottom: 0.1rem;
 }
 </style>

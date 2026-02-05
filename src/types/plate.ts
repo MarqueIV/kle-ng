@@ -60,6 +60,30 @@ export interface MountingHolesSettings {
 }
 
 /**
+ * Definition for a single custom hole
+ */
+export interface CustomHole {
+  /** Unique identifier for the hole */
+  id: string
+  /** Hole diameter in mm */
+  diameter: number
+  /** X offset from origin in keyboard units (U) */
+  offsetX: number
+  /** Y offset from origin in keyboard units (U) */
+  offsetY: number
+}
+
+/**
+ * Settings for custom holes
+ */
+export interface CustomHolesSettings {
+  /** Whether custom holes are enabled */
+  enabled: boolean
+  /** Array of custom hole definitions */
+  holes: CustomHole[]
+}
+
+/**
  * Settings for plate generation
  */
 export interface PlateSettings {
@@ -82,6 +106,8 @@ export interface PlateSettings {
   outline: OutlineSettings
   /** Mounting holes settings */
   mountingHoles: MountingHolesSettings
+  /** Custom holes settings */
+  customHoles: CustomHolesSettings
 }
 
 /**

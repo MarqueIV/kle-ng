@@ -776,7 +776,9 @@ test.describe('Matrix Drawing - Interactive Drawing Tests', () => {
     const lineY = canvasBox.y + row1Y // Row 1's Y position
 
     // Switch to remove mode
-    const removeButton = page.locator('button', { hasText: 'Remove' })
+    const removeButton = page
+      .getByTestId('modal-matrix')
+      .getByRole('button', { name: 'Remove', exact: true })
     await removeButton.click()
 
     // Wait for mode switch
@@ -891,7 +893,9 @@ test.describe('Matrix Drawing - Interactive Drawing Tests', () => {
     const lineY = (key1CenterY + key2CenterY) / 2 // Midpoint between keys
 
     // Switch to remove mode
-    const removeButton = page.locator('button', { hasText: 'Remove' })
+    const removeButton = page
+      .getByTestId('modal-matrix')
+      .getByRole('button', { name: 'Remove', exact: true })
     await removeButton.click()
 
     // Wait for mode switch
@@ -995,7 +999,9 @@ test.describe('Matrix Drawing - Interactive Drawing Tests', () => {
     if (!canvasBox) throw new Error('Canvas not found')
 
     // Switch to remove mode
-    const removeButton = page.locator('button', { hasText: 'Remove' })
+    const removeButton = page
+      .getByTestId('modal-matrix')
+      .getByRole('button', { name: 'Remove', exact: true })
     await removeButton.click()
 
     // Wait for mode switch

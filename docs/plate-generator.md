@@ -81,7 +81,7 @@ changes (key edits, undo, redo). This is debounced at 500ms and only fires when 
 |------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | `PlateGeneratorPanel.vue`    | Root container. Tabbed two-column layout (controls left, preview right). Three tabs: Cutouts, Holes, Outline. Preloads maker.js on mount via `requestIdleCallback`. |
 | `PlateGeneratorSettings.vue` | [Cutouts tab] Form controls for cutout type, stabilizer type, fillet radius, size adjustment, custom dimensions, and merge cutouts toggle. Validates inputs.        |
-| `PlateHolesSettings.vue`     | [Holes tab] Corner mounting hole settings: enable toggle, diameter, and edge distance. Disabled when outline is disabled (holes require outline for positioning).   |
+| `PlateHolesSettings.vue`     | [Holes tab] Corner mounting holes (require outline) and custom holes at arbitrary positions with configurable diameter and X/Y offsets in keyboard units.            |
 | `PlateOutlineSettings.vue`   | [Outline tab] Outline generation settings: enable toggle, independent margins (top/bottom/left/right), fillet radius, and merge-with-cutouts option.                |
 | `PlateGeneratorControls.vue` | "Generate Plate" button with loading state, auto-refresh checkbox, error alerts, and empty-layout warnings.                                                         |
 | `PlateGeneratorResults.vue`  | Renders the SVG preview on success, a spinner during generation, or idle instructions before first generation. Shows both cutouts and outline layers.               |
@@ -283,6 +283,33 @@ The mounting holes feature adds circular holes at the four corners of the plate 
 ### Dependencies
 
 Mounting holes require the outline to be enabled. The holes are positioned relative to the outline corners, so without an outline there's no reference for hole placement. When outline is disabled, the mounting holes controls are automatically disabled in the UI.
+
+## Custom Holes
+
+The custom holes feature allows placing circular holes at arbitrary positions on the plate.
+
+### Settings
+
+| Setting    | Default | Description                                              |
+|------------|---------|----------------------------------------------------------|
+| `enabled`  | `false` | Enable custom holes.                                     |
+| `holes`    | `[]`    | Array of hole definitions.                               |
+
+Each hole definition has the following properties:
+
+| Property   | Default | Description                                              |
+|------------|---------|----------------------------------------------------------|
+| `diameter` | `3`     | Hole diameter (mm). Minimum: 0.5mm.                      |
+| `offsetX`  | `0`     | X offset from origin in keyboard units (U).              |
+| `offsetY`  | `0`     | Y offset from origin in keyboard units (U).              |
+
+### Usage
+
+In the Holes tab, use the **Add** button to create new holes. Each hole appears in a scrollable list where you can configure its diameter and position. Use the **Remove All** button to clear all custom holes, or the × button on each row to remove individual holes.
+
+### Coordinate System
+
+Custom hole positions use keyboard units (U) relative to the origin (the center of the first key). Positive X moves right, positive Y moves down (matching KLE coordinates). The position is converted to millimeters using the keyboard's spacing settings (default: 19.05mm per unit).
 
 ## Coordinate System
 

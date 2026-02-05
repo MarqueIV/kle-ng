@@ -37,6 +37,10 @@ const defaultSettings: PlateSettings = {
     diameter: 3,
     edgeDistance: 3,
   },
+  customHoles: {
+    enabled: false,
+    holes: [],
+  },
 }
 
 export const usePlateGeneratorStore = defineStore('plateGenerator', () => {
@@ -86,6 +90,7 @@ export const usePlateGeneratorStore = defineStore('plateGenerator', () => {
         mergeCutouts: settings.value.mergeCutouts,
         outline: settings.value.outline,
         mountingHoles: settings.value.mountingHoles,
+        customHoles: settings.value.customHoles,
         spacingX,
         spacingY,
       })
@@ -223,6 +228,10 @@ export const usePlateGeneratorStore = defineStore('plateGenerator', () => {
           mountingHoles: {
             ...defaultSettings.mountingHoles,
             ...parsed.mountingHoles,
+          },
+          customHoles: {
+            ...defaultSettings.customHoles,
+            ...parsed.customHoles,
           },
         }
         if (typeof parsed.autoRefresh === 'boolean') {
