@@ -390,9 +390,14 @@ export async function buildPlate(
             sizeAdjust,
             stabilizerType === 'mx-spec-narrow',
           )
-        } else if (stabilizerType == 'mx-basic') {
+        } else if (
+          stabilizerType === 'mx-basic' ||
+          stabilizerType === 'mx-bidirectional' ||
+          stabilizerType === 'mx-tight'
+        ) {
           stabModel = createStabilizerMxBasicModel(
             makerjs,
+            stabilizerType,
             keyWidth,
             keyHeight,
             stabilizerFilletRadius,

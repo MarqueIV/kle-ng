@@ -177,25 +177,26 @@ The Openable cutout is a 14x14mm base with 4 symmetrical notches on the left and
 
 **Stabilizer types:**
 
-- **MX Basic** — Simple 7mm x 15mm rectangular cutout pair, positioned symmetrically. Max fillet radius: 3.5mm.
+- **MX Basic** — Simple 7mm x 15mm rectangular cutout pair. Unidirectional, matching stabilizer orientation required. Max fillet radius: 3.5mm.
+- **MX Bidirectional** — Simple 7mm x 18mm rectangular cutout pair. Supports both stabilizer orientations.
+- **MX Tight** — Simple 6.75mm x 14mm rectangular cutout pair, may not fit with third party stabilizers. Max fillet radius: 3.375mm.
 - **MX Spec** — Spec-accurate Cherry MX stabilizer with side notches and wire channel geometry. Max fillet radius: 0.4mm.
 - **MX Spec Narrow** — Same as MX Spec but with a narrower wire channel, provides more stable switch placement.
 - **None** — No stabilizer cutouts.
 
 **Stabilizer spacing by key size:**
 
-| Key Size | Spacing (mm) |
-|----------|--------------|
-| 2U       | 11.938       |
-| 3U       | 19.05        |
-| 4U       | 28.575       |
-| 4.5U     | 34.671       |
-| 5.5U     | 42.863       |
-| 6U       | 47.625       |
-| 6.25U    | 50.0         |
-| 6.5U     | 52.375       |
-| 7U       | 57.15        |
-| 8U       | 66.675       |
+| Key Size | Cherry MX Spacing (mm) | Alps Spacing (mm)    |
+|----------|------------------------|----------------------|
+| 1.75U    | -                      | 12                   |
+| 2U       | 11.938                 | 14                   |
+| 2.75     | 11.938                 | 14 (AT101: 20.5)     |
+| 3U       | 19.05                  | -                    |
+| 6U       | 47.625                 | -                    |
+| 6.25U    | 50.0                   | 41.86                |
+| 6.5U     | 52.375                 | 45.3                 |
+| 7U       | 57.15                  | -                    |
+| 8U       | 66.675                 | -                    |
 
 For vertical keys (height > width), the stabilizer pair is rotated -90 degrees.
 

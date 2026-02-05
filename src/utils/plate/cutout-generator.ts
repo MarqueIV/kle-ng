@@ -342,7 +342,8 @@ export function validateFilletRadius(
  */
 export function getMaxStabilizerFilletRadius(stabilizerType: StabilizerType): number {
   if (stabilizerType === 'mx-spec' || stabilizerType === 'mx-spec-narrow') return 0.4
-  if (stabilizerType === 'mx-basic') return 3.5
+  if (stabilizerType === 'mx-basic' || stabilizerType === 'mx-bidirectional') return 3.5
+  if (stabilizerType === 'mx-tight') return 3.375
   if (stabilizerType === 'alps-aek' || stabilizerType === 'alps-at101') return 1.3
   return 0
 }
@@ -452,6 +453,18 @@ export function getStabilizerOptions(): StabilizerOption[] {
       description: 'Typical Cherry MX stabilizer cutout suited for most occasions',
     },
     {
+      value: 'mx-bidirectional',
+      label: 'Cherry MX Bidirectional (7mm x 18mm)',
+      description:
+        'Bigger variant of Cherry MX basic cutout, supports both stabilizer orientations',
+    },
+    {
+      value: 'mx-tight',
+      label: 'Cherry MX Tight (6.75mm x 14mm)',
+      description:
+        'Smaller variant of Cherry MX basic cutout, may not fit with third party stabilizers',
+    },
+    {
       value: 'mx-spec',
       label: 'Cherry MX Spec (6.65mm x 12.29mm)',
       description:
@@ -491,6 +504,7 @@ export function getStabilizerOptions(): StabilizerOption[] {
  * For vertical keys (height > width), the assembly is rotated -90 degrees.
  *
  * @param makerjs - The maker.js library
+ * @param stabilizerType - Variant
  * @param keyWidth - Key width in keyboard units
  * @param keyHeight - Key height in keyboard units
  * @param filletRadius - Fillet radius in mm
@@ -499,6 +513,7 @@ export function getStabilizerOptions(): StabilizerOption[] {
  */
 export function createStabilizerMxBasicModel(
   makerjs: typeof MakerJs,
+  stabilizerType: 'mx-basic' | 'mx-tight' | 'mx-bidirectional',
   keyWidth: number,
   keyHeight: number,
   filletRadius: number,
@@ -514,8 +529,15 @@ export function createStabilizerMxBasicModel(
   const spacing = getCherryMxStabilizerSpacing(keySize)
   if (spacing === null) return null
 
-  const stabWidth = 7
-  const stabHeight = 15
+  const stabWidth = stabilizerType === 'mx-tight' ? 6.75 : 7
+  let stabHeight
+  if (stabilizerType === 'mx-basic') {
+    stabHeight = 15
+  } else if (stabilizerType === 'mx-tight') {
+    stabHeight = 14
+  } else {
+    stabHeight = 18
+  }
 
   // Clamp fillet radius to max for stabilizer dimensions
   const maxFillet = D.div(D.min(stabWidth, stabHeight), 2)
@@ -536,9 +558,14 @@ export function createStabilizerMxBasicModel(
     }
     // Rectangle bottom-left at (0,0). Single move to:
     // x: center horizontally on xOffset → -w/2 + xOffset
-    // y: bottom at -9 + sizeAdjust (top at +6 - sizeAdjust)
     const moveX = D.add(D.div(w, -2), xOffset)
-    const moveY = D.add(-9, sizeAdjust)
+    // for mx-basic/mx-bidirectional:
+    // 2 mm between cutout bottom edge and switch bottom edge
+    // y: bottom at -14/2 - 2 = -9 (+ sizeAdjust)
+    // for mx-tight:
+    // 1 mm between cutout bottom edge and switch bottom edge
+    // y: -8 (+ sizeAdjust)
+    const moveY = D.add(stabilizerType === 'mx-tight' ? -8 : -9, sizeAdjust)
     cutout = makerjs.model.move(cutout, [moveX, moveY])
     return cutout
   }

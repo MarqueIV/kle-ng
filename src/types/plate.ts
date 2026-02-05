@@ -19,6 +19,8 @@ export type CutoutType =
  */
 export type StabilizerType =
   | 'mx-basic'
+  | 'mx-bidirectional'
+  | 'mx-tight'
   | 'mx-spec'
   | 'mx-spec-narrow'
   | 'alps-aek'
