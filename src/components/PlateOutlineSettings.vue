@@ -24,6 +24,23 @@ const { settings } = storeToRefs(plateStore)
         <div class="form-text small">Generate a rectangular outline around all cutouts</div>
       </div>
 
+      <!-- Merge with Cutouts -->
+      <div class="mb-2">
+        <div class="form-check">
+          <input
+            id="mergeWithCutouts"
+            v-model="settings.outline.mergeWithCutouts"
+            class="form-check-input"
+            type="checkbox"
+            :disabled="!settings.outline.enabled"
+          />
+          <label class="form-check-label form-label-sm" for="mergeWithCutouts"
+            >Merge with Cutouts</label
+          >
+        </div>
+        <div class="form-text small">Download outline and cutouts as a single file</div>
+      </div>
+
       <!-- Margins -->
       <div class="mb-2">
         <label class="form-label form-label-sm">Margins</label>

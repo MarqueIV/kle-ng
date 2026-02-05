@@ -32,6 +32,8 @@ export interface OutlineSettings {
   marginLeft: number
   /** Right margin in mm */
   marginRight: number
+  /** Merge outline with cutouts into a single file on download */
+  mergeWithCutouts: boolean
 }
 
 /**
@@ -89,6 +91,10 @@ export interface PlateGenerationResult {
   outlineSvgDownload?: string
   /** DXF content for outline (optional, only when outline enabled) */
   outlineDxfContent?: string
+  /** SVG content for merged cutouts + outline (optional, only when outline enabled and merge enabled) */
+  mergedSvgDownload?: string
+  /** DXF content for merged cutouts + outline (optional, only when outline enabled and merge enabled) */
+  mergedDxfContent?: string
 }
 
 /**

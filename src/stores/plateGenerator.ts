@@ -30,6 +30,7 @@ const defaultSettings: PlateSettings = {
     marginBottom: 5,
     marginLeft: 5,
     marginRight: 5,
+    mergeWithCutouts: false,
   },
 }
 
@@ -145,29 +146,43 @@ export const usePlateGeneratorStore = defineStore('plateGenerator', () => {
 
   /**
    * Download all SVG files (cutouts and outline if enabled)
+   * If merge is enabled, downloads single combined file; otherwise separate files
    */
   function downloadAllSvg(): void {
     const result = generationState.value.result
     if (!result) return
 
-    downloadFile(result.svgDownload, 'keyboard-plate.svg', 'image/svg+xml')
+    if (result.mergedSvgDownload) {
+      // Merge enabled: download single combined file
+      downloadFile(result.mergedSvgDownload, 'keyboard-plate.svg', 'image/svg+xml')
+    } else {
+      // Merge disabled: download separate files
+      downloadFile(result.svgDownload, 'keyboard-plate.svg', 'image/svg+xml')
 
-    if (result.outlineSvgDownload) {
-      downloadFile(result.outlineSvgDownload, 'keyboard-plate-outline.svg', 'image/svg+xml')
+      if (result.outlineSvgDownload) {
+        downloadFile(result.outlineSvgDownload, 'keyboard-plate-outline.svg', 'image/svg+xml')
+      }
     }
   }
 
   /**
    * Download all DXF files (cutouts and outline if enabled)
+   * If merge is enabled, downloads single combined file; otherwise separate files
    */
   function downloadAllDxf(): void {
     const result = generationState.value.result
     if (!result) return
 
-    downloadFile(result.dxfContent, 'keyboard-plate.dxf', 'application/dxf')
+    if (result.mergedDxfContent) {
+      // Merge enabled: download single combined file
+      downloadFile(result.mergedDxfContent, 'keyboard-plate.dxf', 'application/dxf')
+    } else {
+      // Merge disabled: download separate files
+      downloadFile(result.dxfContent, 'keyboard-plate.dxf', 'application/dxf')
 
-    if (result.outlineDxfContent) {
-      downloadFile(result.outlineDxfContent, 'keyboard-plate-outline.dxf', 'application/dxf')
+      if (result.outlineDxfContent) {
+        downloadFile(result.outlineDxfContent, 'keyboard-plate-outline.dxf', 'application/dxf')
+      }
     }
   }
 

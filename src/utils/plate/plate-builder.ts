@@ -445,6 +445,8 @@ export async function buildPlate(
   let outlineSvgPreview: string | undefined
   let outlineSvgDownload: string | undefined
   let outlineDxfContent: string | undefined
+  let mergedSvgDownload: string | undefined
+  let mergedDxfContent: string | undefined
 
   if (outlineModel) {
     const outlineOnlyModel: MakerJs.IModel = {
@@ -452,18 +454,43 @@ export async function buildPlate(
       units: makerjs.unitType.Millimeter,
     }
 
-    outlineSvgDownload = makerjs.exporter.toSVG(outlineOnlyModel, {
-      units: makerjs.unitType.Millimeter,
-      stroke: '#000',
-      strokeWidth: '0.25mm',
-      fill: 'none',
-      useSvgPathOnly: true,
-    })
+    // Generate merged exports if merge option is enabled
+    if (outline?.mergeWithCutouts) {
+      const mergedModel: MakerJs.IModel = {
+        models: {
+          plate: plateModel,
+          outline: outlineModel,
+        },
+        units: makerjs.unitType.Millimeter,
+      }
 
-    outlineDxfContent = makerjs.exporter.toDXF(outlineOnlyModel, {
-      units: makerjs.unitType.Millimeter,
-      usePOLYLINE: true,
-    })
+      mergedSvgDownload = makerjs.exporter.toSVG(mergedModel, {
+        units: makerjs.unitType.Millimeter,
+        stroke: '#000',
+        strokeWidth: '0.25mm',
+        fill: 'none',
+        useSvgPathOnly: true,
+      })
+
+      mergedDxfContent = makerjs.exporter.toDXF(mergedModel, {
+        units: makerjs.unitType.Millimeter,
+        usePOLYLINE: true,
+      })
+    } else {
+      // Generate separate outline exports
+      outlineSvgDownload = makerjs.exporter.toSVG(outlineOnlyModel, {
+        units: makerjs.unitType.Millimeter,
+        stroke: '#000',
+        strokeWidth: '0.25mm',
+        fill: 'none',
+        useSvgPathOnly: true,
+      })
+
+      outlineDxfContent = makerjs.exporter.toDXF(outlineOnlyModel, {
+        units: makerjs.unitType.Millimeter,
+        usePOLYLINE: true,
+      })
+    }
   }
 
   return {
@@ -473,5 +500,7 @@ export async function buildPlate(
     outlineSvgPreview,
     outlineSvgDownload,
     outlineDxfContent,
+    mergedSvgDownload,
+    mergedDxfContent,
   }
 }
