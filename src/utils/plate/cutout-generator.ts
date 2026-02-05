@@ -367,30 +367,6 @@ export function validateStabilizerFilletRadius(
 }
 
 /**
- * Validate a size adjustment value for a given cutout type.
- * Positive values (shrink) must not exceed half of the smallest cutout dimension.
- * Negative values (expand) are always valid.
- * For custom-rectangle, pass the custom dimensions.
- * Returns an error message if invalid, or null if valid.
- */
-export function validateSizeAdjust(
-  cutoutType: CutoutType,
-  sizeAdjust: number,
-  customWidth?: number,
-  customHeight?: number,
-): string | null {
-  if (sizeAdjust <= 0) {
-    return null
-  }
-  const generator = getCutoutGenerator(cutoutType, customWidth, customHeight)
-  const maxShrink = Math.min(generator.width, generator.height) / 2
-  if (sizeAdjust >= maxShrink) {
-    return `Size adjustment must be less than ${maxShrink}mm (half of the smallest cutout dimension).`
-  }
-  return null
-}
-
-/**
  * Get a cutout generator by type.
  * For 'custom-rectangle', pass the custom dimensions.
  */

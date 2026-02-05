@@ -202,7 +202,6 @@ For vertical keys (height > width), the stabilizer pair is rotated -90 degrees.
 **Validation functions:**
 - `validateFilletRadius()` — Ensures radius does not exceed `min(width, height) / 2`.
 - `validateStabilizerFilletRadius()` — Checks against the per-type maximum.
-- `validateSizeAdjust()` — Ensures cutout dimensions remain positive after adjustment.
 - `validateCustomCutoutDimension()` — Validates custom width/height bounds.
 
 **Size adjustment (kerf compensation):**

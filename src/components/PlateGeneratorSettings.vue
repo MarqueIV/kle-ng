@@ -9,7 +9,6 @@ import {
   validateFilletRadius,
   validateStabilizerFilletRadius,
   getMaxStabilizerFilletRadius,
-  validateSizeAdjust,
   validateCustomCutoutDimension,
 } from '@/utils/plate/cutout-generator'
 import { useKeyboardStore } from '@/stores/keyboard'
@@ -90,22 +89,6 @@ const customWidthInputClass = computed(() =>
 
 const customHeightInputClass = computed(() =>
   customHeightError.value
-    ? 'form-control form-control-sm is-invalid'
-    : 'form-control form-control-sm',
-)
-
-// Size adjustment validation
-const sizeAdjustError = computed(() =>
-  validateSizeAdjust(
-    settings.value.cutoutType,
-    settings.value.sizeAdjust,
-    settings.value.customCutoutWidth,
-    settings.value.customCutoutHeight,
-  ),
-)
-
-const sizeAdjustInputClass = computed(() =>
-  sizeAdjustError.value
     ? 'form-control form-control-sm is-invalid'
     : 'form-control form-control-sm',
 )
@@ -246,21 +229,20 @@ const sizeAdjustInputClass = computed(() =>
 
       <!-- Size Adjustment -->
       <div class="mb-2">
-        <label for="sizeAdjust" class="form-label form-label-sm">Size Adjustment</label>
+        <label for="sizeAdjust" class="form-label form-label-sm">Size Adjustment (Kerf)</label>
         <CustomNumberInput
           id="sizeAdjust"
           v-model="settings.sizeAdjust"
           :step="0.001"
-          :class="sizeAdjustInputClass"
+          :min="-0.5"
+          :max="0.5"
+          class="form-control form-control-sm"
           size="default"
           title="Cutout size adjustment in millimeters"
         >
           <template #suffix>mm</template>
         </CustomNumberInput>
-        <div v-if="sizeAdjustError" class="invalid-feedback d-block">
-          {{ sizeAdjustError }}
-        </div>
-        <div v-else class="form-text small">Positive = shrink, negative = expand</div>
+        <div class="form-text small">Positive = shrink, negative = expand</div>
       </div>
 
       <!-- Merge Cutouts -->

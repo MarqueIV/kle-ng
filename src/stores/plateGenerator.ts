@@ -5,7 +5,6 @@ import { buildPlate, PlateBuilderError } from '@/utils/plate/plate-builder'
 import {
   validateFilletRadius,
   validateStabilizerFilletRadius,
-  validateSizeAdjust,
   validateCustomCutoutDimension,
 } from '@/utils/plate/cutout-generator'
 import { useKeyboardStore } from '@/stores/keyboard'
@@ -264,7 +263,6 @@ export const usePlateGeneratorStore = defineStore('plateGenerator', () => {
     const ch = s.customCutoutHeight
     if (validateFilletRadius(s.cutoutType, s.filletRadius, cw, ch)) return true
     if (validateStabilizerFilletRadius(s.stabilizerType, s.stabilizerFilletRadius)) return true
-    if (validateSizeAdjust(s.cutoutType, s.sizeAdjust, cw, ch)) return true
     if (s.cutoutType === 'custom-rectangle') {
       const keyboardStore = useKeyboardStore()
       const sx = keyboardStore.metadata.spacing_x || 19.05
