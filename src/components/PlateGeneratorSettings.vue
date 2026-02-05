@@ -115,8 +115,6 @@ const sizeAdjustInputClass = computed(() =>
   <div class="plate-generator-settings">
     <!-- Cutout Configuration Section -->
     <div class="settings-section">
-      <div class="section-title">Cutout Configuration</div>
-
       <!-- Cutout Type -->
       <div class="mb-2">
         <label for="cutoutType" class="form-label form-label-sm">Switch Cutout Type</label>
@@ -295,13 +293,7 @@ const sizeAdjustInputClass = computed(() =>
 
 .settings-section {
   padding-top: 0;
-  padding-bottom: 0.5rem;
-}
-
-.section-title {
-  font-size: 0.875rem;
-  font-weight: 600;
-  color: var(--bs-emphasis-color);
+  padding-bottom: 0;
 }
 
 .fillet-sub-label {
