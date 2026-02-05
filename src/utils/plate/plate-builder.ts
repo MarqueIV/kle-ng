@@ -21,6 +21,7 @@ import { D } from '@/utils/decimal-math'
 import {
   positionCutout,
   getCutoutGenerator,
+  createStabilizerAlpsModel,
   createStabilizerMxBasicModel,
   createStabilizerMxSpecModel,
 } from './cutout-generator'
@@ -389,9 +390,18 @@ export async function buildPlate(
             sizeAdjust,
             stabilizerType === 'mx-spec-narrow',
           )
-        } else {
+        } else if (stabilizerType == 'mx-basic') {
           stabModel = createStabilizerMxBasicModel(
             makerjs,
+            keyWidth,
+            keyHeight,
+            stabilizerFilletRadius,
+            sizeAdjust,
+          )
+        } else {
+          stabModel = createStabilizerAlpsModel(
+            makerjs,
+            stabilizerType,
             keyWidth,
             keyHeight,
             stabilizerFilletRadius,

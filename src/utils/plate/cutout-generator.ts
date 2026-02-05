@@ -175,11 +175,13 @@ export function validateFilletRadius(
  * Get the maximum allowed stabilizer fillet radius for a given stabilizer type.
  * - mx-basic: 3.5mm (min(7, 15) / 2)
  * - mx-spec: 0.4mm (limited by the smallest feature — the cross-mount notch)
+ * - alps-aek: 1.3mm (min(2.67, 5.21) / 2)
  * - none: 0 (no stabilizer)
  */
 export function getMaxStabilizerFilletRadius(stabilizerType: StabilizerType): number {
   if (stabilizerType === 'mx-spec' || stabilizerType === 'mx-spec-narrow') return 0.4
   if (stabilizerType === 'mx-basic') return 3.5
+  if (stabilizerType === 'alps-aek' || stabilizerType === 'alps-at101') return 1.3
   return 0
 }
 
@@ -264,16 +266,40 @@ export function validateCustomCutoutDimension(
 }
 
 /**
- * Get the stabilizer spacing (in mm) for a given key size in units.
+ * Get the Cherry MX stabilizer spacing (in mm) for a given key size in units.
  * Returns null if key size < 2 (no stabilizer needed).
  */
-export function getStabilizerSpacing(keySize: number): number | null {
+function getCherryMxStabilizerSpacing(keySize: number): number | null {
   if (keySize >= 8) return 66.675
   if (keySize >= 7) return 57.15
   if (keySize >= 6.25) return 50
   if (keySize >= 6) return 47.625
   if (keySize >= 3) return 19.05
   if (keySize >= 2) return 11.938
+  return null
+}
+
+/**
+ * Alps stabilizer spacing table.
+ * AT101 has an additional threshold at 2.75U.
+ */
+const alpsSpacingTable: { minKeySize: number; spacing: number; at101Only?: boolean }[] = [
+  { minKeySize: 6.5, spacing: 45.3 },
+  { minKeySize: 6.25, spacing: 41.86 },
+  { minKeySize: 2.75, spacing: 20.5, at101Only: true },
+  { minKeySize: 2, spacing: 14 },
+  { minKeySize: 1.75, spacing: 12 },
+]
+
+/**
+ * Get the Alps stabilizer spacing (in mm) for a given key size in units.
+ * Returns null if key size < 1.75 (no stabilizer needed).
+ */
+function getAlpsStabilizerSpacing(keySize: number, isAt101: boolean): number | null {
+  for (const { minKeySize, spacing, at101Only } of alpsSpacingTable) {
+    if (at101Only && !isAt101) continue
+    if (keySize >= minKeySize) return spacing
+  }
   return null
 }
 
@@ -298,6 +324,16 @@ export function getStabilizerOptions(): StabilizerOption[] {
       label: 'Cherry MX Spec Narrow (6.65mm x 12.29mm)',
       description:
         'Almost spec-accurate Cherry MX stabilizer cutout but with narrow wire channel for all key sizes',
+    },
+    {
+      value: 'alps-aek',
+      label: 'Alps AEK (2.67mm x 5.21mm)',
+      description: 'Alps specific for AEK stabilizer sizes',
+    },
+    {
+      value: 'alps-at101',
+      label: 'Alps AT101 (2.67mm x 5.21mm)',
+      description: 'Alps specific for AT101 stabilizer sizes',
     },
     {
       value: 'none',
@@ -337,7 +373,7 @@ export function createStabilizerMxBasicModel(
     keySize = keyHeight
   }
 
-  const spacing = getStabilizerSpacing(keySize)
+  const spacing = getCherryMxStabilizerSpacing(keySize)
   if (spacing === null) return null
 
   const stabWidth = 7
@@ -420,7 +456,7 @@ export function createStabilizerMxSpecModel(
     keySize = keyHeight
   }
 
-  const spacing = getStabilizerSpacing(keySize)
+  const spacing = getCherryMxStabilizerSpacing(keySize)
   if (spacing === null) return null
 
   // sizeAdjust works like kerf: positive = shrink cutouts
@@ -526,6 +562,71 @@ export function createStabilizerMxSpecModel(
     models: {
       left: positionedLeft,
       right: positionedRight,
+    },
+  }
+
+  // Rotate -90 degrees for vertical keys
+  if (isVertical) {
+    stabModel = makerjs.model.rotate(stabModel, -90)
+  }
+
+  return stabModel
+}
+
+export function createStabilizerAlpsModel(
+  makerjs: typeof MakerJs,
+  stabilizerType: 'alps-aek' | 'alps-at101',
+  keyWidth: number,
+  keyHeight: number,
+  filletRadius: number,
+  sizeAdjust: number,
+): MakerJs.IModel | null {
+  // Determine effective key size (use larger dimension for vertical keys)
+  let keySize = keyWidth
+  const isVertical = keyHeight > keyWidth
+  if (isVertical) {
+    keySize = keyHeight
+  }
+
+  const spacing = getAlpsStabilizerSpacing(keySize, stabilizerType === 'alps-at101')
+  if (spacing === null) return null
+
+  const stabWidth = 2.67
+  const stabHeight = 5.21
+
+  // Clamp fillet radius to max for stabilizer dimensions
+  const maxFillet = D.div(D.min(stabWidth, stabHeight), 2)
+  const clampedFillet = D.min(filletRadius, maxFillet)
+
+  // Adjusted dimensions after size adjustment
+  const w = D.sub(stabWidth, D.mul(sizeAdjust, 2))
+  const h = D.sub(stabHeight, D.mul(sizeAdjust, 2))
+
+  // Create a single stabilizer cutout rectangle positioned at the given x offset.
+  // Uses a single move() call because makerjs.model.move SETS the origin (not additive).
+  function createSingleCutout(xOffset: number): MakerJs.IModel {
+    let cutout: MakerJs.IModel
+    if (clampedFillet > 0) {
+      cutout = new makerjs.models.RoundRectangle(w, h, clampedFillet)
+    } else {
+      cutout = new makerjs.models.Rectangle(w, h)
+    }
+    // Rectangle bottom-left at (0,0). Single move to:
+    // x: center horizontally on xOffset → -w/2 + xOffset
+    // y: bottom at -9.085 + sizeAdjust
+    const moveX = D.add(D.div(w, -2), xOffset)
+    const moveY = D.add(-9.085, sizeAdjust)
+    cutout = makerjs.model.move(cutout, [moveX, moveY])
+    return cutout
+  }
+
+  const leftCutout = createSingleCutout(-spacing)
+  const rightCutout = createSingleCutout(spacing)
+
+  let stabModel: MakerJs.IModel = {
+    models: {
+      left: leftCutout,
+      right: rightCutout,
     },
   }
 

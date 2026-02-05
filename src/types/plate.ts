@@ -16,7 +16,13 @@ export type CutoutType =
 /**
  * Available stabilizer cutout types.
  */
-export type StabilizerType = 'mx-basic' | 'mx-spec' | 'mx-spec-narrow' | 'none'
+export type StabilizerType =
+  | 'mx-basic'
+  | 'mx-spec'
+  | 'mx-spec-narrow'
+  | 'alps-aek'
+  | 'alps-at101'
+  | 'none'
 
 /**
  * Settings for plate outline generation
