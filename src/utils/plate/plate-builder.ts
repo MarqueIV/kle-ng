@@ -177,17 +177,28 @@ function calculateCutoutsBounds(makerjs: typeof MakerJs, plateModel: MakerJs.IMo
  * @param makerjs - The maker.js module
  * @param bounds - Bounding box of the cutouts
  * @param margins - Margins to add on each side (top, bottom, left, right)
+ * @param filletRadius - Corner rounding radius in mm (0 = sharp corners)
  * @returns Outline rectangle model
  */
 function createOutlineModel(
   makerjs: typeof MakerJs,
   bounds: CutoutBounds,
   margins: { top: number; bottom: number; left: number; right: number },
+  filletRadius: number = 0,
 ): MakerJs.IModel {
   const outlineWidth = bounds.maxX - bounds.minX + margins.left + margins.right
   const outlineHeight = bounds.maxY - bounds.minY + margins.top + margins.bottom
 
-  const outlineModel = new makerjs.models.Rectangle(outlineWidth, outlineHeight)
+  let outlineModel: MakerJs.IModel
+
+  if (filletRadius > 0) {
+    // Use RoundRectangle for filleted corners
+    outlineModel = new makerjs.models.RoundRectangle(outlineWidth, outlineHeight, filletRadius)
+  } else {
+    // Use regular Rectangle for sharp corners
+    outlineModel = new makerjs.models.Rectangle(outlineWidth, outlineHeight)
+  }
+
   outlineModel.origin = [bounds.minX - margins.left, bounds.minY - margins.bottom]
 
   return outlineModel
@@ -371,12 +382,17 @@ export async function buildPlate(
   let outlineModel: MakerJs.IModel | null = null
   if (outline?.enabled) {
     const bounds = calculateCutoutsBounds(makerjs, plateModel)
-    outlineModel = createOutlineModel(makerjs, bounds, {
-      top: outline.marginTop,
-      bottom: outline.marginBottom,
-      left: outline.marginLeft,
-      right: outline.marginRight,
-    })
+    outlineModel = createOutlineModel(
+      makerjs,
+      bounds,
+      {
+        top: outline.marginTop,
+        bottom: outline.marginBottom,
+        left: outline.marginLeft,
+        right: outline.marginRight,
+      },
+      outline.filletRadius,
+    )
   }
 
   // Add origin cross marker to the preview model (not included in exports)

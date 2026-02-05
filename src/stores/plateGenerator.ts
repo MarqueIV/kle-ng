@@ -31,6 +31,7 @@ const defaultSettings: PlateSettings = {
     marginLeft: 5,
     marginRight: 5,
     mergeWithCutouts: false,
+    filletRadius: 0,
   },
 }
 

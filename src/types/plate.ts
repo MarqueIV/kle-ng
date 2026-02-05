@@ -34,6 +34,8 @@ export interface OutlineSettings {
   marginRight: number
   /** Merge outline with cutouts into a single file on download */
   mergeWithCutouts: boolean
+  /** Fillet (corner rounding) radius in mm for outline corners. 0 = sharp corners. */
+  filletRadius: number
 }
 
 /**

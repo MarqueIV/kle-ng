@@ -110,6 +110,24 @@ const { settings } = storeToRefs(plateStore)
         </div>
         <div class="form-text small">Distance from cutout bounds to outline edge</div>
       </div>
+
+      <!-- Fillet Radius -->
+      <div class="mb-2">
+        <label for="outlineFilletRadius" class="form-label form-label-sm">Fillet Radius</label>
+        <CustomNumberInput
+          id="outlineFilletRadius"
+          v-model="settings.outline.filletRadius"
+          :step="0.5"
+          :min="0"
+          :disabled="!settings.outline.enabled"
+          class="form-control form-control-sm"
+          size="default"
+          title="Corner rounding radius for outline in millimeters"
+        >
+          <template #suffix>mm</template>
+        </CustomNumberInput>
+        <div class="form-text small">Corner rounding radius (0 = sharp corners)</div>
+      </div>
     </div>
   </div>
 </template>
