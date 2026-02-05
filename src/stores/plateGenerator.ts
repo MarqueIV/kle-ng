@@ -30,13 +30,13 @@ const defaultSettings: PlateSettings = {
     marginBottom: 5,
     marginLeft: 5,
     marginRight: 5,
-    mergeWithCutouts: false,
-    filletRadius: 0,
+    mergeWithCutouts: true,
+    filletRadius: 1,
   },
   mountingHoles: {
     enabled: false,
     diameter: 3,
-    edgeDistance: 5,
+    edgeDistance: 3,
   },
 }
 
