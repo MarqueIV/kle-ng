@@ -57,6 +57,162 @@ export class CherryMxBasicCutout extends RectangleCutout {
   readonly height = 14
 }
 
+/**
+ * Cherry MX Openable cutout: 14x14mm base with 4 symmetrical notches on side edges.
+ *
+ * Notch dimensions:
+ * - Width: 0.8mm (extending outward from each side)
+ * - Height: 3.1mm
+ * - Position: 4.45mm from center (notch centers are 8.9mm apart)
+ *
+ * The notches allow the switch top to be opened without desoldering.
+ * Max fillet radius is 0.4mm (limited by the 0.8mm notch width).
+ */
+export class CherryMxOpenableCutout implements CutoutGenerator {
+  readonly width = 14
+  readonly height = 14
+  readonly notchWidth = 0.8
+  readonly notchHeight = 3.1
+  readonly notchOffset = 4.45 // Distance from center to notch center
+
+  get maxFilletRadius(): number {
+    // Limited by the smallest feature (notch width)
+    return this.notchWidth / 2
+  }
+
+  createModel(
+    makerjs: typeof MakerJs,
+    filletRadius: number,
+    sizeAdjust: number = 0,
+  ): MakerJs.IModel {
+    // Size adjustment (kerf compensation) applied to all edges
+    const k = sizeAdjust
+
+    // Adjusted base rectangle dimensions (bottom-left at origin, like Rectangle)
+    const w = D.sub(this.width, D.mul(k, 2))
+    const h = D.sub(this.height, D.mul(k, 2))
+
+    // Center of the rectangle (for positioning notches)
+    const centerY = D.div(h, 2)
+
+    // Notch dimensions with size adjustment
+    const notchW = D.sub(this.notchWidth, k) // Only subtract once (extends outward)
+    const notchHalfH = D.sub(D.div(this.notchHeight, 2), k)
+
+    // Notch Y positions (relative to rectangle with bottom-left at origin)
+    const topNotchTop = D.add(centerY, D.add(this.notchOffset, notchHalfH))
+    const topNotchBottom = D.add(centerY, D.sub(this.notchOffset, notchHalfH))
+    const bottomNotchTop = D.add(centerY, D.sub(-this.notchOffset, -notchHalfH))
+    const bottomNotchBottom = D.add(centerY, D.sub(-this.notchOffset, notchHalfH))
+
+    // Right edge X positions
+    const rightEdge = w
+    const rightNotchOuter = D.add(w, notchW)
+
+    // Left edge X positions
+    const leftEdge = 0
+    const leftNotchOuter = D.mul(notchW, -1)
+
+    // Build the path clockwise from top-left corner
+    // Rectangle spans (0,0) to (w,h), with notches extending beyond
+    const model: MakerJs.IModel = {
+      paths: {
+        // Top edge
+        top: new makerjs.paths.Line([0, h], [w, h]),
+
+        // Right side with notches (going down)
+        r1: new makerjs.paths.Line([rightEdge, h], [rightEdge, topNotchTop]),
+        r2: new makerjs.paths.Line([rightEdge, topNotchTop], [rightNotchOuter, topNotchTop]),
+        r3: new makerjs.paths.Line(
+          [rightNotchOuter, topNotchTop],
+          [rightNotchOuter, topNotchBottom],
+        ),
+        r4: new makerjs.paths.Line([rightNotchOuter, topNotchBottom], [rightEdge, topNotchBottom]),
+        r5: new makerjs.paths.Line([rightEdge, topNotchBottom], [rightEdge, bottomNotchTop]),
+        r6: new makerjs.paths.Line([rightEdge, bottomNotchTop], [rightNotchOuter, bottomNotchTop]),
+        r7: new makerjs.paths.Line(
+          [rightNotchOuter, bottomNotchTop],
+          [rightNotchOuter, bottomNotchBottom],
+        ),
+        r8: new makerjs.paths.Line(
+          [rightNotchOuter, bottomNotchBottom],
+          [rightEdge, bottomNotchBottom],
+        ),
+        r9: new makerjs.paths.Line([rightEdge, bottomNotchBottom], [rightEdge, 0]),
+
+        // Bottom edge
+        bottom: new makerjs.paths.Line([w, 0], [0, 0]),
+
+        // Left side with notches (going up)
+        l1: new makerjs.paths.Line([leftEdge, 0], [leftEdge, bottomNotchBottom]),
+        l2: new makerjs.paths.Line(
+          [leftEdge, bottomNotchBottom],
+          [leftNotchOuter, bottomNotchBottom],
+        ),
+        l3: new makerjs.paths.Line(
+          [leftNotchOuter, bottomNotchBottom],
+          [leftNotchOuter, bottomNotchTop],
+        ),
+        l4: new makerjs.paths.Line([leftNotchOuter, bottomNotchTop], [leftEdge, bottomNotchTop]),
+        l5: new makerjs.paths.Line([leftEdge, bottomNotchTop], [leftEdge, topNotchBottom]),
+        l6: new makerjs.paths.Line([leftEdge, topNotchBottom], [leftNotchOuter, topNotchBottom]),
+        l7: new makerjs.paths.Line([leftNotchOuter, topNotchBottom], [leftNotchOuter, topNotchTop]),
+        l8: new makerjs.paths.Line([leftNotchOuter, topNotchTop], [leftEdge, topNotchTop]),
+        l9: new makerjs.paths.Line([leftEdge, topNotchTop], [leftEdge, h]),
+      },
+    }
+
+    // Apply fillets to corners if requested
+    if (filletRadius > 0) {
+      const f = Math.min(filletRadius, this.maxFilletRadius)
+      const paths = model.paths!
+
+      // Corner fillets for main rectangle corners
+      const cornerPairs: [string, string, string][] = [
+        ['top', 'r1', 'fillet_tr'],
+        ['r9', 'bottom', 'fillet_br'],
+        ['bottom', 'l1', 'fillet_bl'],
+        ['l9', 'top', 'fillet_tl'],
+      ]
+
+      // Notch corner fillets - right side
+      const rightNotchPairs: [string, string, string][] = [
+        ['r1', 'r2', 'fillet_r1'],
+        ['r2', 'r3', 'fillet_r2'],
+        ['r3', 'r4', 'fillet_r3'],
+        ['r4', 'r5', 'fillet_r4'],
+        ['r5', 'r6', 'fillet_r5'],
+        ['r6', 'r7', 'fillet_r6'],
+        ['r7', 'r8', 'fillet_r7'],
+        ['r8', 'r9', 'fillet_r8'],
+      ]
+
+      // Notch corner fillets - left side
+      const leftNotchPairs: [string, string, string][] = [
+        ['l1', 'l2', 'fillet_l1'],
+        ['l2', 'l3', 'fillet_l2'],
+        ['l3', 'l4', 'fillet_l3'],
+        ['l4', 'l5', 'fillet_l4'],
+        ['l5', 'l6', 'fillet_l5'],
+        ['l6', 'l7', 'fillet_l6'],
+        ['l7', 'l8', 'fillet_l7'],
+        ['l8', 'l9', 'fillet_l8'],
+      ]
+
+      const allPairs = [...cornerPairs, ...rightNotchPairs, ...leftNotchPairs]
+
+      for (const [a, b, name] of allPairs) {
+        const arc = makerjs.path.fillet(paths[a]!, paths[b]!, f)
+        if (arc) {
+          paths[name] = arc
+        }
+      }
+    }
+
+    return model
+  }
+}
+
 export class AlpsSKCMCutout extends RectangleCutout {
   readonly width = 15.5
   readonly height = 12.8
@@ -106,6 +262,7 @@ export class CustomRectangleCutout extends RectangleCutout {
  */
 const cutoutGenerators: Record<string, CutoutGenerator> = {
   'cherry-mx-basic': new CherryMxBasicCutout(),
+  'cherry-mx-openable': new CherryMxOpenableCutout(),
   'alps-skcm': new AlpsSKCMCutout(),
   'alps-skcp': new AlpsSKCPCutout(),
   'kailh-choc-cpg1350': new KailhChocCPG1350(),
@@ -121,6 +278,11 @@ export function getCutoutOptions(): CutoutOption[] {
       value: 'cherry-mx-basic',
       label: 'Cherry MX Basic (14mm x 14mm)',
       description: 'Standard square cutout for Cherry MX switches',
+    },
+    {
+      value: 'cherry-mx-openable',
+      label: 'Cherry MX Openable (14mm x 14mm)',
+      description: 'Cherry MX cutout with side notches for opening switches without desoldering',
     },
     {
       value: 'alps-skcm',

@@ -7,6 +7,7 @@
  */
 export type CutoutType =
   | 'cherry-mx-basic'
+  | 'cherry-mx-openable'
   | 'alps-skcm'
   | 'alps-skcp'
   | 'kailh-choc-cpg1350'

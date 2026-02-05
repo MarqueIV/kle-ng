@@ -156,14 +156,24 @@ Generates individual cutout shapes and handles validation.
 
 **Switch cutout dimensions:**
 
-| Type               | Width (mm)   | Height (mm)  |
-|--------------------|--------------|--------------|
-| Cherry MX Basic    | 14.0         | 14.0         |
-| Alps SKCM/L        | 15.5         | 12.8         |
-| Alps SKCP          | 16.0         | 16.0         |
-| Kailh Choc CPG1350 | 14.0         | 14.0         |
-| Kailh Choc CPG1232 | 13.7         | 12.7         |
-| Custom Rectangle   | User-defined | User-defined |
+| Type               | Width (mm)       | Height (mm)  |
+|--------------------|------------------|--------------|
+| Cherry MX Basic    | 14.0             | 14.0         |
+| Cherry MX Openable | 14.0 + (2 * 0.8) | 14.0         |
+| Alps SKCM/L        | 15.5             | 12.8         |
+| Alps SKCP          | 16.0             | 16.0         |
+| Kailh Choc CPG1350 | 14.0             | 14.0         |
+| Kailh Choc CPG1232 | 13.7             | 12.7         |
+| Custom Rectangle   | User-defined     | User-defined |
+
+**Cherry MX Openable:**
+
+The Openable cutout is a 14x14mm base with 4 symmetrical notches on the left and right edges. These notches allow the switch top housing to be opened for maintenance (e.g., spring/stem swap, lubing) without desoldering.
+
+- Notch width: 0.8mm (extends outward from each side edge)
+- Notch height: 3.1mm
+- Notch center offset: 4.45mm from cutout center (8.9mm between top and bottom notch centers)
+- Max fillet radius: 0.4mm (limited by notch width)
 
 **Stabilizer types:**
 
