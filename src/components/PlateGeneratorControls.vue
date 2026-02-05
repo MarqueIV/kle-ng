@@ -112,7 +112,6 @@ function handleDismissError() {
 <style scoped>
 .plate-generator-controls {
   padding: 0;
-  margin-top: 1rem;
 }
 
 .btn-primary:disabled {

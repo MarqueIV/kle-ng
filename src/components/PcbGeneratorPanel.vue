@@ -40,22 +40,27 @@ onUnmounted(() => {
     </div>
 
     <!-- Two Column Layout: Controls | Output -->
-    <div v-else class="row g-3 h-100">
+    <div v-else class="row g-3">
       <!-- Left Column: All Controls -->
-      <div class="col-md-4 d-flex flex-column" style="max-width: 500px">
-        <div class="flex-grow-0">
+      <div class="col-md-4" style="max-width: 500px">
+        <!-- Settings Card -->
+        <div class="settings-card">
           <PcbGeneratorSettings />
+        </div>
+
+        <!-- Controls Card -->
+        <div class="controls-card">
           <PcbGeneratorControls />
           <PcbDownloadButton />
         </div>
-        <div class="mt-auto">
-          <PcbWorkerStatus />
-        </div>
+
+        <!-- Worker Status -->
+        <PcbWorkerStatus />
       </div>
 
       <!-- Right Column: All Output -->
-      <div class="col-md-8">
-        <div class="results-container">
+      <div class="col-md-8 results-column">
+        <div class="results-card">
           <PcbGeneratorResults />
         </div>
       </div>
@@ -66,16 +71,40 @@ onUnmounted(() => {
 <style scoped>
 .pcb-generator-panel {
   padding: 1rem;
-  border-radius: 0.5rem;
-  box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
   display: flex;
   flex-direction: column;
 }
 
-.results-container {
+/* Card styling matching Plate Generator panel */
+.settings-card,
+.controls-card,
+.results-card {
+  background: var(--bs-tertiary-bg);
+  border: 1px solid var(--bs-border-color);
+  border-radius: 6px;
+  padding: 12px;
+}
+
+.settings-card {
+  margin-bottom: 12px;
+}
+
+.controls-card {
+  padding: 10px 12px;
+}
+
+.results-column {
+  position: relative;
+}
+
+.results-card {
+  position: absolute;
+  top: 0;
+  left: calc(var(--bs-gutter-x) * 0.5);
+  right: calc(var(--bs-gutter-x) * 0.5);
+  bottom: 0;
   display: flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 100%;
+  flex-direction: column;
+  min-height: 300px;
 }
 </style>

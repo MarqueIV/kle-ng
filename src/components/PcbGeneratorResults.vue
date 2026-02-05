@@ -107,6 +107,9 @@ function getProgressPercentage(): number {
   width: 100%;
   height: 100%;
   overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1;
 }
 
 .progress-wrapper {
@@ -114,7 +117,7 @@ function getProgressPercentage(): number {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  height: 100%;
+  flex-grow: 1;
   padding: 2rem;
   max-width: 100%;
   box-sizing: border-box;
@@ -160,7 +163,7 @@ function getProgressPercentage(): number {
 
 .idle-preview-container {
   width: 100%;
-  height: 100%;
+  flex-grow: 1;
   display: flex;
   align-items: stretch;
   justify-content: center;

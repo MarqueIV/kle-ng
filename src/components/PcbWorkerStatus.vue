@@ -133,7 +133,7 @@ const hasIdleCapacity = computed(() => workerStatus.value && workerStatus.value.
 
 <style scoped>
 .pcb-worker-status {
-  margin-top: 1.5rem;
+  margin-top: 12px;
 }
 
 .status-bar {

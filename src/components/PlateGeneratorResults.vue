@@ -50,21 +50,23 @@ const result = computed(() => generationState.value.result)
 <style scoped>
 .plate-generator-results {
   width: 100%;
-  min-height: 250px;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
 }
 
 .loading-wrapper {
   display: flex;
   flex-direction: column;
+  flex-grow: 1;
   align-items: center;
   justify-content: center;
   padding: 2rem;
-  min-height: 250px;
 }
 
-/* SVG preview container - fixed height like reference project */
+/* SVG preview container - fills available height */
 .svg-preview-container {
-  height: 30vh;
+  flex-grow: 1;
   min-height: 250px;
   padding: 1rem;
   border: 1px solid var(--bs-border-color);
@@ -82,10 +84,10 @@ const result = computed(() => generationState.value.result)
 .idle-wrapper {
   display: flex;
   flex-direction: column;
+  flex-grow: 1;
   align-items: center;
   justify-content: center;
   padding: 2rem;
-  min-height: 250px;
   color: var(--bs-secondary-color);
 }
 

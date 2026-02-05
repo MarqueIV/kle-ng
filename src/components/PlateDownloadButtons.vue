@@ -23,7 +23,7 @@ function handleDownloadDxf() {
 
 <template>
   <div class="plate-download-buttons">
-    <div v-if="showButtons" class="d-flex gap-2">
+    <div v-if="showButtons" class="d-flex gap-2" style="margin-top: 1rem">
       <button
         type="button"
         class="btn btn-sm btn-outline-primary flex-fill d-flex align-items-center justify-content-center gap-2"
@@ -51,6 +51,5 @@ function handleDownloadDxf() {
 <style scoped>
 .plate-download-buttons {
   padding: 0;
-  margin-top: 1.5rem;
 }
 </style>

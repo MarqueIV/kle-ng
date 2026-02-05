@@ -19,7 +19,7 @@ onMounted(() => {
 <template>
   <div class="plate-generator-panel">
     <!-- Two Column Layout: Controls | Output -->
-    <div class="row g-3 h-100 align-items-start">
+    <div class="row g-3">
       <!-- Left Column: Tabbed Controls -->
       <div class="col-md-4" style="max-width: 500px">
         <!-- Settings Card -->
@@ -64,7 +64,7 @@ onMounted(() => {
       </div>
 
       <!-- Right Column: All Output -->
-      <div class="col-md-8">
+      <div class="col-md-8 results-column">
         <div class="results-card">
           <PlateGeneratorResults />
         </div>
@@ -98,10 +98,18 @@ onMounted(() => {
   padding: 10px 12px;
 }
 
+.results-column {
+  position: relative;
+}
+
 .results-card {
+  position: absolute;
+  top: 0;
+  left: calc(var(--bs-gutter-x) * 0.5);
+  right: calc(var(--bs-gutter-x) * 0.5);
+  bottom: 0;
   display: flex;
-  align-items: center;
-  justify-content: center;
+  flex-direction: column;
   min-height: 300px;
 }
 

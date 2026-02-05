@@ -29,6 +29,7 @@ function handleDownload() {
       v-if="isTaskSuccess && getDownloadUrl()"
       type="button"
       class="btn btn-sm w-100 d-flex align-items-center justify-content-center gap-2"
+      style="margin-top: 1rem"
       :class="isDownloadAvailable ? 'btn-primary' : 'btn-secondary'"
       :disabled="!isDownloadAvailable"
       @click="handleDownload"
@@ -45,6 +46,5 @@ function handleDownload() {
 <style scoped>
 .pcb-download-button {
   padding: 0;
-  margin-top: 1.5rem;
 }
 </style>
