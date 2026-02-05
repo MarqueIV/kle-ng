@@ -32,7 +32,7 @@ onMounted(() => {
               :class="{ active: activeTab === 'cutouts' }"
               @click="activeTab = 'cutouts'"
             >
-              Cutouts
+              Switch Cutouts
             </button>
             <button
               class="tab-bar-item"
@@ -141,7 +141,6 @@ onMounted(() => {
   padding: 0.375rem 0.75rem;
   font-size: 0.75rem;
   font-weight: 600;
-  text-transform: uppercase;
   letter-spacing: 0.3px;
   color: var(--bs-secondary-color);
   background: transparent;
