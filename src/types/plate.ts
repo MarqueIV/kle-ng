@@ -35,6 +35,8 @@ export interface PlateSettings {
   customCutoutWidth: number
   /** Custom cutout height in mm (used when cutoutType is 'custom-rectangle'). */
   customCutoutHeight: number
+  /** Merge overlapping cutouts into simplified paths. */
+  mergeCutouts: boolean
 }
 
 /**

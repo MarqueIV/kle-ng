@@ -67,20 +67,20 @@ changes (key edits, undo, redo). This is debounced at 500ms and only fires when 
 
 ### Components
 
-| File                         | Purpose                                                                                                                                             |
-|------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------|
-| `PlateGeneratorPanel.vue`    | Root container. Two-column layout (controls left, preview right). Preloads maker.js on mount via `requestIdleCallback`.                             |
-| `PlateGeneratorSettings.vue` | Form controls for cutout type, stabilizer type, fillet radius, size adjustment, and custom dimensions. Validates inputs and displays inline errors. |
-| `PlateGeneratorControls.vue` | "Generate Plate" button with loading state, auto-refresh checkbox, error alerts, and empty-layout warnings.                                         |
-| `PlateGeneratorResults.vue`  | Renders the SVG preview on success, a spinner during generation, or idle instructions before first generation.                                      |
-| `PlateDownloadButtons.vue`   | SVG and DXF download buttons, visible only after successful generation. Creates blobs and triggers browser downloads.                               |
+| File                         | Purpose                                                                                                                                                                   |
+|------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `PlateGeneratorPanel.vue`    | Root container. Two-column layout (controls left, preview right). Preloads maker.js on mount via `requestIdleCallback`.                                                   |
+| `PlateGeneratorSettings.vue` | Form controls for cutout type, stabilizer type, fillet radius, size adjustment, custom dimensions, and merge cutouts toggle. Validates inputs and displays inline errors. |
+| `PlateGeneratorControls.vue` | "Generate Plate" button with loading state, auto-refresh checkbox, error alerts, and empty-layout warnings.                                                               |
+| `PlateGeneratorResults.vue`  | Renders the SVG preview on success, a spinner during generation, or idle instructions before first generation.                                                            |
+| `PlateDownloadButtons.vue`   | SVG and DXF download buttons, visible only after successful generation. Creates blobs and triggers browser downloads.                                                     |
 
 ### Store
 
 **`stores/plateGenerator.ts`** — Pinia store managing all plate generator state.
 
 **State:**
-- `settings: PlateSettings` — Current configuration (cutout type, stabilizer type, fillet radii, size adjust, custom dimensions).
+- `settings: PlateSettings` — Current configuration (cutout type, stabilizer type, fillet radii, size adjust, custom dimensions, merge cutouts).
 - `autoRefresh: boolean` — Whether to regenerate on layout changes.
 - `generationState: GenerationState` — Status (`idle` | `loading` | `generating` | `success` | `error`), result, and error message.
 
@@ -102,9 +102,21 @@ Main orchestration module. `buildPlate(keys, options)` is the entry point.
 1. **Filter keys** — Excludes decal and ghost keys, sorts by position.
 2. **Transform coordinates** — Converts KLE layout coordinates to maker.js coordinates (see Coordinate System below).
 3. **Create cutouts** — For each key, creates a switch cutout model and optionally a stabilizer model.
-4. **Export** — Uses maker.js to produce SVG (preview and download variants) and DXF output.
+4. **Merge cutouts** (optional) — When `mergeCutouts` is enabled, combines overlapping cutouts into simplified paths.
+5. **Export** — Uses maker.js to produce SVG (preview and download variants) and DXF output.
 
 The preview SVG includes an origin crosshair (red line) and 1mm padding. The download SVG uses black strokes and mm units. DXF output uses POLYLINE entities.
+
+**Merge Cutouts:**
+
+The `mergeOverlappingCutouts()` helper function uses the maker.js `combineUnion` API to merge overlapping cutout geometry:
+
+1. Clones the first cutout model as the merge base.
+2. Iteratively combines each subsequent model using `makerjs.model.combineUnion()`.
+3. After each union operation, collects the resulting paths from both models.
+4. Returns a single merged model containing the simplified union of all cutouts.
+
+This is particularly useful when stabilizer cutouts overlap with switch cutouts, as merging produces cleaner paths for manufacturing. Without merging, overlapping shapes may contain internal edges that can cause issues with some CAD/CAM software or laser cutting workflows.
 
 #### `plate/cutout-generator.ts`
 
@@ -154,6 +166,22 @@ For vertical keys (height > width), the stabilizer pair is rotated -90 degrees.
 **Size adjustment (kerf compensation):**
 The `sizeAdjust` value is subtracted from each side of the cutout: `effectiveSize = originalSize - (sizeAdjust * 2)`.
 Positive values shrink cutouts (compensating for kerf in laser cutting), negative values expand them.
+
+**Merge Cutouts setting:**
+When `mergeCutouts` is enabled in `PlateSettings`, overlapping cutout shapes are combined into unified paths using boolean union operations. This setting defaults to `false` and is controlled via a checkbox in the settings panel.
+
+| Setting        | Default | Description                                           |
+|----------------|---------|-------------------------------------------------------|
+| `mergeCutouts` | `false` | Combine overlapping cutouts into simplified outlines. |
+
+**When to use merge cutouts:**
+- Exporting to CAD/CAM software that handles overlapping paths poorly
+- Producing cleaner DXF files for CNC machining
+
+**Trade-offs:**
+- Merging adds processing time, especially for large layouts
+- The merged output loses the distinction between individual cutout types
+- Some minor path simplification may occur at intersection points
 
 #### `makerjs-loader.ts`
 

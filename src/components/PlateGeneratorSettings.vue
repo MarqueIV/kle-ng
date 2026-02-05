@@ -264,6 +264,20 @@ const sizeAdjustInputClass = computed(() =>
         </div>
         <div v-else class="form-text small">Positive = shrink, negative = expand</div>
       </div>
+
+      <!-- Merge Cutouts -->
+      <div class="mb-2">
+        <div class="form-check">
+          <input
+            id="mergeCutouts"
+            v-model="settings.mergeCutouts"
+            class="form-check-input"
+            type="checkbox"
+          />
+          <label class="form-check-label form-label-sm" for="mergeCutouts">Merge Cutouts</label>
+        </div>
+        <div class="form-text small">Combine overlapping cutouts into simplified paths</div>
+      </div>
     </div>
   </div>
 </template>

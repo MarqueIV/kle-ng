@@ -45,6 +45,8 @@ export interface PlateBuilderOptions {
   customCutoutWidth?: number
   /** Custom cutout height in mm (for custom-rectangle type) */
   customCutoutHeight?: number
+  /** Merge overlapping cutouts into simplified paths (default: false) */
+  mergeCutouts?: boolean
 }
 
 /**
@@ -137,6 +139,55 @@ function keyToCutoutPosition(
 }
 
 /**
+ * Merge overlapping cutouts into simplified paths using maker.js combineUnion.
+ * This reduces complexity when stabilizer cutouts overlap with switch cutouts.
+ *
+ * @param makerjs - The maker.js module
+ * @param cutoutModels - Record of individual cutout models
+ * @returns Record with merged models
+ */
+function mergeOverlappingCutouts(
+  makerjs: typeof MakerJs,
+  cutoutModels: Record<string, MakerJs.IModel>,
+): Record<string, MakerJs.IModel> {
+  const modelNames = Object.keys(cutoutModels)
+  if (modelNames.length === 0) {
+    return {}
+  }
+
+  // Start with the first model as the base for merging
+  let mergedModel: MakerJs.IModel = {
+    models: { [modelNames[0]!]: makerjs.model.clone(cutoutModels[modelNames[0]!]!) },
+  }
+
+  // Iteratively combine each subsequent model using union
+  for (let i = 1; i < modelNames.length; i++) {
+    const nextModel: MakerJs.IModel = {
+      models: { [modelNames[i]!]: makerjs.model.clone(cutoutModels[modelNames[i]!]!) },
+    }
+
+    // combineUnion merges two models, keeping the union of both areas
+    // This handles overlapping shapes by creating a single merged outline
+    makerjs.model.combineUnion(mergedModel, nextModel)
+
+    // After combineUnion, nextModel contains the union result
+    // We need to collect both models' remaining paths
+    mergedModel = {
+      models: {
+        ...mergedModel.models,
+        ...nextModel.models,
+      },
+      paths: {
+        ...mergedModel.paths,
+        ...nextModel.paths,
+      },
+    }
+  }
+
+  return { merged: mergedModel }
+}
+
+/**
  * Build a plate from a keyboard layout.
  *
  * @param keys - Array of keys from the keyboard layout
@@ -158,6 +209,7 @@ export async function buildPlate(
     spacingY = DEFAULT_SPACING_Y,
     customCutoutWidth,
     customCutoutHeight,
+    mergeCutouts = false,
   } = options
 
   // Load maker.js
@@ -247,9 +299,15 @@ export async function buildPlate(
     }
   }
 
+  // Merge overlapping cutouts if enabled
+  let finalCutoutModels: Record<string, MakerJs.IModel> = cutoutModels
+  if (mergeCutouts) {
+    finalCutoutModels = mergeOverlappingCutouts(makerjs, cutoutModels)
+  }
+
   // Create the main plate model with all cutouts
   const plateModel: MakerJs.IModel = {
-    models: cutoutModels,
+    models: finalCutoutModels,
     units: makerjs.unitType.Millimeter,
   }
 

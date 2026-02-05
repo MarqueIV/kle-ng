@@ -23,6 +23,7 @@ const defaultSettings: PlateSettings = {
   sizeAdjust: 0,
   customCutoutWidth: 14,
   customCutoutHeight: 14,
+  mergeCutouts: false,
 }
 
 export const usePlateGeneratorStore = defineStore('plateGenerator', () => {
@@ -69,6 +70,7 @@ export const usePlateGeneratorStore = defineStore('plateGenerator', () => {
         sizeAdjust: settings.value.sizeAdjust,
         customCutoutWidth: settings.value.customCutoutWidth,
         customCutoutHeight: settings.value.customCutoutHeight,
+        mergeCutouts: settings.value.mergeCutouts,
         spacingX,
         spacingY,
       })
