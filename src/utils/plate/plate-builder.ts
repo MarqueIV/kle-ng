@@ -13,6 +13,7 @@ import type {
   KeyCutoutPosition,
   StabilizerType,
   OutlineSettings,
+  MountingHolesSettings,
 } from '@/types/plate'
 import { getMakerJs } from '@/utils/makerjs-loader'
 import { getKeyCenter } from '@/utils/keyboard-geometry'
@@ -50,6 +51,8 @@ export interface PlateBuilderOptions {
   mergeCutouts?: boolean
   /** Outline generation settings */
   outline?: OutlineSettings
+  /** Mounting holes settings */
+  mountingHoles?: MountingHolesSettings
 }
 
 /**
@@ -205,6 +208,53 @@ function createOutlineModel(
 }
 
 /**
+ * Create corner mounting holes based on outline bounds.
+ *
+ * @param makerjs - The maker.js module
+ * @param bounds - Bounding box of the cutouts
+ * @param margins - Outline margins (to calculate outline corners)
+ * @param mountingHoles - Mounting hole settings
+ * @returns Record of mounting hole models
+ */
+function createCornerMountingHoles(
+  makerjs: typeof MakerJs,
+  bounds: CutoutBounds,
+  margins: { top: number; bottom: number; left: number; right: number },
+  mountingHoles: MountingHolesSettings,
+): Record<string, MakerJs.IModel> {
+  const holeRadius = mountingHoles.diameter / 2
+  const edgeDist = mountingHoles.edgeDistance
+
+  // Calculate outline dimensions
+  const outlineLeft = bounds.minX - margins.left
+  const outlineBottom = bounds.minY - margins.bottom
+  const outlineRight = bounds.maxX + margins.right
+  const outlineTop = bounds.maxY + margins.top
+
+  // Calculate hole positions (absolute coordinates)
+  const left = outlineLeft + edgeDist
+  const right = outlineRight - edgeDist
+  const bottom = outlineBottom + edgeDist
+  const top = outlineTop - edgeDist
+
+  const holes: Record<string, MakerJs.IModel> = {}
+
+  holes.holeBottomLeft = new makerjs.models.Ellipse(holeRadius, holeRadius)
+  holes.holeBottomLeft.origin = [left, bottom]
+
+  holes.holeBottomRight = new makerjs.models.Ellipse(holeRadius, holeRadius)
+  holes.holeBottomRight.origin = [right, bottom]
+
+  holes.holeTopLeft = new makerjs.models.Ellipse(holeRadius, holeRadius)
+  holes.holeTopLeft.origin = [left, top]
+
+  holes.holeTopRight = new makerjs.models.Ellipse(holeRadius, holeRadius)
+  holes.holeTopRight.origin = [right, top]
+
+  return holes
+}
+
+/**
  * Merge overlapping cutouts into simplified paths using maker.js combineUnion.
  * This reduces complexity when stabilizer cutouts overlap with switch cutouts.
  *
@@ -277,6 +327,7 @@ export async function buildPlate(
     customCutoutHeight,
     mergeCutouts = false,
     outline,
+    mountingHoles,
   } = options
 
   // Load maker.js
@@ -378,21 +429,27 @@ export async function buildPlate(
     units: makerjs.unitType.Millimeter,
   }
 
-  // Create outline model if enabled
-  let outlineModel: MakerJs.IModel | null = null
-  if (outline?.enabled) {
-    const bounds = calculateCutoutsBounds(makerjs, plateModel)
-    outlineModel = createOutlineModel(
-      makerjs,
-      bounds,
-      {
+  // Calculate bounds for outline and mounting holes
+  const bounds = calculateCutoutsBounds(makerjs, plateModel)
+  const outlineMargins = outline
+    ? {
         top: outline.marginTop,
         bottom: outline.marginBottom,
         left: outline.marginLeft,
         right: outline.marginRight,
-      },
-      outline.filletRadius,
-    )
+      }
+    : { top: 0, bottom: 0, left: 0, right: 0 }
+
+  // Add corner mounting holes to cutouts (requires outline to determine corners)
+  if (mountingHoles?.enabled && outline?.enabled) {
+    const holeModels = createCornerMountingHoles(makerjs, bounds, outlineMargins, mountingHoles)
+    Object.assign(plateModel.models!, holeModels)
+  }
+
+  // Create outline model if enabled
+  let outlineModel: MakerJs.IModel | null = null
+  if (outline?.enabled) {
+    outlineModel = createOutlineModel(makerjs, bounds, outlineMargins, outline.filletRadius)
   }
 
   // Add origin cross marker to the preview model (not included in exports)

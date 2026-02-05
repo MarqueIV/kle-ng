@@ -3,11 +3,12 @@ import { onMounted, ref } from 'vue'
 import { preloadMakerJsModule } from '@/utils/makerjs-loader'
 import PlateGeneratorSettings from './PlateGeneratorSettings.vue'
 import PlateOutlineSettings from './PlateOutlineSettings.vue'
+import PlateHolesSettings from './PlateHolesSettings.vue'
 import PlateGeneratorControls from './PlateGeneratorControls.vue'
 import PlateGeneratorResults from './PlateGeneratorResults.vue'
 import PlateDownloadButtons from './PlateDownloadButtons.vue'
 
-type TabId = 'cutouts' | 'outline'
+type TabId = 'cutouts' | 'outline' | 'holes'
 const activeTab = ref<TabId>('cutouts')
 
 // Preload maker.js when component mounts
@@ -35,6 +36,13 @@ onMounted(() => {
             </button>
             <button
               class="tab-bar-item"
+              :class="{ active: activeTab === 'holes' }"
+              @click="activeTab = 'holes'"
+            >
+              Holes
+            </button>
+            <button
+              class="tab-bar-item"
               :class="{ active: activeTab === 'outline' }"
               @click="activeTab = 'outline'"
             >
@@ -42,11 +50,16 @@ onMounted(() => {
             </button>
           </div>
 
-          <!-- Tab Content - Grid stacks both panes to maintain max height -->
+          <!-- Tab Content - Grid stacks all panes to maintain max height -->
           <div class="tab-content-grid">
             <!-- Cutouts Tab -->
             <div class="tab-pane-content" :class="{ 'tab-pane-hidden': activeTab !== 'cutouts' }">
               <PlateGeneratorSettings />
+            </div>
+
+            <!-- Holes Tab -->
+            <div class="tab-pane-content" :class="{ 'tab-pane-hidden': activeTab !== 'holes' }">
+              <PlateHolesSettings />
             </div>
 
             <!-- Outline Tab -->

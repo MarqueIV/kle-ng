@@ -39,6 +39,18 @@ export interface OutlineSettings {
 }
 
 /**
+ * Settings for mounting holes
+ */
+export interface MountingHolesSettings {
+  /** Whether mounting holes are enabled */
+  enabled: boolean
+  /** Diameter of mounting holes in mm */
+  diameter: number
+  /** Distance from corner to hole center in mm */
+  edgeDistance: number
+}
+
+/**
  * Settings for plate generation
  */
 export interface PlateSettings {
@@ -59,6 +71,8 @@ export interface PlateSettings {
   mergeCutouts: boolean
   /** Outline generation settings */
   outline: OutlineSettings
+  /** Mounting holes settings */
+  mountingHoles: MountingHolesSettings
 }
 
 /**

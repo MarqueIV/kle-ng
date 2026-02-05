@@ -33,6 +33,11 @@ const defaultSettings: PlateSettings = {
     mergeWithCutouts: false,
     filletRadius: 0,
   },
+  mountingHoles: {
+    enabled: false,
+    diameter: 3,
+    edgeDistance: 5,
+  },
 }
 
 export const usePlateGeneratorStore = defineStore('plateGenerator', () => {
@@ -81,6 +86,7 @@ export const usePlateGeneratorStore = defineStore('plateGenerator', () => {
         customCutoutHeight: settings.value.customCutoutHeight,
         mergeCutouts: settings.value.mergeCutouts,
         outline: settings.value.outline,
+        mountingHoles: settings.value.mountingHoles,
         spacingX,
         spacingY,
       })
@@ -208,9 +214,25 @@ export const usePlateGeneratorStore = defineStore('plateGenerator', () => {
     if (saved) {
       try {
         const parsed = JSON.parse(saved)
-        // Merge with defaults to ensure new fields have default values
+        // Deep merge with defaults to ensure new nested fields have default values
         // (backward compatibility for users with old localStorage data)
-        settings.value = { ...defaultSettings, ...parsed }
+        // Handle migration from old structure where mountingHoles was inside outline
+        const oldMountingHoles = parsed.outline?.mountingHoles
+        settings.value = {
+          ...defaultSettings,
+          ...parsed,
+          outline: {
+            ...defaultSettings.outline,
+            ...parsed.outline,
+          },
+          mountingHoles: {
+            ...defaultSettings.mountingHoles,
+            ...oldMountingHoles,
+            ...parsed.mountingHoles,
+          },
+        }
+        // Remove old mountingHoles from outline if it exists
+        delete (settings.value.outline as Record<string, unknown>).mountingHoles
         if (typeof parsed.autoRefresh === 'boolean') {
           autoRefresh.value = parsed.autoRefresh
         }
