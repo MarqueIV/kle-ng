@@ -24,6 +24,13 @@ const defaultSettings: PlateSettings = {
   customCutoutWidth: 14,
   customCutoutHeight: 14,
   mergeCutouts: false,
+  outline: {
+    enabled: false,
+    marginTop: 5,
+    marginBottom: 5,
+    marginLeft: 5,
+    marginRight: 5,
+  },
 }
 
 export const usePlateGeneratorStore = defineStore('plateGenerator', () => {
@@ -71,6 +78,7 @@ export const usePlateGeneratorStore = defineStore('plateGenerator', () => {
         customCutoutWidth: settings.value.customCutoutWidth,
         customCutoutHeight: settings.value.customCutoutHeight,
         mergeCutouts: settings.value.mergeCutouts,
+        outline: settings.value.outline,
         spacingX,
         spacingY,
       })
@@ -133,6 +141,34 @@ export const usePlateGeneratorStore = defineStore('plateGenerator', () => {
     if (!result) return
 
     downloadFile(result.dxfContent, 'keyboard-plate.dxf', 'application/dxf')
+  }
+
+  /**
+   * Download all SVG files (cutouts and outline if enabled)
+   */
+  function downloadAllSvg(): void {
+    const result = generationState.value.result
+    if (!result) return
+
+    downloadFile(result.svgDownload, 'keyboard-plate.svg', 'image/svg+xml')
+
+    if (result.outlineSvgDownload) {
+      downloadFile(result.outlineSvgDownload, 'keyboard-plate-outline.svg', 'image/svg+xml')
+    }
+  }
+
+  /**
+   * Download all DXF files (cutouts and outline if enabled)
+   */
+  function downloadAllDxf(): void {
+    const result = generationState.value.result
+    if (!result) return
+
+    downloadFile(result.dxfContent, 'keyboard-plate.dxf', 'application/dxf')
+
+    if (result.outlineDxfContent) {
+      downloadFile(result.outlineDxfContent, 'keyboard-plate-outline.dxf', 'application/dxf')
+    }
   }
 
   /**
@@ -246,5 +282,7 @@ export const usePlateGeneratorStore = defineStore('plateGenerator', () => {
     requestRegenerate,
     downloadSvg,
     downloadDxf,
+    downloadAllSvg,
+    downloadAllDxf,
   }
 })

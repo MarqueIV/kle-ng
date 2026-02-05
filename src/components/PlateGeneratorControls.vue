@@ -81,7 +81,7 @@ function handleDismissError() {
         <span v-if="isLoading" class="spinner-border spinner-border-sm me-2" role="status">
           <span class="visually-hidden">Loading...</span>
         </span>
-        Generate Plate
+        Generate
       </button>
       <div
         class="form-check form-check-inline flex-fill mb-0"

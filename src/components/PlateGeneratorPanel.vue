@@ -2,6 +2,7 @@
 import { onMounted, ref } from 'vue'
 import { preloadMakerJsModule } from '@/utils/makerjs-loader'
 import PlateGeneratorSettings from './PlateGeneratorSettings.vue'
+import PlateOutlineSettings from './PlateOutlineSettings.vue'
 import PlateGeneratorControls from './PlateGeneratorControls.vue'
 import PlateGeneratorResults from './PlateGeneratorResults.vue'
 import PlateDownloadButtons from './PlateDownloadButtons.vue'
@@ -48,11 +49,9 @@ onMounted(() => {
               <PlateGeneratorSettings />
             </div>
 
-            <!-- Outline Tab (placeholder) -->
+            <!-- Outline Tab -->
             <div v-show="activeTab === 'outline'" class="tab-pane-content">
-              <div class="text-muted small py-4 text-center">
-                Outline configuration coming soon.
-              </div>
+              <PlateOutlineSettings />
             </div>
           </div>
         </div>

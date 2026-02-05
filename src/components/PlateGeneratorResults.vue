@@ -41,7 +41,7 @@ const result = computed(() => generationState.value.result)
     <div v-else-if="isIdle" class="idle-wrapper">
       <BiInfoCircle class="mb-2" />
       <p class="small text-center mb-0">
-        Click "Generate Plate" to create switch cutouts from your keyboard layout.
+        Click "Generate" to create switch cutouts and outlines from your keyboard layout.
       </p>
     </div>
   </div>

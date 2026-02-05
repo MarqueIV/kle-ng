@@ -12,6 +12,7 @@ import type {
   PlateGenerationResult,
   KeyCutoutPosition,
   StabilizerType,
+  OutlineSettings,
 } from '@/types/plate'
 import { getMakerJs } from '@/utils/makerjs-loader'
 import { getKeyCenter } from '@/utils/keyboard-geometry'
@@ -47,6 +48,8 @@ export interface PlateBuilderOptions {
   customCutoutHeight?: number
   /** Merge overlapping cutouts into simplified paths (default: false) */
   mergeCutouts?: boolean
+  /** Outline generation settings */
+  outline?: OutlineSettings
 }
 
 /**
@@ -139,6 +142,58 @@ function keyToCutoutPosition(
 }
 
 /**
+ * Bounding box for cutouts
+ */
+interface CutoutBounds {
+  minX: number
+  minY: number
+  maxX: number
+  maxY: number
+}
+
+/**
+ * Calculate the bounding box of all cutouts using maker.js modelExtents.
+ *
+ * @param makerjs - The maker.js module
+ * @param plateModel - The plate model containing all cutouts
+ * @returns Bounding box coordinates in mm
+ */
+function calculateCutoutsBounds(makerjs: typeof MakerJs, plateModel: MakerJs.IModel): CutoutBounds {
+  const extents = makerjs.measure.modelExtents(plateModel)
+  if (!extents) {
+    throw new PlateBuilderError('Cannot calculate bounds for empty plate model')
+  }
+  return {
+    minX: extents.low[0]!,
+    minY: extents.low[1]!,
+    maxX: extents.high[0]!,
+    maxY: extents.high[1]!,
+  }
+}
+
+/**
+ * Create an outline rectangle model around the cutouts with specified margins.
+ *
+ * @param makerjs - The maker.js module
+ * @param bounds - Bounding box of the cutouts
+ * @param margins - Margins to add on each side (top, bottom, left, right)
+ * @returns Outline rectangle model
+ */
+function createOutlineModel(
+  makerjs: typeof MakerJs,
+  bounds: CutoutBounds,
+  margins: { top: number; bottom: number; left: number; right: number },
+): MakerJs.IModel {
+  const outlineWidth = bounds.maxX - bounds.minX + margins.left + margins.right
+  const outlineHeight = bounds.maxY - bounds.minY + margins.top + margins.bottom
+
+  const outlineModel = new makerjs.models.Rectangle(outlineWidth, outlineHeight)
+  outlineModel.origin = [bounds.minX - margins.left, bounds.minY - margins.bottom]
+
+  return outlineModel
+}
+
+/**
  * Merge overlapping cutouts into simplified paths using maker.js combineUnion.
  * This reduces complexity when stabilizer cutouts overlap with switch cutouts.
  *
@@ -210,6 +265,7 @@ export async function buildPlate(
     customCutoutWidth,
     customCutoutHeight,
     mergeCutouts = false,
+    outline,
   } = options
 
   // Load maker.js
@@ -311,9 +367,24 @@ export async function buildPlate(
     units: makerjs.unitType.Millimeter,
   }
 
+  // Create outline model if enabled
+  let outlineModel: MakerJs.IModel | null = null
+  if (outline?.enabled) {
+    const bounds = calculateCutoutsBounds(makerjs, plateModel)
+    outlineModel = createOutlineModel(makerjs, bounds, {
+      top: outline.marginTop,
+      bottom: outline.marginBottom,
+      left: outline.marginLeft,
+      right: outline.marginRight,
+    })
+  }
+
   // Add origin cross marker to the preview model (not included in exports)
   const previewModel: MakerJs.IModel = {
-    models: { plate: plateModel },
+    models: {
+      plate: plateModel,
+      ...(outlineModel && { outline: outlineModel }),
+    },
     units: makerjs.unitType.Millimeter,
   }
   const crossSize = 3
@@ -325,6 +396,19 @@ export async function buildPlate(
   previewModel.paths.originH!.layer = 'origin'
   previewModel.paths.originV!.layer = 'origin'
 
+  // Tag outline paths with a layer for styling
+  if (outlineModel) {
+    // Apply layer to all paths in the outline model
+    if (outlineModel.paths) {
+      for (const pathId of Object.keys(outlineModel.paths)) {
+        const path = outlineModel.paths[pathId]
+        if (path) {
+          path.layer = 'outline'
+        }
+      }
+    }
+  }
+
   // Generate SVG for preview
   const svgPreviewRaw = makerjs.exporter.toSVG(previewModel, {
     units: makerjs.unitType.Millimeter,
@@ -335,6 +419,7 @@ export async function buildPlate(
     svgAttrs: { width: '100%', height: '100%' },
     layerOptions: {
       origin: { stroke: 'red', strokeWidth: '0.3mm' },
+      outline: { stroke: '#0066cc', strokeWidth: '0.5mm' },
     },
   })
 
@@ -356,9 +441,37 @@ export async function buildPlate(
     usePOLYLINE: true,
   })
 
+  // Generate outline exports if enabled
+  let outlineSvgPreview: string | undefined
+  let outlineSvgDownload: string | undefined
+  let outlineDxfContent: string | undefined
+
+  if (outlineModel) {
+    const outlineOnlyModel: MakerJs.IModel = {
+      models: { outline: outlineModel },
+      units: makerjs.unitType.Millimeter,
+    }
+
+    outlineSvgDownload = makerjs.exporter.toSVG(outlineOnlyModel, {
+      units: makerjs.unitType.Millimeter,
+      stroke: '#000',
+      strokeWidth: '0.25mm',
+      fill: 'none',
+      useSvgPathOnly: true,
+    })
+
+    outlineDxfContent = makerjs.exporter.toDXF(outlineOnlyModel, {
+      units: makerjs.unitType.Millimeter,
+      usePOLYLINE: true,
+    })
+  }
+
   return {
     svgPreview,
     svgDownload,
     dxfContent,
+    outlineSvgPreview,
+    outlineSvgDownload,
+    outlineDxfContent,
   }
 }

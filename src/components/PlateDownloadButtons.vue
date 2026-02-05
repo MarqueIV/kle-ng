@@ -13,11 +13,11 @@ const hasResult = computed(() => generationState.value.result !== null)
 const showButtons = computed(() => isSuccess.value && hasResult.value)
 
 function handleDownloadSvg() {
-  plateStore.downloadSvg()
+  plateStore.downloadAllSvg()
 }
 
 function handleDownloadDxf() {
-  plateStore.downloadDxf()
+  plateStore.downloadAllDxf()
 }
 </script>
 

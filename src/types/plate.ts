@@ -19,6 +19,22 @@ export type CutoutType =
 export type StabilizerType = 'mx-basic' | 'mx-spec' | 'mx-spec-narrow' | 'none'
 
 /**
+ * Settings for plate outline generation
+ */
+export interface OutlineSettings {
+  /** Whether outline generation is enabled */
+  enabled: boolean
+  /** Top margin in mm */
+  marginTop: number
+  /** Bottom margin in mm */
+  marginBottom: number
+  /** Left margin in mm */
+  marginLeft: number
+  /** Right margin in mm */
+  marginRight: number
+}
+
+/**
  * Settings for plate generation
  */
 export interface PlateSettings {
@@ -37,6 +53,8 @@ export interface PlateSettings {
   customCutoutHeight: number
   /** Merge overlapping cutouts into simplified paths. */
   mergeCutouts: boolean
+  /** Outline generation settings */
+  outline: OutlineSettings
 }
 
 /**
@@ -65,6 +83,12 @@ export interface PlateGenerationResult {
   svgDownload: string
   /** DXF content as a string */
   dxfContent: string
+  /** SVG content for outline preview (optional, only when outline enabled) */
+  outlineSvgPreview?: string
+  /** SVG content for outline download (optional, only when outline enabled) */
+  outlineSvgDownload?: string
+  /** DXF content for outline (optional, only when outline enabled) */
+  outlineDxfContent?: string
 }
 
 /**
