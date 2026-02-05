@@ -125,22 +125,22 @@ export function getCutoutOptions(): CutoutOption[] {
     {
       value: 'alps-skcm',
       label: 'Alps SKCM/L (15.5mm x 12.8mm)',
-      description: '...',
+      description: 'Cutout for Alps SKCM and SKCL switches',
     },
     {
       value: 'alps-skcp',
       label: 'Alps SKCP (16mm x 16mm)',
-      description: '...',
+      description: 'Cutout for Alps SKCP switches',
     },
     {
       value: 'kailh-choc-cpg1350',
       label: 'Kailh Choc CPG1350 (14mm x 14mm)',
-      description: '...',
+      description: 'Cutout for Choc V1 CPG1350, Chery MX compatible',
     },
     {
       value: 'kailh-choc-cpg1232',
       label: 'Kailh Choc CPG1232 (13.7mm x 12.7mm)',
-      description: '...',
+      description: 'Cutout for Choc CPG1232 switches (Mini Choc)',
     },
     {
       value: 'custom-rectangle',
