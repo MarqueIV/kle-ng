@@ -7,8 +7,10 @@ It exports to SVG and DXF formats for use in manufacturing workflows (laser cutt
 ## Architecture Overview
 
 ```
-PlateGeneratorPanel.vue            ← Entry point, 2-column layout
-├── PlateGeneratorSettings.vue     ← Cutout type, fillet, kerf, custom dimensions
+PlateGeneratorPanel.vue            ← Entry point, tabbed 2-column layout
+├── PlateGeneratorSettings.vue     ← [Cutouts tab] Switch/stab type, fillet, kerf
+├── PlateHolesSettings.vue         ← [Holes tab] Corner mounting holes
+├── PlateOutlineSettings.vue       ← [Outline tab] Outline margins and fillets
 ├── PlateGeneratorControls.vue     ← Generate button, auto-refresh toggle
 ├── PlateGeneratorResults.vue      ← SVG preview display
 └── PlateDownloadButtons.vue       ← SVG / DXF download
@@ -51,10 +53,18 @@ types/plate.ts                     ← Type definitions
 └────────────┬─────────────┘
              ▼
 ┌──────────────────────────┐
+│  Optional features:      │
+│  • Merge cutouts         │
+│  • Generate outline      │
+│  • Add mounting holes    │
+└────────────┬─────────────┘
+             ▼
+┌──────────────────────────┐
 │  maker.js exports        │
 │  → SVG preview (HTML)    │
 │  → SVG download (mm)     │
 │  → DXF content           │
+│  → Merged exports (opt)  │
 └──────────────────────────┘
 ```
 
@@ -67,31 +77,35 @@ changes (key edits, undo, redo). This is debounced at 500ms and only fires when 
 
 ### Components
 
-| File                         | Purpose                                                                                                                                                                   |
-|------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `PlateGeneratorPanel.vue`    | Root container. Two-column layout (controls left, preview right). Preloads maker.js on mount via `requestIdleCallback`.                                                   |
-| `PlateGeneratorSettings.vue` | Form controls for cutout type, stabilizer type, fillet radius, size adjustment, custom dimensions, and merge cutouts toggle. Validates inputs and displays inline errors. |
-| `PlateGeneratorControls.vue` | "Generate Plate" button with loading state, auto-refresh checkbox, error alerts, and empty-layout warnings.                                                               |
-| `PlateGeneratorResults.vue`  | Renders the SVG preview on success, a spinner during generation, or idle instructions before first generation.                                                            |
-| `PlateDownloadButtons.vue`   | SVG and DXF download buttons, visible only after successful generation. Creates blobs and triggers browser downloads.                                                     |
+| File                         | Purpose                                                                                                                                                             |
+|------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `PlateGeneratorPanel.vue`    | Root container. Tabbed two-column layout (controls left, preview right). Three tabs: Cutouts, Holes, Outline. Preloads maker.js on mount via `requestIdleCallback`. |
+| `PlateGeneratorSettings.vue` | [Cutouts tab] Form controls for cutout type, stabilizer type, fillet radius, size adjustment, custom dimensions, and merge cutouts toggle. Validates inputs.        |
+| `PlateHolesSettings.vue`     | [Holes tab] Corner mounting hole settings: enable toggle, diameter, and edge distance. Disabled when outline is disabled (holes require outline for positioning).   |
+| `PlateOutlineSettings.vue`   | [Outline tab] Outline generation settings: enable toggle, independent margins (top/bottom/left/right), fillet radius, and merge-with-cutouts option.                |
+| `PlateGeneratorControls.vue` | "Generate Plate" button with loading state, auto-refresh checkbox, error alerts, and empty-layout warnings.                                                         |
+| `PlateGeneratorResults.vue`  | Renders the SVG preview on success, a spinner during generation, or idle instructions before first generation. Shows both cutouts and outline layers.               |
+| `PlateDownloadButtons.vue`   | SVG and DXF download buttons, visible only after successful generation. Handles separate vs. merged exports based on settings.                                      |
 
 ### Store
 
 **`stores/plateGenerator.ts`** — Pinia store managing all plate generator state.
 
 **State:**
-- `settings: PlateSettings` — Current configuration (cutout type, stabilizer type, fillet radii, size adjust, custom dimensions, merge cutouts).
+- `settings: PlateSettings` — Current configuration including cutouts, outline, and mounting holes settings.
 - `autoRefresh: boolean` — Whether to regenerate on layout changes.
 - `generationState: GenerationState` — Status (`idle` | `loading` | `generating` | `success` | `error`), result, and error message.
 
 **Actions:**
 - `generatePlate()` — Reads keys and spacing from the keyboard store, calls `buildPlate()`, and updates `generationState` with the result.
-- `downloadSvg()` / `downloadDxf()` — Extract the appropriate content from the generation result and trigger a browser download (`keyboard-plate.svg` / `keyboard-plate.dxf`).
+- `downloadSvg()` / `downloadDxf()` — Download cutouts only (`keyboard-plate.svg` / `keyboard-plate.dxf`).
+- `downloadAllSvg()` — Downloads all SVG files. When `outline.mergeWithCutouts` is enabled, downloads a single merged file; otherwise downloads separate cutouts and outline files.
+- `downloadAllDxf()` — Downloads all DXF files. Same merge logic as `downloadAllSvg()`.
 - `requestRegenerate()` — Debounced (500ms) regeneration triggered by layout changes when auto-refresh is on.
 - `resetGeneration()` — Returns `generationState` to idle.
 
 **Persistence:**
-Settings and auto-refresh state are saved to `localStorage` under key `kle-ng-plate-settings`, debounced at 500ms on change.
+Settings and auto-refresh state are saved to `localStorage` under key `kle-ng-plate-settings`, debounced at 500ms on change. The store performs deep merging when loading settings and handles migration from older data structures.
 
 ### Utilities
 
@@ -103,9 +117,11 @@ Main orchestration module. `buildPlate(keys, options)` is the entry point.
 2. **Transform coordinates** — Converts KLE layout coordinates to maker.js coordinates (see Coordinate System below).
 3. **Create cutouts** — For each key, creates a switch cutout model and optionally a stabilizer model.
 4. **Merge cutouts** (optional) — When `mergeCutouts` is enabled, combines overlapping cutouts into simplified paths.
-5. **Export** — Uses maker.js to produce SVG (preview and download variants) and DXF output.
+5. **Create outline** (optional) — When `outline.enabled` is true, generates a rectangular outline with configurable margins and rounded corners.
+6. **Add mounting holes** (optional) — When `mountingHoles.enabled` is true (and outline is enabled), adds circular holes at the four corners.
+7. **Export** — Uses maker.js to produce SVG (preview and download variants) and DXF output.
 
-The preview SVG includes an origin crosshair (red line) and 1mm padding. The download SVG uses black strokes and mm units. DXF output uses POLYLINE entities.
+The preview SVG includes an origin crosshair (red line) and 1mm padding. Outline is rendered in blue (#0066cc). The download SVG uses black strokes and mm units. DXF output uses POLYLINE entities.
 
 **Merge Cutouts:**
 
@@ -117,6 +133,22 @@ The `mergeOverlappingCutouts()` helper function uses the maker.js `combineUnion`
 4. Returns a single merged model containing the simplified union of all cutouts.
 
 This is particularly useful when stabilizer cutouts overlap with switch cutouts, as merging produces cleaner paths for manufacturing. Without merging, overlapping shapes may contain internal edges that can cause issues with some CAD/CAM software or laser cutting workflows.
+
+**Outline Generation:**
+
+The `createOutlineModel()` function generates the plate outline:
+
+- Creates a rectangle encompassing all cutouts plus configured margins.
+- When `filletRadius > 0`, uses maker.js `RoundRectangle` for rounded corners.
+- When `filletRadius = 0`, uses a standard `Rectangle` for sharp corners.
+
+**Corner Mounting Holes:**
+
+The `createCornerMountingHoles()` function adds mounting holes:
+
+- Creates 4 circular holes using maker.js `Ellipse` models.
+- Holes are positioned at `edgeDistance` from each corner of the outline.
+- Requires outline to be enabled (holes need outline bounds for positioning).
 
 #### `plate/cutout-generator.ts`
 
@@ -137,7 +169,7 @@ Generates individual cutout shapes and handles validation.
 
 - **MX Basic** — Simple 7mm x 15mm rectangular cutout pair, positioned symmetrically. Max fillet radius: 3.5mm.
 - **MX Spec** — Spec-accurate Cherry MX stabilizer with side notches and wire channel geometry. Max fillet radius: 0.4mm.
-- **MX Spec Narrow** — Same as MX Spec but with a narrower wire channel, provides more stable switch placement
+- **MX Spec Narrow** — Same as MX Spec but with a narrower wire channel, provides more stable switch placement.
 - **None** — No stabilizer cutouts.
 
 **Stabilizer spacing by key size:**
@@ -168,7 +200,7 @@ The `sizeAdjust` value is subtracted from each side of the cutout: `effectiveSiz
 Positive values shrink cutouts (compensating for kerf in laser cutting), negative values expand them.
 
 **Merge Cutouts setting:**
-When `mergeCutouts` is enabled in `PlateSettings`, overlapping cutout shapes are combined into unified paths using boolean union operations. This setting defaults to `false` and is controlled via a checkbox in the settings panel.
+When `mergeCutouts` is enabled in `PlateSettings`, overlapping cutout shapes are combined into unified paths using boolean union operations.
 
 | Setting        | Default | Description                                           |
 |----------------|---------|-------------------------------------------------------|
@@ -199,6 +231,48 @@ Lazy-loads the [maker.js](https://maker.js.org/) library to keep the initial bun
 #### `decimal-math.ts`
 
 Exported as `D`. Wraps arithmetic operations in a `Decimal` library to avoid floating-point errors in position and dimension calculations. Provides `add`, `sub`, `mul`, `div`, `rotatePoint`, `mirrorPoint`, trigonometric functions, and formatting.
+
+## Plate Outline
+
+The plate outline feature generates a rectangular border around all cutouts, useful for defining the plate's outer boundary.
+
+### Settings
+
+| Setting             | Default | Description                                                    |
+|---------------------|---------|----------------------------------------------------------------|
+| `enabled`           | `false` | Enable outline generation.                                     |
+| `marginTop`         | `5`     | Distance from topmost cutout to top edge (mm).                 |
+| `marginBottom`      | `5`     | Distance from bottommost cutout to bottom edge (mm).           |
+| `marginLeft`        | `5`     | Distance from leftmost cutout to left edge (mm).               |
+| `marginRight`       | `5`     | Distance from rightmost cutout to right edge (mm).             |
+| `filletRadius`      | `1`     | Corner radius for rounded outline corners (mm). 0 = sharp.     |
+| `mergeWithCutouts`  | `true`  | When downloading, combine outline and cutouts into one file.   |
+
+### Merge With Cutouts
+
+When `mergeWithCutouts` is enabled:
+- `downloadAllSvg()` and `downloadAllDxf()` produce a single file containing both the outline and cutouts.
+- The merged export simplifies the workflow for manufacturing.
+
+When disabled:
+- Downloads produce separate files for cutouts and outline.
+- Useful when outline and cutouts need different processing (e.g., different cutting speeds).
+
+## Corner Mounting Holes
+
+The mounting holes feature adds circular holes at the four corners of the plate for screw mounting.
+
+### Settings
+
+| Setting        | Default | Description                                         |
+|----------------|---------|-----------------------------------------------------|
+| `enabled`      | `false` | Enable corner mounting holes.                       |
+| `diameter`     | `3`     | Hole diameter (mm). Minimum: 0.5mm.                 |
+| `edgeDistance` | `3`     | Distance from outline corner to hole center (mm).   |
+
+### Dependencies
+
+Mounting holes require the outline to be enabled. The holes are positioned relative to the outline corners, so without an outline there's no reference for hole placement. When outline is disabled, the mounting holes controls are automatically disabled in the UI.
 
 ## Coordinate System
 
@@ -231,9 +305,20 @@ The `PlateGeneratorControls` component also checks `keyboardStore.keys.length` t
 
 ## Exports
 
-Two export formats are produced:
+### Export Formats
 
 - **SVG** — Vector format with millimeter units. Suitable for direct use in laser cutting software or vector editors.
 - **DXF** — CAD exchange format using POLYLINE entities. Compatible with most CAD/CAM software.
 
-Download filenames are `keyboard-plate.svg` and `keyboard-plate.dxf`. Files are created as in-memory blobs and downloaded via a temporary anchor element.
+### Export Options
+
+| Export Type        | Filename                    | Contents                           |
+|--------------------|-----------------------------|------------------------------------|
+| Cutouts SVG        | `keyboard-plate.svg`        | Switch and stabilizer cutouts only |
+| Cutouts DXF        | `keyboard-plate.dxf`        | Switch and stabilizer cutouts only |
+| Outline SVG        | `keyboard-outline.svg`      | Outline only (when not merged)     |
+| Outline DXF        | `keyboard-outline.dxf`      | Outline only (when not merged)     |
+| Merged SVG         | `keyboard-plate.svg`        | Combined cutouts + outline         |
+| Merged DXF         | `keyboard-plate.dxf`        | Combined cutouts + outline         |
+
+Files are created as in-memory blobs and downloaded via a temporary anchor element.
