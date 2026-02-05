@@ -214,10 +214,6 @@ export const usePlateGeneratorStore = defineStore('plateGenerator', () => {
     if (saved) {
       try {
         const parsed = JSON.parse(saved)
-        // Deep merge with defaults to ensure new nested fields have default values
-        // (backward compatibility for users with old localStorage data)
-        // Handle migration from old structure where mountingHoles was inside outline
-        const oldMountingHoles = parsed.outline?.mountingHoles
         settings.value = {
           ...defaultSettings,
           ...parsed,
@@ -227,12 +223,9 @@ export const usePlateGeneratorStore = defineStore('plateGenerator', () => {
           },
           mountingHoles: {
             ...defaultSettings.mountingHoles,
-            ...oldMountingHoles,
             ...parsed.mountingHoles,
           },
         }
-        // Remove old mountingHoles from outline if it exists
-        delete (settings.value.outline as Record<string, unknown>).mountingHoles
         if (typeof parsed.autoRefresh === 'boolean') {
           autoRefresh.value = parsed.autoRefresh
         }
