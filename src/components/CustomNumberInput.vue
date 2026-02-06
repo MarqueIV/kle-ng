@@ -501,32 +501,19 @@ watch([() => props.disabled, () => props.min, () => props.max], () => {
   border-bottom: 1px solid var(--bs-border-color);
 }
 
-.spinner-btn:hover {
+.spinner-btn:hover:not(:disabled) {
   background: var(--bs-primary);
   color: var(--bs-primary-text-emphasis);
 }
 
 .spinner-btn:disabled {
-  color: var(--bs-secondary-color);
   cursor: not-allowed;
-}
-
-.spinner-btn:disabled:hover {
-  background: var(--bs-secondary-bg);
-  color: var(--bs-secondary-color);
 }
 
 .input-focused .spinner-buttons {
   border-top-color: var(--input-focus-border-color);
   border-right-color: var(--input-focus-border-color);
   border-bottom-color: var(--input-focus-border-color);
-}
-
-/* Disabled state */
-.input-disabled .spinner-btn {
-  background: var(--bs-secondary-bg-subtle);
-  color: var(--bs-secondary-color);
-  cursor: not-allowed;
 }
 
 /* Size variants */
