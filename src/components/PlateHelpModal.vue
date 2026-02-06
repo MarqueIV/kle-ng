@@ -101,6 +101,22 @@
         </ul>
       </div>
     </div>
+
+    <div class="help-section">
+      <h6 class="help-section-title">Credits</h6>
+      <div class="help-content">
+        <p class="small text-body-secondary">
+          Based on
+          <a href="https://kbplate.ai03.com/" target="_blank" rel="noopener noreferrer"
+            >ai03 Plate Generator</a
+          >
+          and
+          <a href="http://builder.swillkb.com/" target="_blank" rel="noopener noreferrer"
+            >swillkb Plate &amp; Case Builder</a
+          >.
+        </p>
+      </div>
+    </div>
   </BaseHelpModal>
 </template>
 
