@@ -206,7 +206,10 @@ For vertical keys (height > width), the stabilizer pair is rotated -90 degrees.
 - `validateCustomCutoutDimension()` — Validates custom width/height bounds.
 
 **Size adjustment (kerf compensation):**
-The `sizeAdjust` value is subtracted from each side of the cutout: `effectiveSize = originalSize - (sizeAdjust * 2)`.
+The `sizeAdjust` value represents the total kerf width — the full width of material removed by the cutting tool.
+Each side of the cutout shrinks by half the kerf: `effectiveSize = originalSize - sizeAdjust`.
+For example, a 14mm cutout with `sizeAdjust = 0.5` is drawn at 13.5mm (0.25mm removed per side);
+the cutting tool then removes 0.25mm on each side, producing a 14mm hole.
 Positive values shrink cutouts (compensating for kerf in laser cutting), negative values expand them.
 
 **Merge Cutouts setting:**

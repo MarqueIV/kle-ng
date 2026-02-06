@@ -53,11 +53,12 @@
             geometry, not by actual application constraints.
           </li>
           <li>
-            <strong>Size Adjustment (Kerf)</strong> - The kerf in metal cutting represents the width
-            of the material that is removed by the cutting process. This is an
-            <strong>advanced</strong>
-            option and can often be left at 0. Normally, kerf is a positive value, but the Plate
-            Generator allows negative values for small adjustments in 3D printing.
+            <strong>Size Adjustment (Kerf)</strong> - Kerf is the total width of material removed by
+            the cutting tool (e.g. the laser beam). The cutout path shrinks by half the kerf on each
+            side so the final physical hole matches the intended size. For example, a 14mm cutout
+            with kerf 0.5mm is drawn at 13.5mm; the laser removes 0.25mm per side, resulting in a
+            14mm hole. This is an <strong>advanced</strong> option and can often be left at 0.
+            Negative values expand cutouts, useful for small adjustments in 3D printing.
           </li>
           <li>
             <strong>Merge Cutouts</strong> - Combines overlapping shapes into single paths. Can be

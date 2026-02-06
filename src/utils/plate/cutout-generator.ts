@@ -43,8 +43,8 @@ abstract class RectangleCutout implements CutoutGenerator {
     filletRadius: number,
     sizeAdjust: number = 0,
   ): MakerJs.IModel {
-    const w = this.width - sizeAdjust * 2
-    const h = this.height - sizeAdjust * 2
+    const w = this.width - sizeAdjust
+    const h = this.height - sizeAdjust
     if (filletRadius > 0) {
       return new makerjs.models.RoundRectangle(w, h, filletRadius)
     }
@@ -86,7 +86,8 @@ export class CherryMxOpenableCutout implements CutoutGenerator {
     sizeAdjust: number = 0,
   ): MakerJs.IModel {
     // Size adjustment (kerf compensation) applied to all edges
-    const k = sizeAdjust
+    // sizeAdjust is the total kerf width; halve it for per-side adjustment
+    const k = sizeAdjust / 2
 
     // Adjusted base rectangle dimensions (bottom-left at origin, like Rectangle)
     const w = D.sub(this.width, D.mul(k, 2))
@@ -543,9 +544,9 @@ export function createStabilizerMxBasicModel(
   const maxFillet = D.div(D.min(stabWidth, stabHeight), 2)
   const clampedFillet = D.min(filletRadius, maxFillet)
 
-  // Adjusted dimensions after size adjustment
-  const w = D.sub(stabWidth, D.mul(sizeAdjust, 2))
-  const h = D.sub(stabHeight, D.mul(sizeAdjust, 2))
+  // Adjusted dimensions after size adjustment (kerf: total width, halve for per-side)
+  const w = D.sub(stabWidth, sizeAdjust)
+  const h = D.sub(stabHeight, sizeAdjust)
 
   // Create a single stabilizer cutout rectangle positioned at the given x offset.
   // Uses a single move() call because makerjs.model.move SETS the origin (not additive).
@@ -561,11 +562,11 @@ export function createStabilizerMxBasicModel(
     const moveX = D.add(D.div(w, -2), xOffset)
     // for mx-basic/mx-bidirectional:
     // 2 mm between cutout bottom edge and switch bottom edge
-    // y: bottom at -14/2 - 2 = -9 (+ sizeAdjust)
+    // y: bottom at -14/2 - 2 = -9 (+ sizeAdjust/2 per-side kerf)
     // for mx-tight:
     // 1 mm between cutout bottom edge and switch bottom edge
-    // y: -8 (+ sizeAdjust)
-    const moveY = D.add(stabilizerType === 'mx-tight' ? -8 : -9, sizeAdjust)
+    // y: -8 (+ sizeAdjust/2 per-side kerf)
+    const moveY = D.add(stabilizerType === 'mx-tight' ? -8 : -9, D.div(sizeAdjust, 2))
     cutout = makerjs.model.move(cutout, [moveX, moveY])
     return cutout
   }
@@ -624,8 +625,8 @@ export function createStabilizerMxSpecModel(
   const spacing = getCherryMxStabilizerSpacing(keySize)
   if (spacing === null) return null
 
-  // sizeAdjust works like kerf: positive = shrink cutouts
-  const k = sizeAdjust
+  // sizeAdjust is the total kerf width; halve for per-side adjustment
+  const k = sizeAdjust / 2
 
   // Left cutout points (clockwise from top-left)
   // Main housing body
@@ -763,9 +764,9 @@ export function createStabilizerAlpsModel(
   const maxFillet = D.div(D.min(stabWidth, stabHeight), 2)
   const clampedFillet = D.min(filletRadius, maxFillet)
 
-  // Adjusted dimensions after size adjustment
-  const w = D.sub(stabWidth, D.mul(sizeAdjust, 2))
-  const h = D.sub(stabHeight, D.mul(sizeAdjust, 2))
+  // Adjusted dimensions after size adjustment (kerf: total width, halve for per-side)
+  const w = D.sub(stabWidth, sizeAdjust)
+  const h = D.sub(stabHeight, sizeAdjust)
 
   // Create a single stabilizer cutout rectangle positioned at the given x offset.
   // Uses a single move() call because makerjs.model.move SETS the origin (not additive).
@@ -778,9 +779,9 @@ export function createStabilizerAlpsModel(
     }
     // Rectangle bottom-left at (0,0). Single move to:
     // x: center horizontally on xOffset → -w/2 + xOffset
-    // y: bottom at -9.085 + sizeAdjust
+    // y: bottom at -9.085 + sizeAdjust/2 (per-side kerf)
     const moveX = D.add(D.div(w, -2), xOffset)
-    const moveY = D.add(-9.085, sizeAdjust)
+    const moveY = D.add(-9.085, D.div(sizeAdjust, 2))
     cutout = makerjs.model.move(cutout, [moveX, moveY])
     return cutout
   }
@@ -833,8 +834,8 @@ export async function positionCutout(
 
   // Center the model at the origin (rectangle is created from 0,0 corner)
   // Use adjusted dimensions for centering
-  const adjustedWidth = generator.width - sizeAdjust * 2
-  const adjustedHeight = generator.height - sizeAdjust * 2
+  const adjustedWidth = generator.width - sizeAdjust
+  const adjustedHeight = generator.height - sizeAdjust
   model = makerjs.model.move(model, [-adjustedWidth / 2, -adjustedHeight / 2])
 
   // Apply rotation around the origin (which is now the center of the cutout)
@@ -842,8 +843,17 @@ export async function positionCutout(
     model = makerjs.model.rotate(model, cutout.rotationAngle, [0, 0])
   }
 
-  // Move to final position
-  model = makerjs.model.move(model, [cutout.centerX, cutout.centerY])
+  // Move to final position: center adjusted cutout at the key center.
+  // cutout.centerX/Y is the bottom-left position for the original-size cutout;
+  // derive the key center and offset by half the adjusted dimensions.
+  // Note: makerjs.model.move SETS origin (not additive), so the first move
+  // for centering is overwritten — we must compute the correct final origin.
+  const keyCenterX = cutout.centerX + cutout.width / 2
+  const keyCenterY = cutout.centerY + cutout.height / 2
+  model = makerjs.model.move(model, [
+    keyCenterX - adjustedWidth / 2,
+    keyCenterY - adjustedHeight / 2,
+  ])
 
   return model
 }
