@@ -486,3 +486,191 @@ describe('Plate Builder – DXF switch cutouts', () => {
     expect(distanceBetweenCenters(polylines[0]!, polylines[1]!)).toBeCloseTo(Math.sqrt(613), 6)
   })
 })
+
+// ---------------------------------------------------------------------------
+// Stabilizer cutout tests
+// ---------------------------------------------------------------------------
+
+describe('Plate Builder – DXF stabilizer cutouts', () => {
+  /**
+   * Separate the switch cutout from stabilizer cutouts.
+   * The switch cutout center is closest to the key center (origin for single-key tests).
+   */
+  function separateCutouts(polylines: { x: number; y: number }[][]) {
+    const sorted = [...polylines].sort((a, b) => {
+      const ca = polylineCenter(a)
+      const cb = polylineCenter(b)
+      return Math.hypot(ca.x, ca.y) - Math.hypot(cb.x, cb.y)
+    })
+    return {
+      switchCutout: sorted[0]!,
+      stabCutouts: sorted.slice(1),
+    }
+  }
+
+  it('2U key with mx-basic — 7x15mm stab pair at ±11.938mm', async () => {
+    const keys = [createKey({ x: 0, y: 0, width: 2, height: 1 })]
+    const options: PlateBuilderOptions = {
+      cutoutType: 'cherry-mx-basic',
+      stabilizerType: 'mx-basic',
+    }
+
+    const result = await buildPlate(keys, options)
+    const polylines = parseDxfPolylines(result.dxfContent)
+
+    expect(polylines).toHaveLength(3)
+
+    const { switchCutout, stabCutouts } = separateCutouts(polylines)
+
+    // Switch cutout: 14x14mm centered at origin
+    expect(polylineDimensions(switchCutout).width).toBe(14)
+    expect(polylineDimensions(switchCutout).height).toBe(14)
+    expect(polylineCenter(switchCutout).x).toBe(0)
+    expect(polylineCenter(switchCutout).y).toBe(0)
+
+    // Stabilizer cutouts: 7x15mm each
+    expect(stabCutouts).toHaveLength(2)
+    for (const stab of stabCutouts) {
+      expect(polylineDimensions(stab).width).toBe(7)
+      expect(polylineDimensions(stab).height).toBe(15)
+    }
+
+    // Sort left/right by x
+    const [left, right] = [...stabCutouts].sort((a, b) => polylineCenter(a).x - polylineCenter(b).x)
+    const lc = polylineCenter(left!)
+    const rc = polylineCenter(right!)
+
+    // Stab centers at ±11.938mm from key center, offset -1.5mm vertically
+    expect(lc.x).toBe(-11.938)
+    expect(rc.x).toBe(11.938)
+    expect(lc.y).toBe(-1.5)
+    expect(rc.y).toBe(-1.5)
+
+    // Symmetry: midpoint of stab centers x = key center x
+    expect((lc.x + rc.x) / 2).toBe(0)
+
+    // Distance between stab centers (axis-aligned, use x difference)
+    expect(rc.x - lc.x).toBe(23.876)
+  })
+
+  it('6.25U spacebar with mx-basic — 7x15mm stab pair at ±50mm', async () => {
+    const keys = [createKey({ x: 0, y: 0, width: 6.25, height: 1 })]
+    const options: PlateBuilderOptions = {
+      cutoutType: 'cherry-mx-basic',
+      stabilizerType: 'mx-basic',
+    }
+
+    const result = await buildPlate(keys, options)
+    const polylines = parseDxfPolylines(result.dxfContent)
+
+    expect(polylines).toHaveLength(3)
+
+    const { switchCutout, stabCutouts } = separateCutouts(polylines)
+
+    // Switch cutout at origin
+    expect(polylineCenter(switchCutout).x).toBe(0)
+    expect(polylineCenter(switchCutout).y).toBe(0)
+
+    // Stabilizer cutouts: 7x15mm each
+    for (const stab of stabCutouts) {
+      expect(polylineDimensions(stab).width).toBe(7)
+      expect(polylineDimensions(stab).height).toBe(15)
+    }
+
+    const [left, right] = [...stabCutouts].sort((a, b) => polylineCenter(a).x - polylineCenter(b).x)
+    const lc = polylineCenter(left!)
+    const rc = polylineCenter(right!)
+
+    // Stab centers at ±50mm
+    expect(lc.x).toBe(-50)
+    expect(rc.x).toBe(50)
+    expect(lc.y).toBe(-1.5)
+    expect(rc.y).toBe(-1.5)
+
+    // Symmetry
+    expect((lc.x + rc.x) / 2).toBe(0)
+
+    // Distance between stab centers
+    expect(rc.x - lc.x).toBe(100)
+  })
+
+  it('2U vertical key — stab assembly rotated, stabs vertically symmetric', async () => {
+    const keys = [createKey({ x: 0, y: 0, width: 1, height: 2 })]
+    const options: PlateBuilderOptions = {
+      cutoutType: 'cherry-mx-basic',
+      stabilizerType: 'mx-basic',
+    }
+
+    const result = await buildPlate(keys, options)
+    const polylines = parseDxfPolylines(result.dxfContent)
+
+    expect(polylines).toHaveLength(3)
+
+    const { switchCutout, stabCutouts } = separateCutouts(polylines)
+
+    // Switch cutout still at origin
+    expect(polylineCenter(switchCutout).x).toBe(0)
+    expect(polylineCenter(switchCutout).y).toBe(0)
+
+    // Stab bounding boxes swap due to -90° rotation: 15mm wide x 7mm tall
+    for (const stab of stabCutouts) {
+      expect(polylineDimensions(stab).width).toBeCloseTo(15, 6)
+      expect(polylineDimensions(stab).height).toBeCloseTo(7, 6)
+    }
+
+    // Sort bottom/top by y
+    const [bottom, top] = [...stabCutouts].sort((a, b) => polylineCenter(a).y - polylineCenter(b).y)
+    const bc = polylineCenter(bottom!)
+    const tc = polylineCenter(top!)
+
+    // After -90° rotation: (x,y) -> (y,-x)
+    // Original stab centers (±11.938, -1.5) become (-1.5, ∓11.938)
+    expect(bc.y).toBeCloseTo(-11.938, 6)
+    expect(tc.y).toBeCloseTo(11.938, 6)
+    expect(bc.x).toBeCloseTo(-1.5, 6)
+    expect(tc.x).toBeCloseTo(-1.5, 6)
+
+    // Y-symmetry: midpoint of stab centers y = key center y
+    expect((bc.y + tc.y) / 2).toBeCloseTo(0, 6)
+
+    // Distance between stab centers preserved
+    expect(distanceBetweenCenters(bottom!, top!)).toBeCloseTo(23.876, 6)
+  })
+
+  it('rotated 2U key at 30° — stab distance and symmetry preserved', async () => {
+    const keys = [
+      createKey({
+        x: 0,
+        y: 0,
+        width: 2,
+        height: 1,
+        rotation_angle: 30,
+        rotation_x: 0,
+        rotation_y: 0,
+      }),
+    ]
+    const options: PlateBuilderOptions = {
+      cutoutType: 'cherry-mx-basic',
+      stabilizerType: 'mx-basic',
+    }
+
+    const result = await buildPlate(keys, options)
+    const polylines = parseDxfPolylines(result.dxfContent)
+
+    expect(polylines).toHaveLength(3)
+
+    const { switchCutout, stabCutouts } = separateCutouts(polylines)
+
+    // Switch cutout center still at origin (first key = origin)
+    expect(polylineCenter(switchCutout).x).toBeCloseTo(0, 6)
+    expect(polylineCenter(switchCutout).y).toBeCloseTo(0, 6)
+
+    // Distance between stab centers preserved under rotation
+    expect(distanceBetweenCenters(stabCutouts[0]!, stabCutouts[1]!)).toBeCloseTo(23.876, 6)
+
+    // Both stabs equidistant from key center (rotation preserves distances)
+    const d0 = Math.hypot(polylineCenter(stabCutouts[0]!).x, polylineCenter(stabCutouts[0]!).y)
+    const d1 = Math.hypot(polylineCenter(stabCutouts[1]!).x, polylineCenter(stabCutouts[1]!).y)
+    expect(d0).toBeCloseTo(d1, 6)
+  })
+})
