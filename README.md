@@ -532,6 +532,13 @@ The JSON file may contain any recognizable layout format.
 
 **Note:** GitHub API has rate limits for unauthenticated requests. If you encounter rate limit errors, wait a few minutes before trying again.
 
+## Plate Generator
+
+The Plate Generator creates switch and stabilizer cutouts for your keyboard layout, exporting to SVG and DXF formats
+for manufacturing processes like laser cutting.
+
+<img src="resources/plate-generator-section.png">
+
 ## PCB Generator
 
 The PCB Generator creates KiCAD projects directly from your keyboard layout.
