@@ -252,7 +252,7 @@ const sections = computed(() => ({
   },
   plate: {
     id: 'plate',
-    title: 'Plate Generator (Work In Progress)',
+    title: 'Plate Generator',
     component: 'PlateGeneratorPanel',
   },
 }))
