@@ -14,6 +14,7 @@ import CanvasFooter from './components/CanvasFooter.vue'
 import CanvasHelpModal from './components/CanvasHelpModal.vue'
 import FundingModal from './components/FundingModal.vue'
 import PcbHelpModal from './components/PcbHelpModal.vue'
+import PlateHelpModal from './components/PlateHelpModal.vue'
 import PcbSettingsModal from './components/PcbSettingsModal.vue'
 import ToastContainer from './components/ToastContainer.vue'
 import ThemeToggle from './components/ThemeToggle.vue'
@@ -294,6 +295,17 @@ const closePcbHelp = () => {
   isPcbHelpVisible.value = false
 }
 
+// Plate Help modal state
+const isPlateHelpVisible = ref(false)
+
+const showPlateHelp = () => {
+  isPlateHelpVisible.value = true
+}
+
+const closePlateHelp = () => {
+  isPlateHelpVisible.value = false
+}
+
 // PCB Settings modal state
 const isPcbSettingsVisible = ref(false)
 
@@ -456,6 +468,15 @@ const stopResize = () => {
               >
                 <BiQuestionCircle />
               </button>
+              <!-- Help button for Plate Generator section -->
+              <button
+                v-if="section.id === 'plate'"
+                @click.stop="showPlateHelp"
+                class="btn btn-outline-secondary help-btn"
+                title="Help"
+              >
+                <BiQuestionCircle />
+              </button>
               <!-- Settings button only for PCB Generator section (debug/preview mode only) -->
               <button
                 v-if="section.id === 'pcb' && !isProduction"
@@ -561,6 +582,9 @@ const stopResize = () => {
 
     <!-- PCB Help Modal -->
     <PcbHelpModal :is-visible="isPcbHelpVisible" @close="closePcbHelp" />
+
+    <!-- Plate Help Modal -->
+    <PlateHelpModal :is-visible="isPlateHelpVisible" @close="closePlateHelp" />
 
     <!-- PCB Settings Modal -->
     <PcbSettingsModal :is-visible="isPcbSettingsVisible" @close="closePcbSettings" />
