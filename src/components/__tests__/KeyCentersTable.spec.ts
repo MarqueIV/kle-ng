@@ -11,6 +11,10 @@ vi.mock('@/utils/keyboard-geometry', () => ({
     x: key.x + (key.width || 1) / 2,
     y: key.y + (key.height || 1) / 2,
   }),
+  getKeyCenterMm: (key: Key, spacingX: number, spacingY: number) => ({
+    x: (key.x + (key.width || 1) / 2) * spacingX,
+    y: (key.y + (key.height || 1) / 2) * spacingY,
+  }),
 }))
 
 describe('KeyCentersTable', () => {

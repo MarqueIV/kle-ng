@@ -17,7 +17,7 @@ import type {
   CustomHolesSettings,
 } from '@/types/plate'
 import { getMakerJs } from '@/utils/makerjs-loader'
-import { getKeyCenter } from '@/utils/keyboard-geometry'
+import { getKeyCenterMm } from '@/utils/keyboard-geometry'
 import { D } from '@/utils/decimal-math'
 import {
   positionCutout,
@@ -120,7 +120,7 @@ function filterValidKeys(keys: Key[]): Key[] {
 /**
  * Convert a KLE key to a cutout position with coordinate transformation.
  *
- * Positions are computed relative to originCenter (the first key's center),
+ * Positions are computed relative to originCenterMm (the first key's center in mm),
  * with the origin key's top-left cutout corner placed at (0, 0).
  *
  * Coordinate transformation:
@@ -132,16 +132,16 @@ function keyToCutoutPosition(
   cutoutType: CutoutType,
   spacingX: number,
   spacingY: number,
-  originCenter: { x: number; y: number },
+  originCenterMm: { x: number; y: number },
   customWidth?: number,
   customHeight?: number,
 ): KeyCutoutPosition {
   const generator = getCutoutGenerator(cutoutType, customWidth, customHeight)
-  const center = getKeyCenter(key)
+  const centerMm = getKeyCenterMm(key, spacingX, spacingY)
 
   return {
-    centerX: D.sub(D.mul(D.sub(center.x, originCenter.x), spacingX), D.div(generator.width, 2)),
-    centerY: D.sub(D.mul(D.sub(originCenter.y, center.y), spacingY), D.div(generator.height, 2)),
+    centerX: D.sub(D.sub(centerMm.x, originCenterMm.x), D.div(generator.width, 2)),
+    centerY: D.sub(D.sub(originCenterMm.y, centerMm.y), D.div(generator.height, 2)),
     rotationAngle: -(key.rotation_angle || 0),
     width: generator.width,
     height: generator.height,
@@ -381,7 +381,7 @@ export async function buildPlate(
   }
 
   // Use the first key's center as the origin so its cutout center lands at (0, 0)
-  const originCenter = getKeyCenter(validKeys[0]!)
+  const originCenterMm = getKeyCenterMm(validKeys[0]!, spacingX, spacingY)
 
   // Convert keys to cutout positions
   const cutoutPositions = validKeys.map((key) =>
@@ -390,7 +390,7 @@ export async function buildPlate(
       cutoutType,
       spacingX,
       spacingY,
-      originCenter,
+      originCenterMm,
       customCutoutWidth,
       customCutoutHeight,
     ),

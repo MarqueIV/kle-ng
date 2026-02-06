@@ -46,6 +46,57 @@ export function getKeyCenter(key: Key): { x: number; y: number } {
 }
 
 /**
+ * Calculate the center point of a key in millimeters, applying rotation in mm-space.
+ *
+ * Unlike getKeyCenter (which rotates in layout-unit space), this function
+ * converts to mm first and then applies rotation. This is necessary when
+ * spacingX ≠ spacingY, because non-uniform scaling after rotation would
+ * distort the geometry.
+ *
+ * @param key - The key object with position, dimensions, and optional rotation
+ * @param spacingX - Horizontal spacing in mm per unit
+ * @param spacingY - Vertical spacing in mm per unit
+ * @returns Center point {x, y} in millimeters
+ */
+export function getKeyCenterMm(
+  key: Key,
+  spacingX: number,
+  spacingY: number,
+): { x: number; y: number } {
+  // Pre-rotation center in layout units
+  const centerX_u = D.add(key.x, D.div(key.width || 1, 2))
+  const centerY_u = D.add(key.y, D.div(key.height || 1, 2))
+
+  // Convert to mm
+  let centerX_mm = D.mul(centerX_u, spacingX)
+  let centerY_mm = D.mul(centerY_u, spacingY)
+
+  // Apply rotation in mm space if key is rotated
+  if (key.rotation_angle && key.rotation_angle !== 0) {
+    const originX_u = key.rotation_x !== undefined ? key.rotation_x : centerX_u
+    const originY_u = key.rotation_y !== undefined ? key.rotation_y : centerY_u
+
+    const originX_mm = D.mul(originX_u, spacingX)
+    const originY_mm = D.mul(originY_u, spacingY)
+
+    const angleRad = D.degreesToRadians(key.rotation_angle)
+    const cos = Math.cos(angleRad)
+    const sin = Math.sin(angleRad)
+
+    const relX = D.sub(centerX_mm, originX_mm)
+    const relY = D.sub(centerY_mm, originY_mm)
+
+    const rotX = D.sub(D.mul(relX, cos), D.mul(relY, sin))
+    const rotY = D.add(D.mul(relX, sin), D.mul(relY, cos))
+
+    centerX_mm = D.add(originX_mm, rotX)
+    centerY_mm = D.add(originY_mm, rotY)
+  }
+
+  return { x: Number(centerX_mm), y: Number(centerY_mm) }
+}
+
+/**
  * Calculate the Euclidean distance between the centers of two keys in layout units.
  *
  * @param key1 - First key

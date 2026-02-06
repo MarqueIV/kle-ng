@@ -82,10 +82,10 @@ Events:
           >
             <td class="small">{{ item.originalIndex }}</td>
             <td class="small font-monospace">
-              {{ formatCoordinate(item.center.x, 'x') }}
+              {{ formatCoordinate(item.center.x) }}
             </td>
             <td class="small font-monospace">
-              {{ formatCoordinate(item.center.y, 'y') }}
+              {{ formatCoordinate(item.center.y) }}
             </td>
           </tr>
         </tbody>
@@ -97,8 +97,7 @@ Events:
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { useKeyboardStore, type Key } from '@/stores/keyboard'
-import { getKeyCenter } from '@/utils/keyboard-geometry'
-import { D } from '@/utils/decimal-math'
+import { getKeyCenter, getKeyCenterMm } from '@/utils/keyboard-geometry'
 import BiGrid3x3 from 'bootstrap-icons/icons/grid-3x3.svg'
 import BiArrowDownUp from 'bootstrap-icons/icons/arrow-down-up.svg'
 import BiSortNumericDown from 'bootstrap-icons/icons/sort-numeric-down.svg'
@@ -140,29 +139,20 @@ const handleSort = (column: SortColumn) => {
 }
 
 /**
- * Format coordinate value according to selected units
+ * Format coordinate value for display
  */
-const formatCoordinate = (value: number, axis: 'x' | 'y'): string => {
-  if (props.units === 'U') {
-    // Return in units (no conversion needed)
-    return value.toFixed(6).replace(/\.?0+$/, '')
-  } else {
-    // Convert to mm using spacing
-    const spacingValue = axis === 'x' ? props.spacing.x : props.spacing.y
-    const mmValue = D.mul(value, spacingValue)
-    return Number(mmValue)
-      .toFixed(6)
-      .replace(/\.?0+$/, '')
-  }
+const formatCoordinate = (value: number): string => {
+  return value.toFixed(6).replace(/\.?0+$/, '')
 }
 
 /**
  * Calculate center positions for all keys with sorting applied
  */
 const keyCenters = computed(() => {
+  const isMm = props.units === 'mm'
   const items = keyboardStore.keys.map((key, index) => ({
     key,
-    center: getKeyCenter(key),
+    center: isMm ? getKeyCenterMm(key, props.spacing.x, props.spacing.y) : getKeyCenter(key),
     originalIndex: index,
   }))
 
