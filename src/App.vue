@@ -64,7 +64,7 @@ onUnmounted(() => {
   window.removeEventListener('beforeunload', handleBeforeUnload)
 })
 
-const sectionOrder = ref(['canvas', 'properties', 'json', 'pcb', 'plate'])
+const sectionOrder = ref(['canvas', 'properties', 'json', 'plate', 'pcb'])
 const draggedSection = ref<string | null>(null)
 const dragOverSection = ref<string | null>(null)
 const isDraggingSection = ref(false)
