@@ -516,6 +516,12 @@ watch([() => props.disabled, () => props.min, () => props.max], () => {
   border-bottom-color: var(--input-focus-border-color);
 }
 
+.custom-number-input input.is-invalid + .spinner-buttons {
+  border-top-color: var(--bs-form-invalid-border-color, #dc3545);
+  border-right-color: var(--bs-form-invalid-border-color, #dc3545);
+  border-bottom-color: var(--bs-form-invalid-border-color, #dc3545);
+}
+
 /* Size variants */
 
 .custom-number-input.size-default input {
