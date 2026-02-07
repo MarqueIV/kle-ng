@@ -3,6 +3,7 @@ import { usePlateGeneratorStore } from '@/stores/plateGenerator'
 import { storeToRefs } from 'pinia'
 import CustomNumberInput from './CustomNumberInput.vue'
 import type { CustomHole } from '@/types/plate'
+import BiTrash from 'bootstrap-icons/icons/trash.svg'
 
 const plateStore = usePlateGeneratorStore()
 const { settings } = storeToRefs(plateStore)
@@ -187,7 +188,7 @@ function removeAllCustomHoles(): void {
               title="Remove this hole"
               @click="removeCustomHole(hole.id)"
             >
-              &times;
+              <BiTrash />
             </button>
           </div>
         </div>
@@ -290,10 +291,11 @@ function removeAllCustomHoles(): void {
 }
 
 .remove-hole-btn {
+  display: flex;
+  align-items: center;
   padding: 0.2rem 0.5rem;
   line-height: 1;
   font-size: 1rem;
   align-self: end;
-  margin-bottom: 0.1rem;
 }
 </style>
