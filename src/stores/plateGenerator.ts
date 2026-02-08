@@ -234,9 +234,6 @@ export const usePlateGeneratorStore = defineStore('plateGenerator', () => {
             ...parsed.customHoles,
           },
         }
-        if (typeof parsed.autoRefresh === 'boolean') {
-          autoRefresh.value = parsed.autoRefresh
-        }
       } catch (error) {
         console.warn('Failed to load plate settings:', error)
       }
@@ -244,10 +241,7 @@ export const usePlateGeneratorStore = defineStore('plateGenerator', () => {
   }
 
   function saveSettings(): void {
-    localStorage.setItem(
-      STORAGE_KEY,
-      JSON.stringify({ ...settings.value, autoRefresh: autoRefresh.value }),
-    )
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ ...settings.value }))
   }
 
   // Manual debounce helper

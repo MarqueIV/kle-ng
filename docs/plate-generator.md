@@ -105,7 +105,9 @@ changes (key edits, undo, redo). This is debounced at 500ms and only fires when 
 - `resetGeneration()` — Returns `generationState` to idle.
 
 **Persistence:**
-Settings and auto-refresh state are saved to `localStorage` under key `kle-ng-plate-settings`, debounced at 500ms on change. The store performs deep merging when loading settings and handles migration from older data structures.
+Settings are saved to `localStorage` under key `kle-ng-plate-settings`, debounced at 500ms on change. The store performs deep merging when loading settings and handles migration from older data structures.
+`autoRefresh` is intentionally not saved. Some settings, such as certain cutout shapes or size adjustments (kerf), can cause slow plate generation; therefore, `autoRefresh` could unexpectedly
+cause CPU usage spikes when the website is opened via a shared link.
 
 ### Utilities
 
