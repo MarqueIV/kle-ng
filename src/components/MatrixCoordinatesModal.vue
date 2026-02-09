@@ -1239,7 +1239,7 @@ defineExpose({
 }
 
 /* Mobile anchoring */
-@media (max-width: 767px) {
+@media (max-width: 767.98px) {
   .matrix-modal {
     position: fixed !important;
     top: auto !important;
@@ -1325,7 +1325,7 @@ defineExpose({
 }
 
 /* Responsive button layout for mobile */
-@media (max-width: 576px) {
+@media (max-width: 575.98px) {
   .panel-footer {
     flex-direction: column;
     gap: 8px;
@@ -1424,7 +1424,7 @@ defineExpose({
 }
 
 /* Responsive adjustments */
-@media (max-width: 576px) {
+@media (max-width: 575.98px) {
   .matrix-modal {
     width: 100%;
   }

@@ -171,7 +171,7 @@ onUnmounted(() => {
 }
 
 /* Responsive adjustments */
-@media (max-width: 576px) {
+@media (max-width: 575.98px) {
   .modal-settings {
     margin: 1rem;
     max-width: none;

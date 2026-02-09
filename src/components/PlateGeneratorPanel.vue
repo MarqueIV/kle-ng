@@ -22,7 +22,7 @@ onMounted(() => {
     <!-- Two Column Layout: Controls | Output -->
     <div class="row g-3">
       <!-- Left Column: Tabbed Controls -->
-      <div class="col-md-4" style="max-width: 500px">
+      <div class="col-lg-4 settings-column">
         <!-- Settings Card -->
         <div class="settings-card">
           <!-- Tab Bar -->
@@ -77,7 +77,7 @@ onMounted(() => {
       </div>
 
       <!-- Right Column: All Output -->
-      <div class="col-md-8 results-column">
+      <div class="col-lg-8 results-column">
         <div class="results-card">
           <PlateGeneratorResults />
         </div>
@@ -91,6 +91,10 @@ onMounted(() => {
   padding: 1rem;
   display: flex;
   flex-direction: column;
+}
+
+.settings-column {
+  max-width: 500px;
 }
 
 /* Card styling matching Key Properties panel */
@@ -124,6 +128,17 @@ onMounted(() => {
   display: flex;
   flex-direction: column;
   min-height: 300px;
+}
+
+@media (max-width: 991.98px) {
+  .settings-column {
+    max-width: none;
+  }
+
+  .results-card {
+    position: static;
+    min-height: 300px;
+  }
 }
 
 /* Segmented tab bar */

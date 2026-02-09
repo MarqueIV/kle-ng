@@ -754,7 +754,7 @@ const stopResize = () => {
 }
 
 /* Responsive adjustments */
-@media (max-width: 768px) {
+@media (max-width: 767.98px) {
   .drag-handle {
     padding: 3px 8px !important;
     min-height: 24px;

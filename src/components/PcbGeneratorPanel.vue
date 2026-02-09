@@ -42,7 +42,7 @@ onUnmounted(() => {
     <!-- Two Column Layout: Controls | Output -->
     <div v-else class="row g-3">
       <!-- Left Column: All Controls -->
-      <div class="col-md-4" style="max-width: 500px">
+      <div class="col-lg-4 settings-column">
         <!-- Settings Card -->
         <div class="settings-card">
           <PcbGeneratorSettings />
@@ -59,7 +59,7 @@ onUnmounted(() => {
       </div>
 
       <!-- Right Column: All Output -->
-      <div class="col-md-8 results-column">
+      <div class="col-lg-8 results-column">
         <div class="results-card">
           <PcbGeneratorResults />
         </div>
@@ -73,6 +73,10 @@ onUnmounted(() => {
   padding: 1rem;
   display: flex;
   flex-direction: column;
+}
+
+.settings-column {
+  max-width: 500px;
 }
 
 /* Card styling matching Plate Generator panel */
@@ -106,5 +110,16 @@ onUnmounted(() => {
   display: flex;
   flex-direction: column;
   min-height: 300px;
+}
+
+@media (max-width: 991.98px) {
+  .settings-column {
+    max-width: none;
+  }
+
+  .results-card {
+    position: static;
+    min-height: 300px;
+  }
 }
 </style>

@@ -777,7 +777,7 @@ onUnmounted(() => {
 }
 
 /* Mobile anchoring - similar to Key Properties panel */
-@media (max-width: 767px) {
+@media (max-width: 767.98px) {
   .legend-tools-panel {
     position: fixed !important;
     top: auto !important;
@@ -892,7 +892,7 @@ onUnmounted(() => {
 }
 
 /* Responsive adjustments */
-@media (max-width: 576px) {
+@media (max-width: 575.98px) {
   .legend-tools-panel {
     width: 320px;
   }

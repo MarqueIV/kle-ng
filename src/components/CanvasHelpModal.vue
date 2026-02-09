@@ -264,7 +264,7 @@ const close = () => {
 }
 
 /* Responsive adjustments */
-@media (max-width: 768px) {
+@media (max-width: 767.98px) {
   .interactions-grid {
     grid-template-columns: 1fr;
     gap: 1rem;

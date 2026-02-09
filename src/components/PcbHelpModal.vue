@@ -145,7 +145,7 @@ const close = () => {
   margin-bottom: 0.5rem;
 }
 
-@media (max-width: 768px) {
+@media (max-width: 767.98px) {
   .help-image {
     float: none;
     display: block;

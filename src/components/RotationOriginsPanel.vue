@@ -231,7 +231,7 @@ const handleClose = () => {
 }
 
 /* Mobile anchoring */
-@media (max-width: 767px) {
+@media (max-width: 767.98px) {
   .rotation-origins-panel {
     position: fixed !important;
     top: auto !important;
@@ -382,7 +382,7 @@ const handleClose = () => {
 }
 
 /* Responsive adjustments */
-@media (max-width: 576px) {
+@media (max-width: 575.98px) {
   .rotation-origins-panel {
     width: 320px;
   }

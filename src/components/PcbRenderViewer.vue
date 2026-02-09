@@ -220,4 +220,20 @@ const containerBackgroundClass = computed(() => {
   pointer-events: none;
   user-select: none;
 }
+
+@media (max-width: 991.98px) {
+  .svg-container {
+    height: 300px;
+  }
+
+  .pcb-render-viewer-buttons {
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.25rem;
+  }
+
+  .pcb-render-viewer-buttons .ms-2 {
+    margin-left: 0 !important;
+  }
+}
 </style>

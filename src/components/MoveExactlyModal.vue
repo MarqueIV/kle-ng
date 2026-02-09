@@ -318,7 +318,7 @@ onUnmounted(() => {
 }
 
 /* Mobile anchoring - similar to Key Properties panel */
-@media (max-width: 767px) {
+@media (max-width: 767.98px) {
   .move-exactly-panel {
     position: fixed !important;
     top: auto !important;
@@ -417,7 +417,7 @@ onUnmounted(() => {
 }
 
 /* Responsive adjustments */
-@media (max-width: 576px) {
+@media (max-width: 575.98px) {
   .move-exactly-panel {
     width: 320px;
   }

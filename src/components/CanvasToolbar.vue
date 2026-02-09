@@ -789,7 +789,7 @@ onUnmounted(() => {
 }
 
 /* Responsive adjustments */
-@media (max-width: 768px) {
+@media (max-width: 767.98px) {
   .canvas-toolbar {
     width: 72px;
     min-width: 72px;

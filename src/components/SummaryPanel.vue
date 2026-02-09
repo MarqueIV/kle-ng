@@ -476,7 +476,7 @@ const keysBySizeAndColor = computed(() => {
 }
 
 /* Responsive adjustments */
-@media (max-width: 576px) {
+@media (max-width: 575.98px) {
   .property-group {
     padding: 8px;
   }

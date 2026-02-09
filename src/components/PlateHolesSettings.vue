@@ -298,4 +298,14 @@ function removeAllCustomHoles(): void {
   font-size: 1rem;
   align-self: end;
 }
+
+@media (max-width: 991.98px) {
+  .hole-inputs {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .remove-hole-btn {
+    align-self: center;
+  }
+}
 </style>
