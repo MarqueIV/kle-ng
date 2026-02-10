@@ -17,6 +17,7 @@
       @focus="handleFocus"
       @blur="handleBlur"
       @keydown="handleKeydown"
+      @keyup="handleKeyup"
       type="number"
       :step="step"
       :min="min"
@@ -57,7 +58,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, nextTick, watch, onMounted } from 'vue'
+import { ref, computed, nextTick, watch, onMounted, onBeforeUnmount } from 'vue'
 import { D } from '@/utils/decimal-math'
 import BiChevronDown from 'bootstrap-icons/icons/chevron-down.svg'
 import BiChevronUp from 'bootstrap-icons/icons/chevron-up.svg'
@@ -133,8 +134,11 @@ interface Emits {
   /** Emitted when the component value changes (for v-model binding) */
   (e: 'update:modelValue', value: number | undefined): void
 
-  /** Emitted when the input value is committed (on blur or Enter) */
+  /** Emitted when the input value changes (on every tick for live preview) */
   (e: 'change', value: number | undefined): void
+
+  /** Emitted when a continuous interaction ends (blur after wheel, keyup after arrow hold, spinner click, typed input commit). Use for undo save points. */
+  (e: 'commit', value: number | undefined): void
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -156,6 +160,7 @@ const inputRef = ref<HTMLInputElement>()
 const suffixRef = ref<HTMLDivElement>()
 const isActive = ref(false)
 const userInput = ref<string | null>(null)
+const hasUncommittedChanges = ref(false)
 
 const inputClass = computed(() => {
   return props.class
@@ -243,7 +248,7 @@ const handleInput = (event: Event) => {
   }
 }
 
-// Strict validation on change/blur
+// Strict validation on change/blur — emits both change and commit (typed input is always a discrete action)
 const handleInputChange = () => {
   if (userInput.value === null) return
 
@@ -253,6 +258,7 @@ const handleInputChange = () => {
   if (inputValue === '') {
     const clearValue = getValueOnClear()
     setValidatedValue(clearValue)
+    emit('commit', validateValue(clearValue))
     userInput.value = null
     return
   }
@@ -266,6 +272,7 @@ const handleInputChange = () => {
   }
 
   setValidatedValue(numValue)
+  emit('commit', validateValue(numValue))
   userInput.value = null
 }
 
@@ -275,6 +282,7 @@ const handleFocus = () => {
 
 const handleBlur = () => {
   isActive.value = false
+  flushCommit()
   // Perform validation on blur
   handleInputChange()
 }
@@ -326,11 +334,19 @@ const validateValue = (value: number | undefined): number | undefined => {
   return newValue
 }
 
-// Set a validated value and emit events
+// Set a validated value and emit both update:modelValue and change (for live preview)
 const setValidatedValue = (value: number | undefined) => {
   const validatedValue = validateValue(value)
   emit('update:modelValue', validatedValue)
   emit('change', validatedValue)
+}
+
+// Emit commit when a continuous interaction ends (save point for undo)
+const flushCommit = () => {
+  if (hasUncommittedChanges.value) {
+    hasUncommittedChanges.value = false
+    emit('commit', validateValue(props.modelValue))
+  }
 }
 
 const handleKeydown = (event: KeyboardEvent) => {
@@ -338,14 +354,20 @@ const handleKeydown = (event: KeyboardEvent) => {
     inputRef.value?.blur()
   } else if (event.key === 'ArrowUp') {
     event.preventDefault()
-    increment()
+    adjustValue(1, undefined, true)
   } else if (event.key === 'ArrowDown') {
     event.preventDefault()
-    decrement()
+    adjustValue(-1, undefined, true)
   }
 }
 
-const adjustValue = (delta: number, stepSize?: number) => {
+const handleKeyup = (event: KeyboardEvent) => {
+  if (event.key === 'ArrowUp' || event.key === 'ArrowDown') {
+    flushCommit()
+  }
+}
+
+const adjustValue = (delta: number, stepSize?: number, deferCommit = false) => {
   const actualStep = stepSize !== undefined ? stepSize : props.step || 1
   // If modelValue is undefined, use referenceValue if available, otherwise default to 0
   const currentValue = props.modelValue ?? props.referenceValue ?? 0
@@ -355,6 +377,12 @@ const adjustValue = (delta: number, stepSize?: number) => {
   userInput.value = null
 
   setValidatedValue(newValue)
+
+  if (deferCommit) {
+    hasUncommittedChanges.value = true
+  } else {
+    emit('commit', validateValue(newValue))
+  }
 }
 
 const increment = () => {
@@ -385,7 +413,7 @@ const handleWheel = (event: WheelEvent) => {
 
   // Use ctrlStep when Ctrl key is pressed, otherwise use regular step
   const stepSize = event.ctrlKey ? props.ctrlStep : props.step
-  adjustValue(delta, stepSize)
+  adjustValue(delta, stepSize, true)
 }
 
 defineExpose({
@@ -395,11 +423,16 @@ defineExpose({
   select: () => {
     inputRef.value?.select()
   },
+  flushCommit,
 })
 
 // Update suffix width on mount and when suffix content changes
 onMounted(() => {
   updateSuffixWidth()
+})
+
+onBeforeUnmount(() => {
+  flushCommit()
 })
 
 // Clear user input when model value changes externally

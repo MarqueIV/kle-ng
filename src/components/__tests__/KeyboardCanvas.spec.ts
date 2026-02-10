@@ -333,7 +333,14 @@ describe('KeyboardCanvas', () => {
       await wrapper.vm.$nextTick()
 
       expect(key.width).toBeGreaterThan(originalWidth)
-      expect(saveStateSpy).toHaveBeenCalled()
+
+      // saveState is deferred to keyup (commit-on-keyup batching)
+      expect(saveStateSpy).not.toHaveBeenCalled()
+      canvas.dispatchEvent(
+        new KeyboardEvent('keyup', { key: 'ArrowRight', bubbles: true, cancelable: true }),
+      )
+      await wrapper.vm.$nextTick()
+      expect(saveStateSpy).toHaveBeenCalledTimes(1)
     })
 
     it('should adjust height when Shift+Up/Down arrows are pressed', async () => {
@@ -379,7 +386,14 @@ describe('KeyboardCanvas', () => {
       await wrapper.vm.$nextTick()
 
       expect(key.height).toBeGreaterThan(originalHeight)
-      expect(saveStateSpy).toHaveBeenCalled()
+
+      // saveState is deferred to keyup (commit-on-keyup batching)
+      expect(saveStateSpy).not.toHaveBeenCalled()
+      canvas.dispatchEvent(
+        new KeyboardEvent('keyup', { key: 'ArrowDown', bubbles: true, cancelable: true }),
+      )
+      await wrapper.vm.$nextTick()
+      expect(saveStateSpy).toHaveBeenCalledTimes(1)
     })
 
     it('should not allow negative dimensions when adjusting size', async () => {

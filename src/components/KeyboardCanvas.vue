@@ -32,6 +32,7 @@
         data-testid="canvas-main"
         tabindex="0"
         @keydown="handleKeyDown"
+        @keyup="handleKeyUp"
         @focus="handleCanvasFocus"
         @blur="handleCanvasBlur"
         role="img"
@@ -1332,9 +1333,19 @@ const handleCanvasFocus = () => {
   )
 }
 
+let hasUncommittedCanvasChanges = false
+
+const flushCanvasCommit = () => {
+  if (hasUncommittedCanvasChanges) {
+    hasUncommittedCanvasChanges = false
+    keyboardStore.saveState()
+  }
+}
+
 // Using @blur to trigger this when canvas out of focus
 const handleCanvasBlur = () => {
   canvasFocused.value = false
+  flushCanvasCommit()
 
   // Note: Don't close popup on canvas blur - the popup has its own close handlers
   // (click outside, escape key). Closing here would interfere with popup item clicks.
@@ -1448,6 +1459,17 @@ const handleKeyDown = async (event: KeyboardEvent) => {
         moveSelectedKeys(keyboardStore.moveStep, 0)
         break
     }
+  }
+}
+
+const handleKeyUp = (event: KeyboardEvent) => {
+  if (
+    event.key === 'ArrowUp' ||
+    event.key === 'ArrowDown' ||
+    event.key === 'ArrowLeft' ||
+    event.key === 'ArrowRight'
+  ) {
+    flushCanvasCommit()
   }
 }
 
@@ -1645,7 +1667,7 @@ const moveSelectedKeys = (deltaX: number, deltaY: number) => {
       }
     }
   })
-  keyboardStore.saveState()
+  hasUncommittedCanvasChanges = true
   updateCanvasSize()
   renderScheduler.schedule(renderKeyboard)
 }
@@ -1675,7 +1697,7 @@ const adjustSelectedKeysSize = (dimension: 'width' | 'height', delta: number) =>
       }
     }
   })
-  keyboardStore.saveState()
+  hasUncommittedCanvasChanges = true
   updateCanvasSize()
   renderScheduler.schedule(renderKeyboard)
 }

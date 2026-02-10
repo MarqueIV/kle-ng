@@ -625,6 +625,118 @@ describe('CustomNumberInput', () => {
     })
   })
 
+  describe('Commit Event Batching', () => {
+    it('wheel events emit change on every tick but NOT commit', async () => {
+      const wrapper = mount(CustomNumberInput, {
+        props: { modelValue: 5 },
+      })
+
+      const input = wrapper.find('input')
+      await input.trigger('focus')
+
+      // Multiple wheel ticks
+      await input.trigger('wheel', { deltaY: -100 })
+      await wrapper.setProps({ modelValue: 6 })
+      await input.trigger('wheel', { deltaY: -100 })
+      await wrapper.setProps({ modelValue: 7 })
+      await input.trigger('wheel', { deltaY: -100 })
+      await wrapper.setProps({ modelValue: 8 })
+
+      // change emitted on every tick (for live preview)
+      expect(wrapper.emitted('change')).toHaveLength(3)
+
+      // commit should NOT have been emitted yet
+      expect(wrapper.emitted('commit')).toBeFalsy()
+    })
+
+    it('blur after wheel emits a single commit event', async () => {
+      const wrapper = mount(CustomNumberInput, {
+        props: { modelValue: 5 },
+      })
+
+      const input = wrapper.find('input')
+      await input.trigger('focus')
+
+      // Wheel ticks
+      await input.trigger('wheel', { deltaY: -100 })
+      await wrapper.setProps({ modelValue: 6 })
+      await input.trigger('wheel', { deltaY: -100 })
+      await wrapper.setProps({ modelValue: 7 })
+
+      expect(wrapper.emitted('commit')).toBeFalsy()
+
+      // Blur to flush
+      await input.trigger('blur')
+
+      // Now commit should have been emitted exactly once with the final value
+      expect(wrapper.emitted('commit')).toHaveLength(1)
+      expect(wrapper.emitted('commit')![0]).toEqual([7])
+    })
+
+    it('spinner clicks emit both change and commit immediately', async () => {
+      const wrapper = mount(CustomNumberInput, {
+        props: { modelValue: 5, step: 1 },
+      })
+
+      const spinnerUp = wrapper.find('.spinner-up')
+      await spinnerUp.trigger('click')
+
+      // All three events emitted immediately
+      expect(wrapper.emitted('update:modelValue')![0]).toEqual([6])
+      expect(wrapper.emitted('change')![0]).toEqual([6])
+      expect(wrapper.emitted('commit')![0]).toEqual([6])
+    })
+
+    it('arrow keydown emits change on every tick, keyup flushes commit', async () => {
+      const wrapper = mount(CustomNumberInput, {
+        props: { modelValue: 10 },
+      })
+
+      const input = wrapper.find('input')
+
+      // Simulate held arrow key (multiple keydowns with repeat)
+      await input.trigger('keydown', { key: 'ArrowUp' })
+      await wrapper.setProps({ modelValue: 11 })
+      await input.trigger('keydown', { key: 'ArrowUp', repeat: true })
+      await wrapper.setProps({ modelValue: 12 })
+      await input.trigger('keydown', { key: 'ArrowUp', repeat: true })
+      await wrapper.setProps({ modelValue: 13 })
+
+      // change emitted each time (for live preview)
+      expect(wrapper.emitted('change')).toHaveLength(3)
+
+      // commit NOT emitted yet
+      expect(wrapper.emitted('commit')).toBeFalsy()
+
+      // Release the key
+      await input.trigger('keyup', { key: 'ArrowUp' })
+
+      // Now commit should be emitted once with final value
+      expect(wrapper.emitted('commit')).toHaveLength(1)
+      expect(wrapper.emitted('commit')![0]).toEqual([13])
+    })
+
+    it('single arrow keydown + keyup emits commit', async () => {
+      const wrapper = mount(CustomNumberInput, {
+        props: { modelValue: 5 },
+      })
+
+      const input = wrapper.find('input')
+
+      await input.trigger('keydown', { key: 'ArrowDown' })
+      expect(wrapper.emitted('update:modelValue')![0]).toEqual([4])
+      expect(wrapper.emitted('change')![0]).toEqual([4])
+      expect(wrapper.emitted('commit')).toBeFalsy()
+
+      // Simulate parent updating modelValue from v-model binding
+      await wrapper.setProps({ modelValue: 4 })
+
+      await input.trigger('keyup', { key: 'ArrowDown' })
+      expect(wrapper.emitted('commit')).toHaveLength(1)
+      expect(wrapper.emitted('commit')![0]).toEqual([4])
+    })
+  })
+
   describe('Edge Cases', () => {
     it('handles undefined modelValue correctly', () => {
       const wrapper = mount(CustomNumberInput, {

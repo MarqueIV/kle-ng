@@ -67,6 +67,7 @@
                     <CustomNumberInput
                       v-model="currentSpacingX"
                       @change="updateSpacing('spacing_x', currentSpacingX, 19.05)"
+                      @commit="keyboardStore.saveState()"
                       :value-on-clear="19.05"
                       :step="0.05"
                       :min="1"
@@ -79,6 +80,7 @@
                     <CustomNumberInput
                       v-model="currentSpacingY"
                       @change="updateSpacing('spacing_y', currentSpacingY, 19.05)"
+                      @commit="keyboardStore.saveState()"
                       :value-on-clear="19.05"
                       :step="0.05"
                       :min="1"
@@ -350,7 +352,6 @@ const updateMetadata = (field: string, value: string | number | undefined) => {
 const updateSpacing = (field: string, value: number, defaultval: number) => {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   ;(keyboardStore.metadata as any)[field] = value !== defaultval ? value : undefined
-  keyboardStore.saveState()
 }
 
 // Update CSS input (while typing) - save to store but don't reload fonts

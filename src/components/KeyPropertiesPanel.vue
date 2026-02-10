@@ -36,6 +36,7 @@
                       <CustomNumberInput
                         v-model="currentX"
                         @change="updateX"
+                        @commit="keyboardStore.saveState()"
                         :step="moveStep"
                         :min="-100"
                         :max="100"
@@ -47,6 +48,7 @@
                       <CustomNumberInput
                         v-model="currentY"
                         @change="updateY"
+                        @commit="keyboardStore.saveState()"
                         :step="moveStep"
                         :min="-100"
                         :max="100"
@@ -65,6 +67,7 @@
                       <CustomNumberInput
                         v-model="currentWidth"
                         @change="updateWidth"
+                        @commit="keyboardStore.saveState()"
                         :step="0.25"
                         :min="0.25"
                         :max="24"
@@ -76,6 +79,7 @@
                       <CustomNumberInput
                         v-model="currentHeight"
                         @change="updateHeight"
+                        @commit="keyboardStore.saveState()"
                         :step="0.25"
                         :min="0.25"
                         :max="24"
@@ -110,6 +114,7 @@
                   <CustomNumberInput
                     v-model="currentRotationAngle"
                     @change="updateRotationAngle"
+                    @commit="keyboardStore.saveState()"
                     :step="15"
                     :min="-360"
                     :max="360"
@@ -150,6 +155,7 @@
                       <CustomNumberInput
                         v-model="displayRotationX"
                         @change="updateRotationX"
+                        @commit="keyboardStore.saveState()"
                         :step="moveStep"
                         :title="
                           isRelativeRotationMode
@@ -165,6 +171,7 @@
                       <CustomNumberInput
                         v-model="displayRotationY"
                         @change="updateRotationY"
+                        @commit="keyboardStore.saveState()"
                         :step="moveStep"
                         :title="
                           isRelativeRotationMode
@@ -188,6 +195,7 @@
                       <CustomNumberInput
                         v-model="currentX"
                         @change="updateX"
+                        @commit="keyboardStore.saveState()"
                         :step="moveStep"
                         :min="0"
                         :max="36"
@@ -199,6 +207,7 @@
                       <CustomNumberInput
                         v-model="currentY"
                         @change="updateY"
+                        @commit="keyboardStore.saveState()"
                         :step="moveStep"
                         :min="0"
                         :max="36"
@@ -210,6 +219,7 @@
                       <CustomNumberInput
                         v-model="currentX2"
                         @change="updateX2"
+                        @commit="keyboardStore.saveState()"
                         :step="moveStep"
                         :min="0"
                         :max="36"
@@ -221,6 +231,7 @@
                       <CustomNumberInput
                         v-model="currentY2"
                         @change="updateY2"
+                        @commit="keyboardStore.saveState()"
                         :step="moveStep"
                         :min="0"
                         :max="36"
@@ -239,6 +250,7 @@
                       <CustomNumberInput
                         v-model="currentWidth"
                         @change="updateWidth"
+                        @commit="keyboardStore.saveState()"
                         :step="0.25"
                         :min="0.25"
                         :max="24"
@@ -250,6 +262,7 @@
                       <CustomNumberInput
                         v-model="currentHeight"
                         @change="updateHeight"
+                        @commit="keyboardStore.saveState()"
                         :step="0.25"
                         :min="0.25"
                         :max="24"
@@ -262,6 +275,7 @@
                       <CustomNumberInput
                         v-model="currentWidth2"
                         @change="updateWidth2"
+                        @commit="keyboardStore.saveState()"
                         :step="0.25"
                         :min="0.25"
                         :max="24"
@@ -273,6 +287,7 @@
                       <CustomNumberInput
                         v-model="currentHeight2"
                         @change="updateHeight2"
+                        @commit="keyboardStore.saveState()"
                         :step="0.25"
                         :min="0.25"
                         :max="24"
@@ -289,6 +304,7 @@
                   <CustomNumberInput
                     v-model="currentRotationAngle"
                     @change="updateRotationAngle"
+                    @commit="keyboardStore.saveState()"
                     :step="15"
                     :min="-360"
                     :max="360"
@@ -329,6 +345,7 @@
                       <CustomNumberInput
                         v-model="displayRotationX"
                         @change="updateRotationX"
+                        @commit="keyboardStore.saveState()"
                         :step="moveStep"
                         :min="isRelativeRotationMode ? -2 : 0"
                         :max="isRelativeRotationMode ? 2 : 36"
@@ -346,6 +363,7 @@
                       <CustomNumberInput
                         v-model="displayRotationY"
                         @change="updateRotationY"
+                        @commit="keyboardStore.saveState()"
                         :step="moveStep"
                         :min="isRelativeRotationMode ? -2 : 0"
                         :max="isRelativeRotationMode ? 2 : 36"
@@ -672,6 +690,7 @@
                 <CustomNumberInput
                   :model-value="currentDefaultTextSize"
                   @change="updateDefaultTextSizeValue"
+                  @commit="keyboardStore.saveState()"
                   :min="1"
                   :max="9"
                   :step="1"
@@ -698,6 +717,7 @@
                     <CustomNumberInput
                       :model-value="labelTextSizes[0]"
                       @change="(value) => updateLabelTextSizeValue(0, value)"
+                      @commit="keyboardStore.saveState()"
                       :min="1"
                       :max="9"
                       :step="1"
@@ -711,6 +731,7 @@
                     <CustomNumberInput
                       :model-value="labelTextSizes[1]"
                       @change="(value) => updateLabelTextSizeValue(1, value)"
+                      @commit="keyboardStore.saveState()"
                       :min="1"
                       :max="9"
                       :step="1"
@@ -724,6 +745,7 @@
                     <CustomNumberInput
                       :model-value="labelTextSizes[2]"
                       @change="(value) => updateLabelTextSizeValue(2, value)"
+                      @commit="keyboardStore.saveState()"
                       :min="1"
                       :max="9"
                       :step="1"
@@ -738,6 +760,7 @@
                     <CustomNumberInput
                       :model-value="labelTextSizes[3]"
                       @change="(value) => updateLabelTextSizeValue(3, value)"
+                      @commit="keyboardStore.saveState()"
                       :min="1"
                       :max="9"
                       :step="1"
@@ -751,6 +774,7 @@
                     <CustomNumberInput
                       :model-value="labelTextSizes[4]"
                       @change="(value) => updateLabelTextSizeValue(4, value)"
+                      @commit="keyboardStore.saveState()"
                       :min="1"
                       :max="9"
                       :step="1"
@@ -764,6 +788,7 @@
                     <CustomNumberInput
                       :model-value="labelTextSizes[5]"
                       @change="(value) => updateLabelTextSizeValue(5, value)"
+                      @commit="keyboardStore.saveState()"
                       :min="1"
                       :max="9"
                       :step="1"
@@ -778,6 +803,7 @@
                     <CustomNumberInput
                       :model-value="labelTextSizes[6]"
                       @change="(value) => updateLabelTextSizeValue(6, value)"
+                      @commit="keyboardStore.saveState()"
                       :min="1"
                       :max="9"
                       :step="1"
@@ -791,6 +817,7 @@
                     <CustomNumberInput
                       :model-value="labelTextSizes[7]"
                       @change="(value) => updateLabelTextSizeValue(7, value)"
+                      @commit="keyboardStore.saveState()"
                       :min="1"
                       :max="9"
                       :step="1"
@@ -804,6 +831,7 @@
                     <CustomNumberInput
                       :model-value="labelTextSizes[8]"
                       @change="(value) => updateLabelTextSizeValue(8, value)"
+                      @commit="keyboardStore.saveState()"
                       :min="1"
                       :max="9"
                       :step="1"
@@ -1251,8 +1279,6 @@ const updateWidth = () => {
       key.height2 = currentWidth.value
     }
   })
-
-  keyboardStore.saveState()
 }
 
 const updateHeight = () => {
@@ -1267,8 +1293,6 @@ const updateHeight = () => {
       key.height2 = currentHeight.value
     }
   })
-
-  keyboardStore.saveState()
 }
 
 const updateX = () => {
@@ -1277,8 +1301,6 @@ const updateX = () => {
   selectedKeys.value.forEach((key) => {
     key.x = currentX.value
   })
-
-  keyboardStore.saveState()
 }
 
 const updateY = () => {
@@ -1287,8 +1309,6 @@ const updateY = () => {
   selectedKeys.value.forEach((key) => {
     key.y = currentY.value
   })
-
-  keyboardStore.saveState()
 }
 
 const updateX2 = () => {
@@ -1297,8 +1317,6 @@ const updateX2 = () => {
   selectedKeys.value.forEach((key) => {
     key.x2 = currentX2.value
   })
-
-  keyboardStore.saveState()
 }
 
 const updateY2 = () => {
@@ -1307,8 +1325,6 @@ const updateY2 = () => {
   selectedKeys.value.forEach((key) => {
     key.y2 = currentY2.value
   })
-
-  keyboardStore.saveState()
 }
 
 const updateWidth2 = () => {
@@ -1317,8 +1333,6 @@ const updateWidth2 = () => {
   selectedKeys.value.forEach((key) => {
     key.width2 = currentWidth2.value
   })
-
-  keyboardStore.saveState()
 }
 
 const updateHeight2 = () => {
@@ -1327,8 +1341,6 @@ const updateHeight2 = () => {
   selectedKeys.value.forEach((key) => {
     key.height2 = currentHeight2.value
   })
-
-  keyboardStore.saveState()
 }
 
 // Live preview color update (no state save)
@@ -1432,8 +1444,6 @@ const updateRotationAngle = () => {
 
   // Update the current value to reflect the normalization
   currentRotationAngle.value = normalizedAngle
-
-  keyboardStore.saveState()
 }
 
 const updateRotationX = () => {
@@ -1445,8 +1455,6 @@ const updateRotationX = () => {
       ? relativeToAbsolute(displayValue, key.x)
       : displayValue
   })
-
-  keyboardStore.saveState()
 }
 
 const updateRotationY = () => {
@@ -1458,8 +1466,6 @@ const updateRotationY = () => {
       ? relativeToAbsolute(displayValue, key.y)
       : displayValue
   })
-
-  keyboardStore.saveState()
 }
 
 // Live preview label color update (no state save)
@@ -1593,8 +1599,6 @@ const updateLabelTextSizeValue = (index: number, value: number | undefined) => {
       key.textSize[index] = validatedSize
     }
   })
-
-  keyboardStore.saveState()
 }
 
 const updateDefaultTextSizeValue = (value: number | undefined) => {
@@ -1602,7 +1606,6 @@ const updateDefaultTextSizeValue = (value: number | undefined) => {
     selectedKeys.value.forEach((key) => {
       key.default.textSize = value
     })
-    keyboardStore.saveState()
   }
 }
 </script>
