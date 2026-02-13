@@ -945,6 +945,7 @@
                       :ctrlStep="90"
                       :value-on-clear="0"
                       title="Switch orientation"
+                      :disabled="!hasSwitchCutout"
                     />
                   </div>
                   <div class="col-6">
@@ -957,6 +958,7 @@
                       :ctrlStep="90"
                       :value-on-clear="0"
                       title="Stabilizer orientation"
+                      :disabled="!hasStabilizer"
                     />
                   </div>
                 </div>
@@ -1022,6 +1024,22 @@ const isRotaryEncoder = computed(() => {
   const key = selectedKeys.value[0]
   if (!key) return false
   return key.sm === 'rot_ec11'
+})
+
+// Manufacturing orientations are not relevant for ghost, decal, or rotary encoder keys
+const hasSwitchCutout = computed(() => {
+  if (selectedKeys.value.length === 0) return false
+  const key = selectedKeys.value[0]
+  if (!key) return false
+  return !key.ghost && !key.decal && key.sm !== 'rot_ec11'
+})
+
+// Stabilizer orientation additionally requires key wider or taller than 1U
+const hasStabilizer = computed(() => {
+  if (!hasSwitchCutout.value) return false
+  const key = selectedKeys.value[0]
+  if (!key) return false
+  return (key.width || 1) > 1 || (key.height || 1) > 1
 })
 
 // Step property should be disabled for pure 1x1 keys (no secondary dimensions)
@@ -1346,6 +1364,11 @@ const updateWidth = () => {
       key.height = currentWidth.value
       key.height2 = currentWidth.value
     }
+    // Reset stabilizer rotation when key becomes 1x1 (no stabilizer needed)
+    if (currentWidth.value <= 1 && (key.height || 1) <= 1 && key.stabRotation) {
+      key.stabRotation = 0
+      currentManufacturingStabilizerRotation.value = 0
+    }
   })
 }
 
@@ -1359,6 +1382,11 @@ const updateHeight = () => {
     // sync the secondary height to match primary height
     if (key.height2 !== undefined && !key.stepped && !key.x2 && !key.y2) {
       key.height2 = currentHeight.value
+    }
+    // Reset stabilizer rotation when key becomes 1x1 (no stabilizer needed)
+    if ((key.width || 1) <= 1 && currentHeight.value <= 1 && key.stabRotation) {
+      key.stabRotation = 0
+      currentManufacturingStabilizerRotation.value = 0
     }
   })
 }
@@ -1449,6 +1477,16 @@ const updateGhost = () => {
 
   selectedKeys.value.forEach((key) => {
     key.ghost = currentGhost.value
+    if (currentGhost.value) {
+      if (key.switchRotation) {
+        key.switchRotation = 0
+        currentManufacturingSwitchRotation.value = 0
+      }
+      if (key.stabRotation) {
+        key.stabRotation = 0
+        currentManufacturingStabilizerRotation.value = 0
+      }
+    }
   })
 
   keyboardStore.saveState()
@@ -1479,6 +1517,16 @@ const updateDecal = () => {
 
   selectedKeys.value.forEach((key) => {
     key.decal = currentDecal.value
+    if (currentDecal.value) {
+      if (key.switchRotation) {
+        key.switchRotation = 0
+        currentManufacturingSwitchRotation.value = 0
+      }
+      if (key.stabRotation) {
+        key.stabRotation = 0
+        currentManufacturingStabilizerRotation.value = 0
+      }
+    }
   })
 
   keyboardStore.saveState()
@@ -1496,6 +1544,17 @@ const updateRotaryEncoder = () => {
     key.width2 = key.width
     key.height = key.width
     key.height2 = key.width
+
+    if (currentRotaryEncoder.value) {
+      if (key.switchRotation) {
+        key.switchRotation = 0
+        currentManufacturingSwitchRotation.value = 0
+      }
+      if (key.stabRotation) {
+        key.stabRotation = 0
+        currentManufacturingStabilizerRotation.value = 0
+      }
+    }
   })
 
   keyboardStore.saveState()
