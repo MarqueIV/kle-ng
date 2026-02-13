@@ -182,6 +182,14 @@ export const useKeyboardStore = defineStore('keyboard', () => {
     imageCache.clear()
   }
 
+  // Notify canvas that key bounds may have changed (triggers updateCanvasSize + re-render).
+  // Use this from @change handlers that modify position/size/rotation without saving state.
+  const notifyKeysModified = () => {
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('keys-modified'))
+    }
+  }
+
   const saveState = () => {
     // Remove any states after current index
     history.value = history.value.slice(0, historyIndex.value + 1)
@@ -201,9 +209,7 @@ export const useKeyboardStore = defineStore('keyboard', () => {
     }
 
     // Notify canvas of potential bounds changes
-    if (typeof window !== 'undefined') {
-      window.dispatchEvent(new CustomEvent('keys-modified'))
-    }
+    notifyKeysModified()
 
     // Notify plate generator of layout change
     usePlateGeneratorStore().requestRegenerate()
@@ -1545,6 +1551,7 @@ export const useKeyboardStore = defineStore('keyboard', () => {
     updateLayoutFromJson,
     getSerializedData,
     saveState,
+    notifyKeysModified,
 
     // Toolbar actions
     setCanvasMode,

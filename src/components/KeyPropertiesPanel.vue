@@ -1370,6 +1370,8 @@ const updateWidth = () => {
       currentManufacturingStabilizerRotation.value = 0
     }
   })
+
+  keyboardStore.notifyKeysModified()
 }
 
 const updateHeight = () => {
@@ -1389,6 +1391,8 @@ const updateHeight = () => {
       currentManufacturingStabilizerRotation.value = 0
     }
   })
+
+  keyboardStore.notifyKeysModified()
 }
 
 const updateX = () => {
@@ -1397,6 +1401,8 @@ const updateX = () => {
   selectedKeys.value.forEach((key) => {
     key.x = currentX.value
   })
+
+  keyboardStore.notifyKeysModified()
 }
 
 const updateY = () => {
@@ -1405,6 +1411,8 @@ const updateY = () => {
   selectedKeys.value.forEach((key) => {
     key.y = currentY.value
   })
+
+  keyboardStore.notifyKeysModified()
 }
 
 const updateX2 = () => {
@@ -1413,6 +1421,8 @@ const updateX2 = () => {
   selectedKeys.value.forEach((key) => {
     key.x2 = currentX2.value
   })
+
+  keyboardStore.notifyKeysModified()
 }
 
 const updateY2 = () => {
@@ -1421,6 +1431,8 @@ const updateY2 = () => {
   selectedKeys.value.forEach((key) => {
     key.y2 = currentY2.value
   })
+
+  keyboardStore.notifyKeysModified()
 }
 
 const updateWidth2 = () => {
@@ -1429,6 +1441,8 @@ const updateWidth2 = () => {
   selectedKeys.value.forEach((key) => {
     key.width2 = currentWidth2.value
   })
+
+  keyboardStore.notifyKeysModified()
 }
 
 const updateHeight2 = () => {
@@ -1437,6 +1451,8 @@ const updateHeight2 = () => {
   selectedKeys.value.forEach((key) => {
     key.height2 = currentHeight2.value
   })
+
+  keyboardStore.notifyKeysModified()
 }
 
 // Live preview color update (no state save)
@@ -1571,6 +1587,8 @@ const updateRotationAngle = () => {
 
   // Update the current value to reflect the normalization
   currentRotationAngle.value = normalizedAngle
+
+  keyboardStore.notifyKeysModified()
 }
 
 const updateRotationX = () => {
@@ -1582,6 +1600,8 @@ const updateRotationX = () => {
       ? relativeToAbsolute(displayValue, key.x)
       : displayValue
   })
+
+  keyboardStore.notifyKeysModified()
 }
 
 const updateRotationY = () => {
@@ -1593,6 +1613,8 @@ const updateRotationY = () => {
       ? relativeToAbsolute(displayValue, key.y)
       : displayValue
   })
+
+  keyboardStore.notifyKeysModified()
 }
 
 // Normalize to nearest valid manufacturing rotation: -270, -180, -90, 0, 90, 180, 270
