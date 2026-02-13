@@ -65,6 +65,9 @@
             useful when stabilizer cutouts overlap with switch cutouts.
           </li>
         </ul>
+        In order to adjust orientation of individual switch or stabilizer cutout set
+        <code>Switch orientation</code> or <code>Stabilizer orientation</code> property in
+        <b>Key Properties</b> panel.
       </div>
     </div>
 
