@@ -22,9 +22,6 @@ const result = computed(() => generationState.value.result)
   <div class="plate-generator-results">
     <!-- Loading State -->
     <div v-if="isLoading" class="loading-wrapper">
-      <div class="spinner-border text-primary" role="status">
-        <span class="visually-hidden">Loading...</span>
-      </div>
       <p class="text-muted mt-3 text-center">
         {{ generationState.status === 'loading' ? 'Loading library...' : 'Generating plate...' }}
       </p>

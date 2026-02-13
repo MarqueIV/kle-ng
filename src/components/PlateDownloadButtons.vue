@@ -8,9 +8,11 @@ const plateStore = usePlateGeneratorStore()
 const { generationState } = storeToRefs(plateStore)
 
 const isSuccess = computed(() => generationState.value.status === 'success')
+const isGenerating = computed(() => generationState.value.status === 'generating')
+
 const hasResult = computed(() => generationState.value.result !== null)
 
-const showButtons = computed(() => isSuccess.value && hasResult.value)
+const showButtons = computed(() => (isSuccess.value && hasResult.value) || isGenerating.value)
 
 function handleDownloadSvg() {
   plateStore.downloadAllSvg()
@@ -28,6 +30,7 @@ function handleDownloadDxf() {
         type="button"
         class="btn btn-sm btn-outline-primary flex-fill d-flex align-items-center justify-content-center gap-2"
         @click="handleDownloadSvg"
+        :disabled="isGenerating"
         aria-label="Download plate as SVG file"
         title="Download SVG for use in vector editors like Inkscape or Adobe Illustrator"
       >
@@ -38,6 +41,7 @@ function handleDownloadDxf() {
         type="button"
         class="btn btn-sm btn-outline-primary flex-fill d-flex align-items-center justify-content-center gap-2"
         @click="handleDownloadDxf"
+        :disabled="isGenerating"
         aria-label="Download plate as DXF file"
         title="Download DXF for use in CAD software or laser cutting services (units: millimeters)"
       >

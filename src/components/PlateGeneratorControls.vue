@@ -67,9 +67,6 @@ function handleDismissError() {
         @click="handleGeneratePlate"
         :title="buttonTooltip"
       >
-        <span v-if="isLoading" class="spinner-border spinner-border-sm me-2" role="status">
-          <span class="visually-hidden">Loading...</span>
-        </span>
         Generate
       </button>
       <div
