@@ -686,16 +686,18 @@
 
               <!-- Default Text Size -->
               <div class="mb-2">
-                <label class="form-label small mb-1">Default Text Size</label>
-                <CustomNumberInput
-                  :model-value="currentDefaultTextSize"
-                  @change="updateDefaultTextSizeValue"
-                  @commit="keyboardStore.saveState()"
-                  :min="1"
-                  :max="9"
-                  :step="1"
-                  title="Default text size for all labels"
-                />
+                <div class="d-flex align-items-center gap-2">
+                  <label class="form-label small mb-0 text-nowrap">Default Text Size</label>
+                  <CustomNumberInput
+                    :model-value="currentDefaultTextSize"
+                    @change="updateDefaultTextSizeValue"
+                    @commit="keyboardStore.saveState()"
+                    :min="1"
+                    :max="9"
+                    :step="1"
+                    title="Default text size for all labels"
+                  />
+                </div>
               </div>
 
               <!-- Per-Label Text Sizes -->
@@ -845,9 +847,9 @@
               </div>
 
               <!-- Options -->
-              <div class="mb-2">
+              <div>
                 <label class="form-label small mb-1">Options</label>
-                <div class="row row-cols-3 g-2">
+                <div class="row row-cols-3">
                   <div class="col">
                     <div class="form-check">
                       <input
@@ -918,11 +920,58 @@
                   </div>
                 </div>
               </div>
+
+              <!-- Manufacturing -->
+              <div class="mb-2">
+                <div class="d-flex align-items-center justify-content-between mb-1">
+                  <label class="form-label small mb-0">Manufacturing</label>
+                  <button
+                    @click="showManufacturingHelp"
+                    class="btn btn-sm btn-outline-secondary help-btn"
+                    title="Help"
+                    type="button"
+                  >
+                    <BiQuestionCircle />
+                  </button>
+                </div>
+                <div class="row g-1">
+                  <div class="col-6">
+                    <label class="control-label">Switch orientation</label>
+                    <CustomNumberInput
+                      v-model="currentManufacturingSwitchRotation"
+                      @change="updateManufacturingSwitchRotation"
+                      @commit="keyboardStore.saveState()"
+                      :step="90"
+                      :ctrlStep="90"
+                      :value-on-clear="0"
+                      title="Switch orientation"
+                    />
+                  </div>
+                  <div class="col-6">
+                    <label class="control-label">Stabilizer orientation</label>
+                    <CustomNumberInput
+                      v-model="currentManufacturingStabilizerRotation"
+                      @change="updateManufacturingStabilizerRotation"
+                      @commit="keyboardStore.saveState()"
+                      :step="90"
+                      :ctrlStep="90"
+                      :value-on-clear="0"
+                      title="Stabilizer orientation"
+                    />
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
       </fieldset>
     </div>
+
+    <!-- Manufacturing Help Modal -->
+    <ManufacturingHelpModal
+      :is-visible="isManufacturingHelpVisible"
+      @close="closeManufacturingHelp"
+    />
   </div>
 </template>
 
@@ -935,6 +984,8 @@ import { D } from '@/utils/decimal-math'
 import { recentlyUsedColorsManager } from '@/utils/recently-used-colors'
 import { isValidHex, normalizeHex } from '@/utils/color-utils'
 import { isNonRectangular as isNonRectangularUtil } from '@/utils/key-utils'
+import ManufacturingHelpModal from './ManufacturingHelpModal.vue'
+import BiQuestionCircle from 'bootstrap-icons/icons/question-circle.svg'
 
 const keyboardStore = useKeyboardStore()
 
@@ -1054,6 +1105,17 @@ const currentRotaryEncoder = ref(false)
 const currentRotationAngle = ref(0)
 const currentRotationX = ref(0)
 const currentRotationY = ref(0)
+const currentManufacturingSwitchRotation = ref(0)
+const currentManufacturingStabilizerRotation = ref(0)
+
+// Manufacturing help modal
+const isManufacturingHelpVisible = ref(false)
+const showManufacturingHelp = () => {
+  isManufacturingHelpVisible.value = true
+}
+const closeManufacturingHelp = () => {
+  isManufacturingHelpVisible.value = false
+}
 
 // Coordinate conversion functions
 const absoluteToRelative = (absoluteCoord: number, keyPosition: number): number => {
@@ -1134,6 +1196,8 @@ const updateCurrentValues = () => {
     currentRotationAngle.value = 0
     currentRotationX.value = 0
     currentRotationY.value = 0
+    currentManufacturingSwitchRotation.value = 0
+    currentManufacturingStabilizerRotation.value = 0
     return
   }
 
@@ -1171,6 +1235,8 @@ const updateCurrentValues = () => {
     currentRotationAngle.value = normalizeRotationAngle(firstKey.rotation_angle || 0)
     currentRotationX.value = formatNumber(firstKey.rotation_x || 0)
     currentRotationY.value = formatNumber(firstKey.rotation_y || 0)
+    currentManufacturingSwitchRotation.value = firstKey.switchRotation || 0
+    currentManufacturingStabilizerRotation.value = firstKey.stabRotation || 0
   } else {
     // For multi-selection, clear labels and use first key for other values
     labels.value = Array(12).fill(undefined)
@@ -1199,6 +1265,8 @@ const updateCurrentValues = () => {
     currentRotationAngle.value = normalizeRotationAngle(firstKey.rotation_angle || 0)
     currentRotationX.value = formatNumber(firstKey.rotation_x || 0)
     currentRotationY.value = formatNumber(firstKey.rotation_y || 0)
+    currentManufacturingSwitchRotation.value = firstKey.switchRotation || 0
+    currentManufacturingStabilizerRotation.value = firstKey.stabRotation || 0
   }
 }
 
@@ -1465,6 +1533,36 @@ const updateRotationY = () => {
     key.rotation_y = isRelativeRotationMode.value
       ? relativeToAbsolute(displayValue, key.y)
       : displayValue
+  })
+}
+
+// Normalize to nearest valid manufacturing rotation: -270, -180, -90, 0, 90, 180, 270
+const normalizeManufacturingRotation = (value: number): number => {
+  let rounded = Math.round(value / 90) * 90
+  while (rounded > 270) rounded -= 360
+  while (rounded < -270) rounded += 360
+  return rounded
+}
+
+const updateManufacturingSwitchRotation = () => {
+  if (selectedKeys.value.length === 0) return
+
+  const normalized = normalizeManufacturingRotation(currentManufacturingSwitchRotation.value)
+  currentManufacturingSwitchRotation.value = normalized
+
+  selectedKeys.value.forEach((key) => {
+    key.switchRotation = normalized
+  })
+}
+
+const updateManufacturingStabilizerRotation = () => {
+  if (selectedKeys.value.length === 0) return
+
+  const normalized = normalizeManufacturingRotation(currentManufacturingStabilizerRotation.value)
+  currentManufacturingStabilizerRotation.value = normalized
+
+  selectedKeys.value.forEach((key) => {
+    key.stabRotation = normalized
   })
 }
 
@@ -1787,6 +1885,17 @@ const updateDefaultTextSizeValue = (value: number | undefined) => {
   padding: 2px 8px;
   line-height: 1.2;
   height: 20px;
+}
+
+/* Help button styling */
+.help-btn {
+  font-size: 0.875rem;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  padding: 4px;
 }
 
 /* Toggle switch styling */

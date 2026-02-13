@@ -24,7 +24,7 @@
     "format": "prettier --log-level silent --write src/ e2e/"
   },
   "dependencies": {
-    "@adamws/kle-serial": "github:adamws/kle-serial2#v0.18.1",
+    "@adamws/kle-serial": "github:adamws/kle-serial2#develop",
     "bootstrap": "^5.3.8",
     "bootstrap-icons": "^1.13.1",
     "decimal.js": "^10.6.0",
@@ -39,7 +39,7 @@
   },
   "overrides": {
     "ergogen": {
-      "kle-serial": "github:adamws/kle-serial2#v0.18.1"
+      "kle-serial": "github:adamws/kle-serial2#develop"
     }
   },
   "devDependencies": {
