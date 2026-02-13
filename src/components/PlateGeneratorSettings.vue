@@ -107,13 +107,15 @@ const customHeightInputClass = computed(() =>
           class="form-select form-select-sm"
           aria-label="Select switch cutout type"
         >
-          <option v-for="option in cutoutOptions" :key="option.value" :value="option.value">
+          <option
+            v-for="option in cutoutOptions"
+            :key="option.value"
+            :value="option.value"
+            :title="option.description"
+          >
             {{ option.label }}
           </option>
         </select>
-        <div class="form-text small">
-          {{ cutoutOptions.find((o) => o.value === settings.cutoutType)?.description }}
-        </div>
       </div>
 
       <!-- Custom Cutout Dimensions -->
@@ -171,13 +173,15 @@ const customHeightInputClass = computed(() =>
           class="form-select form-select-sm"
           aria-label="Select stabilizer cutout type"
         >
-          <option v-for="option in stabilizerOptions" :key="option.value" :value="option.value">
+          <option
+            v-for="option in stabilizerOptions"
+            :key="option.value"
+            :value="option.value"
+            :title="option.description"
+          >
             {{ option.label }}
           </option>
         </select>
-        <div class="form-text small">
-          {{ stabilizerOptions.find((o) => o.value === settings.stabilizerType)?.description }}
-        </div>
       </div>
 
       <!-- Fillet Radius -->
