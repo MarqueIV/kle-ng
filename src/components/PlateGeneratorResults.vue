@@ -15,24 +15,33 @@ const isSuccess = computed(() => generationState.value.status === 'success')
 
 const isIdle = computed(() => generationState.value.status === 'idle')
 
+const isRegenerating = computed(
+  () => generationState.value.status === 'generating' && generationState.value.result != null,
+)
+
 const result = computed(() => generationState.value.result)
 </script>
 
 <template>
   <div class="plate-generator-results">
-    <!-- Loading State -->
-    <div v-if="isLoading" class="loading-wrapper">
+    <!-- Loading State (first run only, no previous result) -->
+    <div v-if="isLoading && !isRegenerating" class="loading-wrapper">
       <p class="text-muted mt-3 text-center">
         {{ generationState.status === 'loading' ? 'Loading library...' : 'Generating plate...' }}
       </p>
     </div>
 
-    <!-- Success State with SVG Preview -->
+    <!-- SVG Preview (shown when successful OR regenerating with previous result) -->
     <div
-      v-else-if="isSuccess && result"
+      v-else-if="(isSuccess || isRegenerating) && result"
       class="svg-preview-container"
-      v-html="result.svgPreview"
-    ></div>
+      :class="{ regenerating: isRegenerating }"
+    >
+      <div v-if="isRegenerating" class="regenerating-overlay">
+        <p class="text-muted small mb-0">Generating plate...</p>
+      </div>
+      <div v-html="result.svgPreview"></div>
+    </div>
 
     <!-- Idle State -->
     <div v-else-if="isIdle" class="idle-wrapper">
@@ -69,6 +78,25 @@ const result = computed(() => generationState.value.result)
   border: 1px solid var(--bs-border-color);
   border-radius: 0.375rem;
   background: var(--bs-tertiary-bg);
+  overflow: hidden;
+}
+
+.svg-preview-container > div:last-child {
+  width: 100%;
+  height: 100%;
+}
+
+.svg-preview-container.regenerating {
+  position: relative;
+}
+
+.regenerating-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  text-align: center;
+  z-index: 1;
 }
 
 /* SVG fills container and maintains aspect ratio via viewBox */
