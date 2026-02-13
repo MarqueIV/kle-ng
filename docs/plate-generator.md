@@ -117,7 +117,7 @@ Main orchestration module. `buildPlate(keys, options)` is the entry point.
 
 1. **Filter keys** — Excludes decal and ghost keys, sorts by position.
 2. **Transform coordinates** — Converts KLE layout coordinates to maker.js coordinates (see Coordinate System below).
-3. **Create cutouts** — For each key, creates a switch cutout model and optionally a stabilizer model.
+3. **Create cutouts** — For each key, creates a switch cutout model and optionally a stabilizer model. Per-key `switchRotation` and `stabRotation` are applied on top of the layout rotation.
 4. **Merge cutouts** (optional) — When `mergeCutouts` is enabled, combines overlapping cutouts into simplified paths.
 5. **Create outline** (optional) — When `outline.enabled` is true, generates a rectangular outline with configurable margins and rounded corners.
 6. **Add mounting holes** (optional) — When `mountingHoles.enabled` is true (and outline is enabled), adds circular holes at the four corners.
@@ -201,6 +201,18 @@ The Openable cutout is a 14x14mm base with 4 symmetrical notches on the left and
 | 8U       | 66.675                 | -                    |
 
 For vertical keys (height > width), the stabilizer pair is rotated -90 degrees.
+
+**Per-key rotation overrides (`switchRotation` / `stabRotation`):**
+
+Each key can carry optional `switchRotation` and `stabRotation` properties (set in the Manufacturing section of
+`KeyPropertiesPanel`). These rotate the switch cutout or stabilizer cutout independently around the key center,
+on top of the layout rotation (`rotation_angle`). Values use KLE convention (clockwise positive, in 90° increments)
+and are negated internally for maker.js (counter-clockwise positive).
+
+- **`switchRotation`** — Applied inside `positionCutout()`. Combined with the layout rotation into a single rotation
+  before the cutout is moved to its final position: `totalRotation = -(rotation_angle) - switchRotation`.
+- **`stabRotation`** — Applied in `buildPlate()` when positioning the stabilizer model. Combined the same way:
+  `totalStabRotation = -(rotation_angle) - stabRotation`.
 
 **Validation functions:**
 - `validateFilletRadius()` — Ensures radius does not exceed `min(width, height) / 2`.
@@ -331,7 +343,7 @@ The plate builder transforms between two coordinate systems:
 2. Use the first valid key's center as the origin reference.
 3. X position: `(key.centerX - origin.centerX) * spacingX`
 4. Y position: `(origin.centerY - key.centerY) * spacingY` (inverted)
-5. Rotation angle: negated from KLE value.
+5. Rotation angle: negated from KLE value. Per-key `switchRotation` and `stabRotation` are also negated and added to the layout rotation.
 
 Default spacing is 19.05mm on both axes, overridden by keyboard metadata (`spacing_x`, `spacing_y`) when present.
 

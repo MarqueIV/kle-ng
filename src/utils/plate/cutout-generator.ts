@@ -825,6 +825,7 @@ export async function positionCutout(
   sizeAdjust: number = 0,
   customWidth?: number,
   customHeight?: number,
+  switchRotation: number = 0,
 ): Promise<MakerJs.IModel> {
   const makerjs = await getMakerJs()
   const generator = getCutoutGenerator(cutoutType, customWidth, customHeight)
@@ -838,9 +839,12 @@ export async function positionCutout(
   const adjustedHeight = generator.height - sizeAdjust
   model = makerjs.model.move(model, [-adjustedWidth / 2, -adjustedHeight / 2])
 
-  // Apply rotation around the origin (which is now the center of the cutout)
-  if (cutout.rotationAngle !== 0) {
-    model = makerjs.model.rotate(model, cutout.rotationAngle, [0, 0])
+  // Apply rotation around the origin (which is now the center of the cutout).
+  // Combines layout rotation (from key position) with per-switch rotation.
+  // switchRotation uses KLE convention (clockwise positive), negate for maker.js (CCW positive).
+  const totalRotation = cutout.rotationAngle - (switchRotation || 0)
+  if (totalRotation !== 0) {
+    model = makerjs.model.rotate(model, totalRotation, [0, 0])
   }
 
   // Move to final position: center adjusted cutout at the key center.

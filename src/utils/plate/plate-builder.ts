@@ -409,6 +409,7 @@ export async function buildPlate(
         sizeAdjust,
         customCutoutWidth,
         customCutoutHeight,
+        key?.switchRotation || 0,
       )
       cutoutModels[`cutout_${i}`] = cutoutModel
 
@@ -458,8 +459,11 @@ export async function buildPlate(
           const keyCenterY = D.add(position.centerY, D.div(position.height, 2))
 
           let positionedStab = stabModel
-          if (position.rotationAngle !== 0) {
-            positionedStab = makerjs.model.rotate(positionedStab, position.rotationAngle, [0, 0])
+          // Combine layout rotation with per-key stabilizer rotation.
+          // stabRotation uses KLE convention (clockwise positive), negate for maker.js (CCW positive).
+          const totalStabRotation = position.rotationAngle - (key.stabRotation || 0)
+          if (totalStabRotation !== 0) {
+            positionedStab = makerjs.model.rotate(positionedStab, totalStabRotation, [0, 0])
           }
           positionedStab = makerjs.model.move(positionedStab, [keyCenterX, keyCenterY])
           cutoutModels[`stabilizer_${i}`] = positionedStab
