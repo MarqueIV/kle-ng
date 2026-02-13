@@ -32,17 +32,6 @@ const buttonTooltip = computed(() => {
   return 'Generate plate cutouts from current layout'
 })
 
-const statusMessage = computed(() => {
-  switch (generationState.value.status) {
-    case 'loading':
-      return 'Loading plate generation library...'
-    case 'generating':
-      return 'Generating plate...'
-    default:
-      return ''
-  }
-})
-
 async function handleGeneratePlate() {
   await plateStore.generatePlate()
 }
@@ -95,11 +84,6 @@ function handleDismissError() {
         />
         <label class="form-check-label small" for="plateAutoRefresh">Auto Refresh</label>
       </div>
-    </div>
-
-    <!-- Status Message -->
-    <div v-if="isLoading" class="text-muted small mt-2 text-center">
-      {{ statusMessage }}
     </div>
 
     <!-- Empty Layout Warning -->

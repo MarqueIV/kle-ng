@@ -7,6 +7,9 @@ import svgLoader from 'vite-svg-loader'
 
 // https://vite.dev/config/
 export default defineConfig({
+  worker: {
+    format: 'es',
+  },
   plugins: [
     vue(),
     vueDevTools(),

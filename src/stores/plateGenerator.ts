@@ -1,13 +1,14 @@
 import { defineStore } from 'pinia'
 import { ref, watch } from 'vue'
 import type { PlateSettings, GenerationState } from '@/types/plate'
-import { buildPlate, PlateBuilderError } from '@/utils/plate/plate-builder'
 import {
   validateFilletRadius,
   validateStabilizerFilletRadius,
   validateCustomCutoutDimension,
 } from '@/utils/plate/cutout-generator'
 import { useKeyboardStore } from '@/stores/keyboard'
+import type { PlateWorkerResponse } from '@/utils/plate/plate-worker'
+import PlateWorker from '@/utils/plate/plate-worker?worker'
 
 const STORAGE_KEY = 'kle-ng-plate-settings'
 
@@ -57,29 +58,44 @@ export const usePlateGeneratorStore = defineStore('plateGenerator', () => {
     result: null,
   })
 
+  // Persistent worker instance (created lazily on first generate)
+  let worker: Worker | null = null
+
+  // Counter to ignore stale worker responses when a newer generation is in flight
+  let generationId = 0
+
+  function getWorker(): Worker {
+    if (!worker) {
+      worker = new PlateWorker()
+    }
+    return worker
+  }
+
   /**
-   * Generate a plate from the current keyboard layout
+   * Generate a plate from the current keyboard layout.
+   * Dispatches work to a Web Worker so the main thread stays responsive.
    */
-  async function generatePlate(): Promise<void> {
+  function generatePlate(): void {
     const keyboardStore = useKeyboardStore()
 
-    // Set loading state (loading maker.js)
+    // Preserve previous result so the UI can show it dimmed during regeneration
+    const previousResult = generationState.value.result
+
     generationState.value = {
-      status: 'loading',
+      status: 'generating',
       error: null,
-      result: null,
+      result: previousResult,
     }
 
-    try {
-      // Set generating state
-      generationState.value.status = 'generating'
+    // Get spacing from keyboard metadata
+    const spacingX = keyboardStore.metadata.spacing_x || 19.05
+    const spacingY = keyboardStore.metadata.spacing_y || 19.05
 
-      // Get spacing from keyboard metadata
-      const spacingX = keyboardStore.metadata.spacing_x || 19.05
-      const spacingY = keyboardStore.metadata.spacing_y || 19.05
-
-      // Build the plate
-      const result = await buildPlate(keyboardStore.keys, {
+    // Serialize reactive data to plain objects for postMessage.
+    // JSON round-trip strips Vue Proxy wrappers that structuredClone cannot handle.
+    const keys = JSON.parse(JSON.stringify(keyboardStore.keys))
+    const options = JSON.parse(
+      JSON.stringify({
         cutoutType: settings.value.cutoutType,
         stabilizerType: settings.value.stabilizerType,
         filletRadius: settings.value.filletRadius,
@@ -93,35 +109,43 @@ export const usePlateGeneratorStore = defineStore('plateGenerator', () => {
         customHoles: settings.value.customHoles,
         spacingX,
         spacingY,
-      })
+      }),
+    )
 
-      // Set success state
-      generationState.value = {
-        status: 'success',
-        error: null,
-        result,
-      }
-    } catch (error) {
-      // Set error state
-      let errorMessage = 'An unexpected error occurred while generating the plate.'
+    const currentId = ++generationId
+    const w = getWorker()
 
-      if (error instanceof PlateBuilderError) {
-        errorMessage = error.message
-      } else if (error instanceof Error) {
-        // Handle maker.js loading errors or other errors
-        if (error.message.includes('timed out')) {
-          errorMessage = 'Failed to load plate generation library. Please try again.'
-        } else {
-          errorMessage = error.message
+    w.onmessage = (event: MessageEvent<PlateWorkerResponse>) => {
+      // Ignore stale responses from a previous generation
+      if (currentId !== generationId) return
+
+      const data = event.data
+      if (data.type === 'success') {
+        generationState.value = {
+          status: 'success',
+          error: null,
+          result: data.result,
+        }
+      } else {
+        generationState.value = {
+          status: 'error',
+          error: data.message,
+          result: null,
         }
       }
+    }
+
+    w.onerror = (event: ErrorEvent) => {
+      if (currentId !== generationId) return
 
       generationState.value = {
         status: 'error',
-        error: errorMessage,
+        error: event.message || 'An unexpected error occurred in the plate generation worker.',
         result: null,
       }
     }
+
+    w.postMessage({ keys, options })
   }
 
   /**
