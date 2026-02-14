@@ -16,6 +16,7 @@ PlateGeneratorPanel.vue            ← Entry point, tabbed 2-column layout
 └── PlateDownloadButtons.vue       ← SVG / DXF download
 
 stores/plateGenerator.ts           ← State management (Pinia)
+utils/plate/plate-worker.ts        ← Web Worker running buildPlate() off main thread
 utils/plate/plate-builder.ts       ← Orchestrates geometry → export
 utils/plate/cutout-generator.ts    ← Switch & stabilizer cutout shapes
 utils/makerjs-loader.ts            ← Lazy-loads maker.js library
@@ -35,14 +36,19 @@ types/plate.ts                     ← Type definitions
 ┌──────────────────────────┐
 │  plateGeneratorStore     │
 │  .generatePlate()        │
-│  Status: loading →       │
-│  generating → success    │
+│  1. Check cache (hit?) ───────► Instant result, skip worker
+│  2. Check in-flight?   ───────► Set pendingRegeneration, return
+│  Status: generating      │
 └────────────┬─────────────┘
+             │ postMessage (keys, options)
              ▼
 ┌──────────────────────────┐    ┌───────────────────────────┐
-│  buildPlate()            │◄───│  keyboardStore            │
-│  plate-builder.ts        │    │  (keys, spacing metadata) │
-└────────────┬─────────────┘    └───────────────────────────┘
+│  plate-worker.ts         │◄───│  keyboardStore            │
+│  (Web Worker thread)     │    │  (keys, spacing metadata) │
+│  calls buildPlate()      │    └───────────────────────────┘
+│  plate-builder.ts        │
+└────────────┬─────────────┘
+             │ (worker thread)
              ▼
 ┌──────────────────────────┐
 │  For each valid key:     │
@@ -65,13 +71,34 @@ types/plate.ts                     ← Type definitions
 │  → SVG download (mm)     │
 │  → DXF content           │
 │  → Merged exports (opt)  │
-└──────────────────────────┘
+└────────────┬─────────────┘
+             │ postMessage (result)
+             ▼
+┌────────────────────────────┐
+│  Store onmessage handler   │
+│  1. Check generationId     │
+│     (stale? discard)       │
+│  2. Cache result           │
+│  3. Status: success        │
+│  4. If pendingRegeneration │
+│     → re-enter generate    │
+└────────────────────────────┘
 ```
 
 ### Auto-Refresh
 
 When auto-refresh is enabled, the keyboard store calls `plateGeneratorStore.requestRegenerate()` whenever the layout
 changes (key edits, undo, redo). This is debounced at 500ms and only fires when settings pass validation.
+
+**Settings watcher:** A separate settings watcher (debounced at 300ms) calls `generatePlate()` whenever plate
+settings change, provided the current status is `'success'` or `'generating'`. When called during `'generating'`
+status, `generatePlate()` handles deferral internally via the `pendingRegeneration` flag rather than queueing
+redundant work.
+
+**Layout change handling:** `requestRegenerate()` clears the settings cache immediately (because cached results
+are for the old layout). If generation is currently in-flight, it increments `generationId` to mark the in-flight
+result as stale and sets `pendingRegeneration` so regeneration proceeds after the worker finishes. The debounced
+500ms regeneration still fires as a backup path.
 
 ## File Reference
 
@@ -81,10 +108,10 @@ changes (key edits, undo, redo). This is debounced at 500ms and only fires when 
 |------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | `PlateGeneratorPanel.vue`    | Root container. Tabbed two-column layout (controls left, preview right). Three tabs: Cutouts, Holes, Outline. Preloads maker.js on mount via `requestIdleCallback`. |
 | `PlateGeneratorSettings.vue` | [Cutouts tab] Form controls for cutout type, stabilizer type, fillet radius, size adjustment, custom dimensions, and merge cutouts toggle. Validates inputs.        |
-| `PlateHolesSettings.vue`     | [Holes tab] Corner mounting holes (require outline) and custom holes at arbitrary positions with configurable diameter and X/Y offsets in keyboard units.            |
+| `PlateHolesSettings.vue`     | [Holes tab] Corner mounting holes (require outline) and custom holes at arbitrary positions with configurable diameter and X/Y offsets in keyboard units.           |
 | `PlateOutlineSettings.vue`   | [Outline tab] Outline generation settings: enable toggle, independent margins (top/bottom/left/right), fillet radius, and merge-with-cutouts option.                |
 | `PlateGeneratorControls.vue` | "Generate Plate" button with loading state, auto-refresh checkbox, error alerts, and empty-layout warnings.                                                         |
-| `PlateGeneratorResults.vue`  | Renders the SVG preview on success, a spinner during generation, or idle instructions before first generation. Shows both cutouts and outline layers.               |
+| `PlateGeneratorResults.vue`  | Renders the SVG preview on success, or idle instructions before first generation. During regeneration, shows the previous result dimmed with a spinner overlay. Shows both cutouts and outline layers. |
 | `PlateDownloadButtons.vue`   | SVG and DXF download buttons, visible only after successful generation. Handles separate vs. merged exports based on settings.                                      |
 
 ### Store
@@ -94,14 +121,22 @@ changes (key edits, undo, redo). This is debounced at 500ms and only fires when 
 **State:**
 - `settings: PlateSettings` — Current configuration including cutouts, outline, and mounting holes settings.
 - `autoRefresh: boolean` — Whether to regenerate on layout changes.
-- `generationState: GenerationState` — Status (`idle` | `loading` | `generating` | `success` | `error`), result, and error message.
+- `generationState: GenerationState` — Status (`idle` | `generating` | `success` | `error`), result, and error message.
+
+Note: the `GenerationStatus` type definition still includes `'loading'` for backward compatibility, but the store never sets it. Components that check for `'loading'` do so defensively.
+
+**Internal state (not exposed):**
+- `worker: Worker | null` — Persistent Web Worker instance, created lazily on first `generatePlate()` call.
+- `generationId: number` — Counter used to detect and discard stale worker responses. Incremented on cache hits and layout changes.
+- `cache: Map<string, PlateGenerationResult>` — Cache of generated results keyed by JSON-stringified settings (not layout). Cleared on layout change.
+- `pendingRegeneration: boolean` — Flag indicating that `generatePlate()` was called while a generation was already in-flight. Checked on worker completion to trigger a follow-up generation.
 
 **Actions:**
-- `generatePlate()` — Reads keys and spacing from the keyboard store, calls `buildPlate()`, and updates `generationState` with the result.
+- `generatePlate()` — Serializes current keys and settings, checks the cache, and dispatches work to a Web Worker. On cache hit, returns the cached result instantly and increments `generationId` to invalidate any in-flight worker response. On cache miss during an in-flight generation, sets `pendingRegeneration` and returns without queueing redundant work. On worker completion, caches the result and checks `pendingRegeneration` to re-enter if needed.
 - `downloadSvg()` / `downloadDxf()` — Download cutouts only (`keyboard-plate.svg` / `keyboard-plate.dxf`).
 - `downloadAllSvg()` — Downloads all SVG files. When `outline.mergeWithCutouts` is enabled, downloads a single merged file; otherwise downloads separate cutouts and outline files.
 - `downloadAllDxf()` — Downloads all DXF files. Same merge logic as `downloadAllSvg()`.
-- `requestRegenerate()` — Debounced (500ms) regeneration triggered by layout changes when auto-refresh is on.
+- `requestRegenerate()` — Clears the cache, marks any in-flight generation as stale (`++generationId`), sets `pendingRegeneration` if generating, then triggers debounced (500ms) regeneration when auto-refresh is on.
 - `resetGeneration()` — Returns `generationState` to idle.
 
 **Persistence:**
@@ -111,9 +146,15 @@ cause CPU usage spikes when the website is opened via a shared link.
 
 ### Utilities
 
+#### `plate/plate-worker.ts`
+
+Web Worker entry point. Receives `{ keys, options }` messages from the store, calls `buildPlate()`, and posts
+back a `PlateWorkerResponse` (either `{ type: 'success', result }` or `{ type: 'error', message }`). Catches
+`PlateBuilderError` for user-facing messages and handles maker.js timeout errors separately.
+
 #### `plate/plate-builder.ts`
 
-Main orchestration module. `buildPlate(keys, options)` is the entry point.
+Main orchestration module. `buildPlate(keys, options)` is the entry point. Called by the Web Worker, not directly by the store.
 
 1. **Filter keys** — Excludes decal and ghost keys, sorts by position.
 2. **Transform coordinates** — Converts KLE layout coordinates to maker.js coordinates (see Coordinate System below).
@@ -258,6 +299,61 @@ Lazy-loads the [maker.js](https://maker.js.org/) library to keep the initial bun
 #### `decimal-math.ts`
 
 Exported as `D`. Wraps arithmetic operations in a `Decimal` library to avoid floating-point errors in position and dimension calculations. Provides `add`, `sub`, `mul`, `div`, `rotatePoint`, `mirrorPoint`, trigonometric functions, and formatting.
+
+## Worker, Cache & Deferred Regeneration
+
+### Web Worker
+
+Plate generation runs off the main thread in a Web Worker (`utils/plate/plate-worker.ts`). The worker calls
+`buildPlate()` with the provided keys and options, then posts back either a success response containing the
+`PlateGenerationResult` or an error response with a message string.
+
+- **Lazy creation:** The worker is instantiated on the first call to `generatePlate()`, not on store creation or panel mount.
+- **Reused across generations:** The same worker instance handles all subsequent generations. It is never terminated between runs.
+- **Serialization:** Keys and options are serialized via `JSON.parse(JSON.stringify(...))` before `postMessage` to strip Vue Proxy wrappers that `structuredClone` (used internally by `postMessage`) cannot handle.
+
+The worker imports `buildPlate` and `PlateBuilderError` from `plate-builder.ts`. It catches `PlateBuilderError` for user-facing messages and surfaces timeout errors from the maker.js loader separately.
+
+### Cache
+
+A `Map<string, PlateGenerationResult>` caches previously generated results. The cache key is the JSON-stringified
+settings object (cutout type, stabilizer type, fillet radii, size adjust, outline, holes, spacing) -- it does **not**
+include the layout keys. This means the cache is only valid for the current layout.
+
+- **Cache hit:** Returns instantly. Increments `generationId` to invalidate any in-flight worker response, since the
+  result is already available.
+- **Cache miss:** Proceeds to dispatch work to the Web Worker.
+- **Invalidation:** The entire cache is cleared by `requestRegenerate()` whenever the layout changes. Since the cache
+  key does not include layout data, all entries become stale on layout change.
+
+### Deferred Regeneration
+
+When `generatePlate()` is called while a generation is already in-flight (status is `'generating'` and the call
+is a cache miss), it sets the `pendingRegeneration` flag and returns immediately instead of posting a second
+message to the worker. Multiple mid-flight calls collapse into a single deferred generation.
+
+On worker completion (`onmessage` or `onerror`), the store checks `pendingRegeneration`. If set, it clears the
+flag and calls `generatePlate()` again, which will pick up the latest reactive settings and keys.
+
+This also applies to stale responses: when a worker response arrives with an outdated `generationId` (because a
+cache hit or layout change incremented the counter), the response is not cached or displayed, but
+`pendingRegeneration` is still checked. This ensures that a deferred layout-change regeneration can proceed even
+when the in-flight result was marked stale.
+
+### Stale Response Filtering
+
+The `generationId` counter prevents stale worker responses from overwriting current state.
+
+- **Incremented** in two places:
+  - In `generatePlate()` when a cache hit occurs (the cached result is already applied, so any in-flight worker response for the same settings is redundant).
+  - In `requestRegenerate()` when the layout changes during an in-flight generation (the in-flight result is for the old layout).
+- **Checked** in the `onmessage` and `onerror` handlers: if `currentId !== generationId`, the response is discarded (not cached, not displayed). The handler still checks `pendingRegeneration` to allow deferred regeneration to proceed.
+
+### Previous Result Preservation
+
+When a new generation starts (cache miss, no in-flight work), the store preserves the previous `generationState.result`
+while setting the status to `'generating'`. The `PlateGeneratorResults` component uses this to show the previous SVG
+preview while the new result is being computed.
 
 ## Plate Outline
 
