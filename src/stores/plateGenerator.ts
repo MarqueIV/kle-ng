@@ -68,6 +68,10 @@ export const usePlateGeneratorStore = defineStore('plateGenerator', () => {
   // Cleared on layout change (requestRegenerate), so growth is naturally bounded.
   const cache = new Map<string, PlateGenerationResult>()
 
+  // Flag to defer regeneration when a generation is already in-flight.
+  // Multiple mid-flight setting changes collapse into a single deferred generation.
+  let pendingRegeneration = false
+
   function getWorker(): Worker {
     if (!worker) {
       worker = new PlateWorker()
@@ -115,6 +119,13 @@ export const usePlateGeneratorStore = defineStore('plateGenerator', () => {
       return
     }
 
+    // If a generation is already in-flight, defer to avoid queueing
+    // redundant work on the worker. The flag is checked on completion.
+    if (generationState.value.status === 'generating') {
+      pendingRegeneration = true
+      return
+    }
+
     // Preserve previous result so the UI can show it dimmed during regeneration
     const previousResult = generationState.value.result
 
@@ -133,8 +144,21 @@ export const usePlateGeneratorStore = defineStore('plateGenerator', () => {
     const w = getWorker()
 
     w.onmessage = (event: MessageEvent<PlateWorkerResponse>) => {
-      // Ignore stale responses from a previous generation
-      if (currentId !== generationId) return
+      // Stale response (generationId was bumped by a cache hit or layout change).
+      // Don't cache or display — but still check pendingRegeneration so a
+      // deferred layout-change regeneration can proceed.
+      if (currentId !== generationId) {
+        if (pendingRegeneration) {
+          pendingRegeneration = false
+          generationState.value = {
+            status: 'success',
+            error: null,
+            result: generationState.value.result,
+          }
+          generatePlate()
+        }
+        return
+      }
 
       const data = event.data
       if (data.type === 'success') {
@@ -151,15 +175,36 @@ export const usePlateGeneratorStore = defineStore('plateGenerator', () => {
           result: null,
         }
       }
+
+      if (pendingRegeneration) {
+        pendingRegeneration = false
+        generatePlate()
+      }
     }
 
     w.onerror = (event: ErrorEvent) => {
-      if (currentId !== generationId) return
+      if (currentId !== generationId) {
+        if (pendingRegeneration) {
+          pendingRegeneration = false
+          generationState.value = {
+            status: 'success',
+            error: null,
+            result: generationState.value.result,
+          }
+          generatePlate()
+        }
+        return
+      }
 
       generationState.value = {
         status: 'error',
         error: event.message || 'An unexpected error occurred in the plate generation worker.',
         result: null,
+      }
+
+      if (pendingRegeneration) {
+        pendingRegeneration = false
+        generatePlate()
       }
     }
 
@@ -320,7 +365,8 @@ export const usePlateGeneratorStore = defineStore('plateGenerator', () => {
 
   // Auto-refresh: regenerate plate when cutout settings change (only if already generated)
   const debouncedRegenerate = useDebounceFn(() => {
-    if (generationState.value.status === 'success' && !hasSettingsErrors()) {
+    const status = generationState.value.status
+    if ((status === 'success' || status === 'generating') && !hasSettingsErrors()) {
       generatePlate()
     }
   }, 300)
@@ -351,6 +397,10 @@ export const usePlateGeneratorStore = defineStore('plateGenerator', () => {
 
   function requestRegenerate(): void {
     clearCache()
+    if (generationState.value.status === 'generating') {
+      ++generationId // mark in-flight result as stale (layout changed)
+      pendingRegeneration = true
+    }
     debouncedLayoutRegenerate()
   }
 
