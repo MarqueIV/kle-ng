@@ -145,6 +145,7 @@
 <script setup lang="ts">
 import { ref, watch, onMounted, onUnmounted, nextTick } from 'vue'
 import { useDraggablePanel } from '@/composables/useDraggablePanel'
+import { useKeyboardStore } from '@/stores/keyboard'
 import CustomNumberInput from './CustomNumberInput.vue'
 import BiGripVertical from 'bootstrap-icons/icons/grip-vertical.svg'
 import BiArrowsMove from 'bootstrap-icons/icons/arrows-move.svg'
@@ -169,18 +170,25 @@ interface Emits {
 
 const emit = defineEmits<Emits>()
 
+const keyboardStore = useKeyboardStore()
+
+// Helper to get current spacing from keyboard metadata
+const getMetadataSpacing = () => ({
+  x: keyboardStore.metadata.spacing_x || 19.05,
+  y: keyboardStore.metadata.spacing_y || 19.05,
+})
+
 // Local state
 const movementX = ref(0)
 const movementY = ref(0)
 const selectedUnit = ref<'U' | 'mm'>('U')
-const uSpacing = ref({ x: 19.05, y: 19.05 }) // Default 1U = 19.05mm
+const uSpacing = ref(getMetadataSpacing())
 
 // Persistent state for last used values (survives modal close/open cycles)
 const lastUsedValues = ref({
   movementX: 0,
   movementY: 0,
   selectedUnit: 'U' as 'U' | 'mm',
-  uSpacing: { x: 19.05, y: 19.05 },
 })
 
 // Dragging functionality with viewport bounds checking
@@ -200,7 +208,8 @@ watch(
       movementX.value = lastUsedValues.value.movementX
       movementY.value = lastUsedValues.value.movementY
       selectedUnit.value = lastUsedValues.value.selectedUnit
-      uSpacing.value = { ...lastUsedValues.value.uSpacing }
+      // Always sync spacing from keyboard metadata (user can still override in-modal)
+      uSpacing.value = getMetadataSpacing()
       initializePosition({ x: window.innerWidth - 400, y: 100 })
 
       // Modal is now visible and ready for interaction
@@ -273,11 +282,11 @@ const handleApply = () => {
   const deltaY = convertYToInternalUnits(movementY.value)
 
   // Save current values for future use (only when applied, not cancelled)
+  // Note: uSpacing is not saved here - it always syncs from keyboard metadata on open
   lastUsedValues.value = {
     movementX: movementX.value,
     movementY: movementY.value,
     selectedUnit: selectedUnit.value,
-    uSpacing: { ...uSpacing.value },
   }
 
   emit('apply', deltaX, deltaY)

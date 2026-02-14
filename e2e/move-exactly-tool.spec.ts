@@ -515,7 +515,9 @@ test.describe('Move Exactly Tool', () => {
       await moveExactlyHelper.cancel()
     })
 
-    test('should persist unit selection and conversion values', async ({ page }) => {
+    test('should persist unit selection and movement values but reset spacing from metadata', async ({
+      page,
+    }) => {
       // Add a key
       await canvasHelper.addKey()
       await expect(page.getByTestId('counter-keys')).toContainText('Keys: 1')
@@ -539,16 +541,17 @@ test.describe('Move Exactly Tool', () => {
       await moveExactlyHelper.apply()
       await canvasHelper.waitForRender()
 
-      // Reopen modal - should remember mm unit, conversion values, and movement values
+      // Reopen modal - should remember mm unit and movement values,
+      // but spacing resets from keyboard metadata (default 19.05)
       await moveExactlyHelper.openModal()
 
       // Verify mm unit is still selected
       await moveExactlyHelper.expectUnitMmSelected()
       await moveExactlyHelper.expectSpacingConfigVisible()
 
-      // Verify custom spacing values are preserved
-      await moveExactlyHelper.expectXSpacingValue('20')
-      await moveExactlyHelper.expectYSpacingValue('18')
+      // Spacing should reset to metadata defaults (19.05), not the overridden values
+      await moveExactlyHelper.expectXSpacingValue('19.05')
+      await moveExactlyHelper.expectYSpacingValue('19.05')
 
       // Verify movement values are preserved
       await moveExactlyHelper.expectXInputValue('40')
