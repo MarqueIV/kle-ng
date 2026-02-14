@@ -108,14 +108,10 @@ describe('KeyPropertiesPanel', () => {
       expect(positionContents[0]!.exists()).toBe(true)
       expect(positionContents[1]!.exists()).toBe(true)
 
-      // Advanced mode should have 4 columns for position (X, Y, X2, Y2)
-      // Switch to advanced mode first
-      await wrapper.find('.toggle-mode-btn').trigger('click')
-      await wrapper.vm.$nextTick()
+      const basicPositionCols = positionContents[0]!.findAll('.mb-2:first-child .col-6')
+      expect(basicPositionCols.length).toBe(2) // X, Y
 
-      const advancedPositionCols = wrapper.findAll(
-        '.position-content:last-child .mb-2:first-child .col-3',
-      )
+      const advancedPositionCols = positionContents[1]!.findAll('.mb-2:first-child .col-3')
       expect(advancedPositionCols.length).toBe(4) // X, Y, X2, Y2
     })
 

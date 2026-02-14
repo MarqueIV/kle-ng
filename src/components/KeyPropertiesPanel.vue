@@ -107,81 +107,6 @@
                     </div>
                   </div>
                 </div>
-
-                <!-- Rotation -->
-                <div class="mb-2">
-                  <label class="form-label small mb-1">Rotation</label>
-                  <CustomNumberInput
-                    v-model="currentRotationAngle"
-                    @change="updateRotationAngle"
-                    @commit="keyboardStore.saveState()"
-                    :step="15"
-                    :min="-360"
-                    :max="360"
-                    :wrap-around="true"
-                    :wrap-min="-360"
-                    :wrap-max="360"
-                    class="form-control form-control-sm mb-1"
-                    title="Rotation Angle in Degrees"
-                  >
-                    <template #suffix>degrees</template>
-                  </CustomNumberInput>
-                  <div class="d-flex justify-content-between align-items-center mb-1">
-                    <label class="form-label small mb-0">{{
-                      isRelativeRotationMode ? 'Origin Point (relative)' : 'Origin Point (absolute)'
-                    }}</label>
-                    <div
-                      class="toggle-switch"
-                      :class="{ disabled: selectedKeys.length === 0 }"
-                      @click="selectedKeys.length > 0 ? toggleRotationOriginMode() : null"
-                    >
-                      <input
-                        type="checkbox"
-                        :checked="isRelativeRotationMode"
-                        :disabled="selectedKeys.length === 0"
-                        class="toggle-input"
-                      />
-                      <span class="toggle-slider">
-                        <span class="toggle-label toggle-label-left">A</span>
-                        <span class="toggle-label toggle-label-right">R</span>
-                      </span>
-                    </div>
-                  </div>
-                  <div class="row g-1">
-                    <div class="col-6">
-                      <label class="control-label">{{
-                        isRelativeRotationMode ? 'X offset' : 'X'
-                      }}</label>
-                      <CustomNumberInput
-                        v-model="displayRotationX"
-                        @change="updateRotationX"
-                        @commit="keyboardStore.saveState()"
-                        :step="moveStep"
-                        :title="
-                          isRelativeRotationMode
-                            ? 'Rotation Origin X (relative to key)'
-                            : 'Rotation Origin X (absolute)'
-                        "
-                      />
-                    </div>
-                    <div class="col-6">
-                      <label class="control-label">{{
-                        isRelativeRotationMode ? 'Y offset' : 'Y'
-                      }}</label>
-                      <CustomNumberInput
-                        v-model="displayRotationY"
-                        @change="updateRotationY"
-                        @commit="keyboardStore.saveState()"
-                        :step="moveStep"
-                        :title="
-                          isRelativeRotationMode
-                            ? 'Rotation Origin Y (relative to key)'
-                            : 'Rotation Origin Y (absolute)'
-                        "
-                      />
-                    </div>
-                  </div>
-                </div>
               </div>
 
               <!-- Advanced Mode -->
@@ -297,83 +222,88 @@
                     </div>
                   </div>
                 </div>
+              </div>
 
-                <!-- Rotation (same as basic) -->
-                <div class="mb-2">
-                  <label class="form-label small mb-1">Rotation</label>
-                  <CustomNumberInput
-                    v-model="currentRotationAngle"
-                    @change="updateRotationAngle"
-                    @commit="keyboardStore.saveState()"
-                    :step="15"
-                    :min="-360"
-                    :max="360"
-                    :wrap-around="true"
-                    :wrap-min="-360"
-                    :wrap-max="360"
-                    class="form-control form-control-sm mb-1"
-                    title="Rotation Angle in Degrees"
+              <!-- Rotation -->
+              <div class="mb-2">
+                <label class="form-label small mb-1">Rotation</label>
+                <CustomNumberInput
+                  v-model="currentRotationAngle"
+                  @change="updateRotationAngle"
+                  @commit="keyboardStore.saveState()"
+                  :step="15"
+                  :min="-360"
+                  :max="360"
+                  :wrap-around="true"
+                  :wrap-min="-360"
+                  :wrap-max="360"
+                  class="form-control form-control-sm mb-1"
+                  title="Rotation Angle in Degrees"
+                >
+                  <template #suffix>degrees</template>
+                </CustomNumberInput>
+              </div>
+              <!-- Rotation Origin -->
+              <div class="mb-2">
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                  <label class="form-label small mb-0">{{
+                    isRelativeRotationMode
+                      ? 'Rotation Origin Point (relative)'
+                      : 'Rotation Origin Point (absolute)'
+                  }}</label>
+                  <div
+                    class="toggle-switch"
+                    :class="{ disabled: selectedKeys.length === 0 }"
+                    @click="selectedKeys.length > 0 ? toggleRotationOriginMode() : null"
                   >
-                    <template #suffix>degrees</template>
-                  </CustomNumberInput>
-                  <div class="d-flex justify-content-between align-items-center mb-1">
-                    <label class="form-label small mb-0">{{
-                      isRelativeRotationMode ? 'Origin Point (relative)' : 'Origin Point (absolute)'
-                    }}</label>
-                    <div
-                      class="toggle-switch"
-                      :class="{ disabled: selectedKeys.length === 0 }"
-                      @click="selectedKeys.length > 0 ? toggleRotationOriginMode() : null"
-                    >
-                      <input
-                        type="checkbox"
-                        :checked="isRelativeRotationMode"
-                        :disabled="selectedKeys.length === 0"
-                        class="toggle-input"
-                      />
-                      <span class="toggle-slider">
-                        <span class="toggle-label toggle-label-left">A</span>
-                        <span class="toggle-label toggle-label-right">R</span>
-                      </span>
-                    </div>
+                    <input
+                      type="checkbox"
+                      :checked="isRelativeRotationMode"
+                      :disabled="selectedKeys.length === 0"
+                      class="toggle-input"
+                    />
+                    <span class="toggle-slider">
+                      <span class="toggle-label toggle-label-left">A</span>
+                      <span class="toggle-label toggle-label-right">R</span>
+                    </span>
                   </div>
-                  <div class="row g-1">
-                    <div class="col-6">
-                      <label class="control-label">{{
-                        isRelativeRotationMode ? 'X offset' : 'X'
-                      }}</label>
-                      <CustomNumberInput
-                        v-model="displayRotationX"
-                        @change="updateRotationX"
-                        @commit="keyboardStore.saveState()"
-                        :step="moveStep"
-                        :min="isRelativeRotationMode ? -2 : 0"
-                        :max="isRelativeRotationMode ? 2 : 36"
-                        :title="
-                          isRelativeRotationMode
-                            ? 'Rotation Origin X (relative to key)'
-                            : 'Rotation Origin X (absolute)'
-                        "
-                      />
-                    </div>
-                    <div class="col-6">
-                      <label class="control-label">{{
-                        isRelativeRotationMode ? 'Y offset' : 'Y'
-                      }}</label>
-                      <CustomNumberInput
-                        v-model="displayRotationY"
-                        @change="updateRotationY"
-                        @commit="keyboardStore.saveState()"
-                        :step="moveStep"
-                        :min="isRelativeRotationMode ? -2 : 0"
-                        :max="isRelativeRotationMode ? 2 : 36"
-                        :title="
-                          isRelativeRotationMode
-                            ? 'Rotation Origin Y (relative to key)'
-                            : 'Rotation Origin Y (absolute)'
-                        "
-                      />
-                    </div>
+                </div>
+                <div class="row g-1">
+                  <div class="col-6">
+                    <label class="control-label">{{
+                      isRelativeRotationMode ? 'X offset' : 'X'
+                    }}</label>
+                    <CustomNumberInput
+                      v-model="displayRotationX"
+                      @change="updateRotationX"
+                      @commit="keyboardStore.saveState()"
+                      :step="moveStep"
+                      :min="isRelativeRotationMode ? -2 : 0"
+                      :max="isRelativeRotationMode ? 2 : 36"
+                      :title="
+                        isRelativeRotationMode
+                          ? 'Rotation Origin X (relative to key)'
+                          : 'Rotation Origin X (absolute)'
+                      "
+                    />
+                  </div>
+                  <div class="col-6">
+                    <label class="control-label">{{
+                      isRelativeRotationMode ? 'Y offset' : 'Y'
+                    }}</label>
+                    <CustomNumberInput
+                      v-model="displayRotationY"
+                      @change="updateRotationY"
+                      @commit="keyboardStore.saveState()"
+                      :step="moveStep"
+                      :min="isRelativeRotationMode ? -2 : 0"
+                      :max="isRelativeRotationMode ? 2 : 36"
+                      :title="
+                        isRelativeRotationMode
+                          ? 'Rotation Origin Y (relative to key)'
+                          : 'Rotation Origin Y (absolute)'
+                      "
+                    />
                   </div>
                 </div>
               </div>
