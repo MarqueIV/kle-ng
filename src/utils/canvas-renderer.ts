@@ -384,7 +384,10 @@ export class CanvasRenderer {
 
     // Draw rotation origin indicators on top of all keys for selected keys
     selectedKeys.forEach((key) => {
-      if (key.rotation_angle && key.rotation_angle !== 0) {
+      const hasRotation = key.rotation_angle && key.rotation_angle !== 0
+      const hasNonZeroOrigin =
+        (key.rotation_x && key.rotation_x !== 0) || (key.rotation_y && key.rotation_y !== 0)
+      if (hasRotation || hasNonZeroOrigin) {
         this.drawRotationOriginIndicator(key)
       }
     })
