@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref, watch } from 'vue'
-import type { PlateSettings, GenerationState } from '@/types/plate'
+import type { PlateSettings, GenerationState, PlateGenerationResult } from '@/types/plate'
 import {
   validateFilletRadius,
   validateStabilizerFilletRadius,
@@ -64,6 +64,10 @@ export const usePlateGeneratorStore = defineStore('plateGenerator', () => {
   // Counter to ignore stale worker responses when a newer generation is in flight
   let generationId = 0
 
+  // Cache of previously computed plate results, keyed by JSON-stringified options.
+  // Cleared on layout change (requestRegenerate), so growth is naturally bounded.
+  const cache = new Map<string, PlateGenerationResult>()
+
   function getWorker(): Worker {
     if (!worker) {
       worker = new PlateWorker()
@@ -78,6 +82,39 @@ export const usePlateGeneratorStore = defineStore('plateGenerator', () => {
   function generatePlate(): void {
     const keyboardStore = useKeyboardStore()
 
+    // Get spacing from keyboard metadata
+    const spacingX = keyboardStore.metadata.spacing_x || 19.05
+    const spacingY = keyboardStore.metadata.spacing_y || 19.05
+
+    // Serialize options once — used as both cache key and worker payload.
+    const optionsJson = JSON.stringify({
+      cutoutType: settings.value.cutoutType,
+      stabilizerType: settings.value.stabilizerType,
+      filletRadius: settings.value.filletRadius,
+      stabilizerFilletRadius: settings.value.stabilizerFilletRadius,
+      sizeAdjust: settings.value.sizeAdjust,
+      customCutoutWidth: settings.value.customCutoutWidth,
+      customCutoutHeight: settings.value.customCutoutHeight,
+      mergeCutouts: settings.value.mergeCutouts,
+      outline: settings.value.outline,
+      mountingHoles: settings.value.mountingHoles,
+      customHoles: settings.value.customHoles,
+      spacingX,
+      spacingY,
+    })
+
+    // Check cache — return instantly on hit
+    const cached = cache.get(optionsJson)
+    if (cached) {
+      ++generationId // invalidate any in-flight worker response
+      generationState.value = {
+        status: 'success',
+        error: null,
+        result: cached,
+      }
+      return
+    }
+
     // Preserve previous result so the UI can show it dimmed during regeneration
     const previousResult = generationState.value.result
 
@@ -87,30 +124,10 @@ export const usePlateGeneratorStore = defineStore('plateGenerator', () => {
       result: previousResult,
     }
 
-    // Get spacing from keyboard metadata
-    const spacingX = keyboardStore.metadata.spacing_x || 19.05
-    const spacingY = keyboardStore.metadata.spacing_y || 19.05
-
     // Serialize reactive data to plain objects for postMessage.
     // JSON round-trip strips Vue Proxy wrappers that structuredClone cannot handle.
     const keys = JSON.parse(JSON.stringify(keyboardStore.keys))
-    const options = JSON.parse(
-      JSON.stringify({
-        cutoutType: settings.value.cutoutType,
-        stabilizerType: settings.value.stabilizerType,
-        filletRadius: settings.value.filletRadius,
-        stabilizerFilletRadius: settings.value.stabilizerFilletRadius,
-        sizeAdjust: settings.value.sizeAdjust,
-        customCutoutWidth: settings.value.customCutoutWidth,
-        customCutoutHeight: settings.value.customCutoutHeight,
-        mergeCutouts: settings.value.mergeCutouts,
-        outline: settings.value.outline,
-        mountingHoles: settings.value.mountingHoles,
-        customHoles: settings.value.customHoles,
-        spacingX,
-        spacingY,
-      }),
-    )
+    const options = JSON.parse(optionsJson)
 
     const currentId = ++generationId
     const w = getWorker()
@@ -121,6 +138,7 @@ export const usePlateGeneratorStore = defineStore('plateGenerator', () => {
 
       const data = event.data
       if (data.type === 'success') {
+        cache.set(optionsJson, data.result)
         generationState.value = {
           status: 'success',
           error: null,
@@ -316,15 +334,25 @@ export const usePlateGeneratorStore = defineStore('plateGenerator', () => {
     }
   })
 
+  function clearCache(): void {
+    cache.clear()
+  }
+
   /**
    * Called by the keyboard store when the layout changes (saveState, undo, redo).
-   * Triggers plate regeneration if auto-refresh is enabled and settings are valid.
+   * Clears the cache immediately (layout changed, all cached results are stale),
+   * then debounces the actual regeneration.
    */
-  const requestRegenerate = useDebounceFn(() => {
+  const debouncedLayoutRegenerate = useDebounceFn(() => {
     if (autoRefresh.value && !hasSettingsErrors()) {
       generatePlate()
     }
   }, 500)
+
+  function requestRegenerate(): void {
+    clearCache()
+    debouncedLayoutRegenerate()
+  }
 
   // Load settings on store creation
   loadSettings()
