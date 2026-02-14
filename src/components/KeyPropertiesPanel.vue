@@ -278,8 +278,6 @@
                       @change="updateRotationX"
                       @commit="keyboardStore.saveState()"
                       :step="moveStep"
-                      :min="isRelativeRotationMode ? -2 : 0"
-                      :max="isRelativeRotationMode ? 2 : 36"
                       :title="
                         isRelativeRotationMode
                           ? 'Rotation Origin X (relative to key)'
@@ -296,8 +294,6 @@
                       @change="updateRotationY"
                       @commit="keyboardStore.saveState()"
                       :step="moveStep"
-                      :min="isRelativeRotationMode ? -2 : 0"
-                      :max="isRelativeRotationMode ? 2 : 36"
                       :title="
                         isRelativeRotationMode
                           ? 'Rotation Origin Y (relative to key)'
