@@ -7,7 +7,7 @@ test.describe('GitHub Star Popup', () => {
   let waitHelpers: WaitHelpers
 
   test.beforeEach(async ({ page, context }) => {
-    // Clear localStorage before each test to simulate new user
+    // Clear cookies and navigate to app
     await context.clearCookies()
     await page.goto('/')
 
@@ -15,12 +15,12 @@ test.describe('GitHub Star Popup', () => {
     waitHelpers = new WaitHelpers(page)
     popupHelper = new GitHubStarPopupHelper(page, waitHelpers)
 
-    // Initialize for testing
+    // Clear storage and set E2E flag in sessionStorage (persists across navigations)
     await popupHelper.initializeForTesting()
   })
 
-  test('should handle popup timing correctly', async ({ page }) => {
-    await page.goto('/')
+  test('should handle popup timing correctly', async () => {
+    // Wait for initial page load to complete
     await waitHelpers.waitForDoubleAnimationFrame()
 
     // Popup should not be visible immediately on first visit
@@ -29,15 +29,14 @@ test.describe('GitHub Star Popup', () => {
     // Show popup after simulating 2 minutes delay
     await popupHelper.showPopupAfterDelay(120000)
 
-    // Popup should now be visible
+    // Popup should now be visible (showPopupAfterDelay already waits for it)
     await popupHelper.expectPopupVisible()
   })
 
   test('should display popup with correct content and properties', async ({ page }) => {
-    await page.goto('/')
     await waitHelpers.waitForDoubleAnimationFrame()
 
-    // Show popup
+    // Show popup (this also waits for it to be visible)
     await popupHelper.showPopupAfterDelay(120000)
     await popupHelper.expectPopupVisible()
 
@@ -70,10 +69,9 @@ test.describe('GitHub Star Popup', () => {
   })
 
   test('should persist dismiss state and not show again', async ({ page }) => {
-    await page.goto('/')
     await waitHelpers.waitForDoubleAnimationFrame()
 
-    // Show popup
+    // Show popup (this also waits for it to be visible)
     await popupHelper.showPopupAfterDelay(120000)
     await popupHelper.expectPopupVisible()
 
@@ -99,11 +97,10 @@ test.describe('GitHub Star Popup', () => {
     await popupHelper.expectPopupNotVisibleAfterWait()
   })
 
-  test('should close popup and open new tab when star button is clicked', async ({ page }) => {
-    await page.goto('/')
+  test('should close popup and open new tab when star button is clicked', async () => {
     await waitHelpers.waitForDoubleAnimationFrame()
 
-    // Show popup
+    // Show popup (this also waits for it to be visible)
     await popupHelper.showPopupAfterDelay(120000)
     await popupHelper.expectPopupVisible()
 
@@ -121,10 +118,9 @@ test.describe('GitHub Star Popup', () => {
     // Set mobile viewport
     await page.setViewportSize({ width: 375, height: 667 })
 
-    await page.goto('/')
     await waitHelpers.waitForDoubleAnimationFrame()
 
-    // Show popup
+    // Show popup (this also waits for it to be visible)
     await popupHelper.showPopupAfterDelay(120000)
     await popupHelper.expectPopupVisible()
 

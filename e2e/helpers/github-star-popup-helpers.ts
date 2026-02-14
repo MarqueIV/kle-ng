@@ -83,7 +83,8 @@ export class GitHubStarPopupHelper {
 
   /**
    * Initialize the page for popup testing.
-   * Clears localStorage and sets the E2E test flag.
+   * Clears localStorage and sets the E2E test flag in sessionStorage.
+   * Using sessionStorage ensures the flag persists across page navigations and reloads.
    *
    * @example
    * ```typescript
@@ -93,9 +94,8 @@ export class GitHubStarPopupHelper {
   async initializeForTesting(): Promise<void> {
     await this.page.evaluate(() => {
       localStorage.clear()
-      // Set flag to allow popup to show in E2E tests
-      ;(window as typeof window & { __ALLOW_POPUP_IN_E2E__?: boolean }).__ALLOW_POPUP_IN_E2E__ =
-        true
+      // Set flag in sessionStorage to persist across page navigations and reloads
+      sessionStorage.setItem('__ALLOW_POPUP_IN_E2E__', 'true')
     })
   }
 
@@ -152,6 +152,7 @@ export class GitHubStarPopupHelper {
 
   /**
    * Show the popup by simulating a first visit delay and reloading.
+   * Waits for the popup to be visible after reload to ensure component has mounted.
    *
    * @param millisecondsAgo - Time in milliseconds ago (default: 120000 = 2 minutes)
    *
@@ -163,7 +164,10 @@ export class GitHubStarPopupHelper {
   async showPopupAfterDelay(millisecondsAgo: number = 120000): Promise<void> {
     await this.simulateFirstVisit(millisecondsAgo)
     await this.page.reload()
-    await this.page.waitForLoadState('networkidle')
+    await this.page.waitForLoadState('domcontentloaded')
+    // Wait for the popup to appear - it shows immediately when time condition is met (line 106 in component)
+    // The popup has a 0.4s CSS animation, so we wait for it to be visible with a reasonable timeout
+    await this.getPopup().waitFor({ state: 'visible', timeout: 2000 })
   }
 
   // ============================================================================

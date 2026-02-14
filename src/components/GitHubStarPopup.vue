@@ -55,14 +55,14 @@ const handleStarClick = () => {
 
 const checkAndShowPopup = () => {
   // Skip popup in unit test environments only
-  // Allow E2E tests (which set window.__ALLOW_POPUP_IN_E2E__)
+  // Allow E2E tests (which set sessionStorage flag that persists across page navigations)
   const isUnitTest =
     import.meta.env.MODE === 'test' ||
     typeof (globalThis as Record<string, unknown>).describe !== 'undefined'
   const isE2ETest =
     typeof navigator !== 'undefined' &&
     navigator.webdriver &&
-    (window as typeof window & { __ALLOW_POPUP_IN_E2E__?: boolean }).__ALLOW_POPUP_IN_E2E__
+    sessionStorage.getItem('__ALLOW_POPUP_IN_E2E__') === 'true'
 
   if (isUnitTest && !isE2ETest) {
     return
