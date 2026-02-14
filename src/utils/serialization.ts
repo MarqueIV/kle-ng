@@ -195,6 +195,8 @@ export function getKleInternalFormatForExport(keyboard: Keyboard) {
       sm: key.sm,
       sb: key.sb,
       st: key.st,
+      switchRotation: key.switchRotation,
+      stabRotation: key.stabRotation,
     })),
   }
 }

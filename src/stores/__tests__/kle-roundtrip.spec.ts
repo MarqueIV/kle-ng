@@ -200,6 +200,8 @@ describe('KLE Round-trip Compatibility Tests', () => {
         'sm',
         'sb',
         'st',
+        'switchRotation',
+        'stabRotation',
       ]
 
       // Check first few keys for property order

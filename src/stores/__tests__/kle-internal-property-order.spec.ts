@@ -58,6 +58,8 @@ describe('KLE Internal Format Property Order', () => {
       'sm',
       'sb',
       'st',
+      'switchRotation',
+      'stabRotation',
     ]
 
     // Verify that properties appear in the expected order
