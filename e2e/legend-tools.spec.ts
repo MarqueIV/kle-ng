@@ -69,9 +69,8 @@ test.describe('Legend Tools Panel', () => {
       await canvasHelper.addKey()
       await expect(page.getByText('Keys: 1')).toBeVisible()
 
-      // Select the key
-      await page.getByTestId('canvas-main').click({ position: { x: 47, y: 47 }, force: true })
-      await expect(page.getByText('Selected: 1')).toBeVisible()
+      // Select the key - use selectKeyAt for more robust selection
+      await canvasHelper.selectKeyAt(47, 47)
 
       // Click extra tools again (dropdown closes when a key is added/selected)
       await legendHelper.getExtraToolsButton().click()
@@ -199,9 +198,8 @@ test.describe('Legend Tools Panel', () => {
         await canvasHelper.addKey()
         await expect(page.getByText('Keys: 1')).toBeVisible()
 
-        // Select the key
-        await page.getByTestId('canvas-main').click({ position: { x: 47, y: 47 }, force: true })
-        await expect(page.getByText('Selected: 1')).toBeVisible()
+        // Select the key - use selectKeyAt for more robust selection
+        await canvasHelper.selectKeyAt(47, 47)
       })
 
       test('should auto-start editing when typing', async () => {
@@ -268,9 +266,8 @@ test.describe('Legend Tools Panel', () => {
         await canvasHelper.addKey()
         await expect(page.getByText('Keys: 3')).toBeVisible()
 
-        // Select first key
-        await page.getByTestId('canvas-main').click({ position: { x: 47, y: 47 }, force: true })
-        await expect(page.getByText('Selected: 1')).toBeVisible()
+        // Select first key - use selectKeyAt for more robust selection
+        await canvasHelper.selectKeyAt(47, 47)
 
         // Type and press Enter
         await legendHelper.typeInEditMode('Q', true)
@@ -309,7 +306,7 @@ test.describe('Legend Tools Panel', () => {
         await waitHelpers.waitForDoubleAnimationFrame()
         await expect(page.getByText('Keys: 3')).toBeVisible()
 
-        // Select all keys with Ctrl+A
+        // Focus canvas and select all keys with Ctrl+A
         await page.getByTestId('canvas-main').click({ position: { x: 100, y: 100 }, force: true })
         await page.keyboard.press('ControlOrMeta+a')
         await waitHelpers.waitForDoubleAnimationFrame()
@@ -369,7 +366,10 @@ test.describe('Legend Tools Panel', () => {
         await legendHelper.expectEditingAlertVisible('Test')
 
         // Change selection (click elsewhere to deselect)
+        // Wait for canvas stability before clicking
+        await canvasHelper.waitForCanvasStability()
         await page.getByTestId('canvas-main').click({ position: { x: 300, y: 300 }, force: true })
+        await waitHelpers.waitForDoubleAnimationFrame()
 
         // Editing should be committed (shows placeholder, not "Editing")
         await expect(legendHelper.getEditingAlert()).toBeVisible()
@@ -397,9 +397,8 @@ test.describe('Legend Tools Panel', () => {
         await canvasHelper.addKey()
         await expect(page.getByText('Keys: 1')).toBeVisible()
 
-        // Select the key
-        await page.getByTestId('canvas-main').click({ position: { x: 47, y: 47 }, force: true })
-        await expect(page.getByText('Selected: 1')).toBeVisible()
+        // Select the key - use selectKeyAt for more robust selection
+        await canvasHelper.selectKeyAt(47, 47)
       })
 
       test('should edit all 12 label positions correctly', async () => {
@@ -438,9 +437,8 @@ test.describe('Legend Tools Panel', () => {
         await canvasHelper.addKey()
         await expect(page.getByText('Keys: 1')).toBeVisible()
 
-        // Select the key
-        await page.getByTestId('canvas-main').click({ position: { x: 47, y: 47 }, force: true })
-        await expect(page.getByText('Selected: 1')).toBeVisible()
+        // Select the key - use selectKeyAt for more robust selection
+        await canvasHelper.selectKeyAt(47, 47)
       })
 
       test('should handle empty labels (backspace all characters)', async ({ page }) => {
@@ -482,7 +480,9 @@ test.describe('Legend Tools Panel', () => {
 
       test('should not error when no keys selected', async ({ page }) => {
         // Deselect all keys
+        await canvasHelper.waitForCanvasStability()
         await page.getByTestId('canvas-main').click({ position: { x: 300, y: 300 }, force: true })
+        await waitHelpers.waitForDoubleAnimationFrame()
         await expect(page.getByText('Selected: 0')).toBeVisible()
 
         // Try to type (should not start editing)
@@ -518,9 +518,8 @@ test.describe('Legend Tools Panel', () => {
         await canvasHelper.addKey()
         await expect(page.getByText('Keys: 1')).toBeVisible()
 
-        // Select the key
-        await page.getByTestId('canvas-main').click({ position: { x: 47, y: 47 }, force: true })
-        await expect(page.getByText('Selected: 1')).toBeVisible()
+        // Select the key - use selectKeyAt for more robust selection
+        await canvasHelper.selectKeyAt(47, 47)
       })
 
       test('should update canvas on each keystroke', async ({ page }) => {
@@ -572,9 +571,8 @@ test.describe('Legend Tools Panel', () => {
         await canvasHelper.addKey()
         await expect(page.getByText('Keys: 2')).toBeVisible()
 
-        // Select only the first key
-        await page.getByTestId('canvas-main').click({ position: { x: 47, y: 47 }, force: true })
-        await expect(page.getByText('Selected: 1')).toBeVisible()
+        // Select only the first key - use selectKeyAt for more robust selection
+        await canvasHelper.selectKeyAt(47, 47)
 
         // Select position 0 (TL) and start typing
         await legendHelper.selectEditPosition(0)
@@ -623,9 +621,8 @@ test.describe('Legend Tools Panel', () => {
         await legendHelper.closePanel()
 
         // Verify first key has both labels at correct positions
-        // Click on first key
-        await page.getByTestId('canvas-main').click({ position: { x: 47, y: 47 }, force: true })
-        await expect(page.getByText('Selected: 1')).toBeVisible()
+        // Click on first key - use selectKeyAt for more robust selection
+        await canvasHelper.selectKeyAt(47, 47)
 
         // Wait for properties panel to be visible
         const propertiesPanel = page.locator('.key-properties-panel')
@@ -644,10 +641,7 @@ test.describe('Legend Tools Panel', () => {
 
         // Click on second key to verify it has no labels
         // UNIT_SIZE is 54px, so second key is 54px to the right of first key
-        await page.getByTestId('canvas-main').click({ position: { x: 101, y: 47 }, force: true })
-
-        // Verify we selected the second key
-        await expect(page.getByText('Selected: 1')).toBeVisible()
+        await canvasHelper.selectKeyAt(101, 47)
 
         // Wait for properties panel to update with second key's data
         await waitHelpers.waitForDoubleAnimationFrame()
@@ -688,7 +682,7 @@ test.describe('Legend Tools Panel', () => {
       legendHelper.verifyEmptyLabels(jsonData)
     })
 
-    test('should verify JSON after removing specific labels', async ({ page }) => {
+    test('should verify JSON after removing specific labels', async () => {
       // Setup: Add two keys with different labels
       await canvasHelper.addKey()
       await waitHelpers.waitForDoubleAnimationFrame()
@@ -697,13 +691,12 @@ test.describe('Legend Tools Panel', () => {
 
       await canvasHelper.addKey()
       await waitHelpers.waitForDoubleAnimationFrame()
-      // Select second key
-      await page.getByTestId('canvas-main').click({ position: { x: 47 + 54, y: 47 }, force: true })
+      // Select second key - use selectKeyAt for more robust selection
+      await canvasHelper.selectKeyAt(47 + 54, 47)
       await canvasHelper.setKeyLabel('topLeft', 'B')
 
-      // Select first key and remove its legends
-      await page.getByTestId('canvas-main').click({ position: { x: 47, y: 47 }, force: true })
-      await expect(page.getByText('Selected: 1')).toBeVisible()
+      // Select first key and remove its legends - use selectKeyAt for more robust selection
+      await canvasHelper.selectKeyAt(47, 47)
 
       await legendHelper.openPanel()
       await legendHelper.switchToRemoveTab()
@@ -855,9 +848,8 @@ test.describe('Legend Tools Panel', () => {
       // Import layout
       await importHelper.importFromFile('e2e/fixtures/simple-layout.json', 8)
 
-      // Select first key and align its legend
-      await page.getByTestId('canvas-main').click({ position: { x: 47, y: 47 }, force: true })
-      await expect(page.getByText('Selected: 1')).toBeVisible()
+      // Select first key and align its legend - use selectKeyAt for more robust selection
+      await canvasHelper.selectKeyAt(47, 47)
 
       await legendHelper.openPanel()
       await legendHelper.switchToAlignTab()
@@ -902,10 +894,12 @@ test.describe('Legend Tools Panel', () => {
       // Initially, move button should be disabled
       await legendHelper.expectMoveButtonDisabled()
 
-      // Select from position (first TL radio button) - use force click due to overlay issues
+      // Select from position (first TL radio button)
+      await expect(legendHelper.getPositionRadio(0, 0)).toBeVisible()
       await legendHelper.getPositionRadio(0, 0).click({ force: true })
 
       // Select to position (second TC radio button)
+      await expect(legendHelper.getPositionRadio(1, 1)).toBeVisible()
       await legendHelper.getPositionRadio(1, 1).click({ force: true })
 
       // Move button should now be enabled
@@ -942,7 +936,9 @@ test.describe('Legend Tools Panel', () => {
       await legendHelper.openPanel()
       await legendHelper.switchToMoveTab()
 
-      // Select same position for both from and to - use force click due to overlay issues
+      // Select same position for both from and to
+      await expect(legendHelper.getPositionRadio(0, 0)).toBeVisible()
+      await expect(legendHelper.getPositionRadio(0, 1)).toBeVisible()
       await legendHelper.getPositionRadio(0, 0).click({ force: true })
       await legendHelper.getPositionRadio(0, 1).click({ force: true })
 
@@ -993,9 +989,8 @@ test.describe('Legend Tools Panel', () => {
       // Import layout with labels
       await importHelper.importFromFile('e2e/fixtures/simple-layout.json', 8)
 
-      // Select first key
-      await page.getByTestId('canvas-main').click({ position: { x: 47, y: 47 }, force: true })
-      await expect(page.getByText('Selected: 1')).toBeVisible()
+      // Select first key - use selectKeyAt for more robust selection
+      await canvasHelper.selectKeyAt(47, 47)
 
       // Move legend position
       await legendHelper.openPanel()
@@ -1142,12 +1137,8 @@ test.describe('Legend Tools Panel', () => {
     let importHelper: ImportExportHelper
 
     test.beforeEach(async ({ page }) => {
-      await page.goto('/')
-      await page.waitForLoadState('networkidle')
-
-      waitHelpers = new WaitHelpers(page)
-      legendHelper = new LegendToolsHelper(page, waitHelpers)
-      canvasHelper = new CanvasTestHelper(page)
+      // Note: Parent beforeEach already navigated to '/' and initialized helpers
+      // We only need to initialize importHelper here
       importHelper = new ImportExportHelper(page, waitHelpers)
     })
 
@@ -1171,8 +1162,8 @@ test.describe('Legend Tools Panel', () => {
       // Switch to align and align remaining (add new label first)
       await legendHelper.closePanel()
 
-      // Click first key and add a label
-      await page.getByTestId('canvas-main').click({ position: { x: 47, y: 47 }, force: true })
+      // Click first key and add a label - use selectKeyAt for more robust selection
+      await canvasHelper.selectKeyAt(47, 47)
       await canvasHelper.setKeyLabel('topLeft', 'Test')
 
       await legendHelper.openPanel()
@@ -1225,7 +1216,7 @@ test.describe('Legend Tools Panel', () => {
       expect(jsonString.includes('E')).toBe(true)
     })
 
-    test('should maintain key order through operations', async ({ page }) => {
+    test('should maintain key order through operations', async () => {
       // Create specific layout
       await canvasHelper.addKey()
       await waitHelpers.waitForDoubleAnimationFrame()
@@ -1242,8 +1233,8 @@ test.describe('Legend Tools Panel', () => {
       // Export initial state (for comparison purposes)
       await legendHelper.exportAndVerifyJSON('order-before.json')
 
-      // Perform legend operation on middle key
-      await page.getByTestId('canvas-main').click({ position: { x: 47 + 54, y: 47 }, force: true })
+      // Perform legend operation on middle key - use selectKeyAt for more robust selection
+      await canvasHelper.selectKeyAt(47 + 54, 47)
       await legendHelper.openPanel()
       await legendHelper.switchToMoveTab()
       await legendHelper.moveLegend(4, 0) // Move from center to top-left

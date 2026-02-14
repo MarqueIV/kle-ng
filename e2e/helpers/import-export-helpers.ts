@@ -45,12 +45,15 @@ export class ImportExportHelper {
     const fileChooserPromise = this.page.waitForEvent('filechooser')
 
     // Click Import button
-    const importButton = this.page.locator('button', { hasText: 'Import' })
+    const importButton = this.page.getByTestId('button-import')
     await importButton.click()
 
-    // Wait for dropdown to be visible and click "From File"
-    await expect(this.page.locator('.dropdown-menu:has(a:has-text("From File"))')).toBeVisible()
-    await this.page.locator('a', { hasText: 'From File' }).click()
+    // Wait for "From File" link to be visible and clickable (using testid)
+    const fromFileLink = this.page.getByTestId('import-from-file')
+    await expect(fromFileLink).toBeVisible()
+
+    // Now click to open file chooser
+    await fromFileLink.click()
 
     // Select the file
     const fileChooser = await fileChooserPromise
@@ -89,10 +92,16 @@ export class ImportExportHelper {
     // Set up download promise
     const downloadPromise = this.page.waitForEvent('download')
 
-    // Click Export button and select Download PNG
-    const exportButton = this.page.locator('button', { hasText: 'Export' })
+    // Click Export button
+    const exportButton = this.page.getByTestId('button-export')
     await exportButton.click()
-    await this.page.locator('a', { hasText: 'Download PNG' }).click()
+
+    // Wait for Download PNG link to be visible and clickable (using testid)
+    const downloadPngLink = this.page.getByTestId('export-download-png')
+    await expect(downloadPngLink).toBeVisible()
+
+    // Now click to download
+    await downloadPngLink.click()
 
     // Wait for download
     const download = await downloadPromise
@@ -125,10 +134,16 @@ export class ImportExportHelper {
     // Set up download promise
     const downloadPromise = this.page.waitForEvent('download')
 
-    // Click Export button and select Download JSON
-    const exportButton = this.page.locator('button', { hasText: 'Export' })
+    // Click Export button
+    const exportButton = this.page.getByTestId('button-export')
     await exportButton.click()
-    await this.page.locator('a', { hasText: 'Download JSON' }).click()
+
+    // Wait for Download JSON link to be visible and clickable (using testid)
+    const downloadJsonLink = this.page.getByTestId('export-download-json')
+    await expect(downloadJsonLink).toBeVisible()
+
+    // Now click to download
+    await downloadJsonLink.click()
 
     // Wait for download
     const download = await downloadPromise

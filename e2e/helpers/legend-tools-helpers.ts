@@ -252,7 +252,15 @@ export class LegendToolsHelper {
    */
   async openPanel(): Promise<void> {
     await this.getExtraToolsButton().click()
+
+    // Wait for dropdown to be visible and fully animated (0.2s CSS transition)
+    await expect(this.getExtraToolsDropdown()).toBeVisible()
+    // Wait for dropdown to reach full opacity (animation complete)
+    await expect(this.getExtraToolsDropdown()).toHaveCSS('opacity', '1')
+
+    // Now click the Legend Tools menu item
     await this.getLegendToolsMenuItem().click()
+
     await this.expectPanelVisible()
     // Wait for panel body to be fully rendered (contains all tabs)
     await expect(this.page.locator('.panel-body')).toBeVisible()
@@ -301,6 +309,8 @@ export class LegendToolsHelper {
     await expect(this.getRemoveTabInput()).toBeChecked()
     // Wait for tab content to be fully rendered and interactive
     await expect(this.getCategoryButton('All')).toBeVisible()
+    // Wait for all category buttons to be enabled and interactive
+    await expect(this.getCategoryButton('All')).toBeEnabled()
   }
 
   /**
@@ -316,6 +326,8 @@ export class LegendToolsHelper {
     await expect(this.getAlignTabInput()).toBeChecked()
     // Wait for tab content to be fully rendered and interactive
     await expect(this.getKeycapPreview()).toBeVisible()
+    // Wait for alignment buttons to be enabled
+    await expect(this.getAlignmentButton(0)).toBeEnabled()
   }
 
   /**
@@ -331,6 +343,8 @@ export class LegendToolsHelper {
     await expect(this.getMoveTabInput()).toBeChecked()
     // Wait for tab content to be fully rendered and interactive
     await expect(this.getMoveButton()).toBeVisible()
+    // Wait for position selectors to be visible
+    await expect(this.getKeycapSelectors().first()).toBeVisible()
   }
 
   // ============================================================================
@@ -419,6 +433,10 @@ export class LegendToolsHelper {
    * ```
    */
   async moveLegend(fromPosition: number, toPosition: number): Promise<void> {
+    // Wait for position radios to be visible before clicking
+    await expect(this.getPositionRadio(fromPosition, 0)).toBeVisible()
+    await expect(this.getPositionRadio(toPosition, 1)).toBeVisible()
+
     await this.getPositionRadio(fromPosition, 0).click({ force: true })
     await this.getPositionRadio(toPosition, 1).click({ force: true })
     await this.getMoveButton().click()
@@ -680,6 +698,8 @@ export class LegendToolsHelper {
     await expect(this.getEditTabInput()).toBeChecked()
     // Wait for tab content to be fully rendered and interactive
     await expect(this.page.getByTestId('edit-tab-content')).toBeVisible()
+    // Wait for position selectors to be visible
+    await expect(this.getEditPositionRadio(0)).toBeVisible()
   }
 
   /**
@@ -693,6 +713,8 @@ export class LegendToolsHelper {
    * ```
    */
   async selectEditPosition(position: number): Promise<void> {
+    // Wait for position radio to be visible before clicking
+    await expect(this.getEditPositionRadio(position)).toBeVisible()
     await this.getEditPositionRadio(position).click({ force: true })
     await expect(this.getEditPositionRadio(position)).toBeChecked()
   }
@@ -854,10 +876,16 @@ export class LegendToolsHelper {
     // Set up download promise
     const downloadPromise = this.page.waitForEvent('download')
 
-    // Click Export button and select Download JSON
-    const exportButton = this.page.locator('button', { hasText: 'Export' })
+    // Click Export button
+    const exportButton = this.page.getByTestId('button-export')
     await exportButton.click()
-    await this.page.locator('a', { hasText: 'Download JSON' }).click()
+
+    // Wait for Download JSON link to be visible and clickable (using testid)
+    const downloadJsonLink = this.page.getByTestId('export-download-json')
+    await expect(downloadJsonLink).toBeVisible()
+
+    // Now click to download
+    await downloadJsonLink.click()
 
     // Wait for download
     const download = await downloadPromise
