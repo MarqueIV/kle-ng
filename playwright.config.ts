@@ -42,8 +42,8 @@ export default defineConfig({
   reporter: process.env.CI ? 'list' : (process.env.CLAUDECODE ? 'dot' : 'html'),
   /* Shared settings for all the projects below. See https://playwright.dev/docs/api/class-testoptions. */
   use: {
-    /* Maximum time each action such as `click()` can take. Defaults to 0 (no limit). */
-    actionTimeout: 0,
+    /* Maximum time each action such as `click()` can take. */
+    actionTimeout: 10000,
     /* Base URL to use in actions like `await page.goto('/')`. */
     baseURL: process.env.CI ? 'http://localhost:4173' : 'http://localhost:5173',
 
