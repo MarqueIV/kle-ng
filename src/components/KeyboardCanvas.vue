@@ -868,7 +868,21 @@ const handleContainerClick = (event: MouseEvent) => {
   }
 }
 
+const closeOpenDropdowns = () => {
+  document.querySelectorAll('.dropdown-menu.show').forEach((menu) => {
+    menu.classList.remove('show')
+    const toggle = menu.parentElement?.querySelector('[data-bs-toggle="dropdown"]')
+    if (toggle) {
+      toggle.classList.remove('show')
+      toggle.setAttribute('aria-expanded', 'false')
+    }
+  })
+}
+
 const handleContainerMouseDown = (event: MouseEvent) => {
+  // Close any open Bootstrap dropdowns (e.g., toolbar dropdowns)
+  closeOpenDropdowns()
+
   // If the mousedown is on the canvas itself, let the canvas handler manage it
   if (event.target === canvasRef.value) {
     return

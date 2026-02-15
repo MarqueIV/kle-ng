@@ -199,17 +199,14 @@ test.describe('Mirror Functionality', () => {
     await editor.expectKeyCount(3)
     await editor.properties.setLabel('center', '3')
 
-    // Select all keys by clicking on each one while holding Ctrl
-    await editor.canvas.clickAt(47, 47, { modifiers: ['Control'], force: true })
-    await editor.canvas.clickAt(101, 47, { modifiers: ['Control'], force: true })
-    await editor.canvas.clickAt(155, 47, { modifiers: ['Control'], force: true })
+    await editor.canvas.selectAll()
 
     // Wait for multi-select to complete
     await waitHelpers.waitForQuadAnimationFrame()
 
     // Verify all keys are selected (flexible - accept whatever keys we have)
     const selectedCount = await editor.getSelectedCount()
-    expect(selectedCount).toBeGreaterThanOrEqual(2) // At least 2 keys should be selected
+    expect(selectedCount).toEqual(3)
 
     // Switch to horizontal mirror mode using dropdown
     await toolbarHelper.selectMirrorHorizontal()
@@ -230,8 +227,10 @@ test.describe('Mirror Functionality', () => {
 
     // Verify that mirror operation worked - should have more keys than before
     const finalKeysCount = await editor.getKeyCount()
-    // We should have at least the original 3 keys plus the selected mirrored keys
-    expect(finalKeysCount).toBeGreaterThan(3) // Should have more than 3 keys
+    // We should have 6 keys plus the selected mirrored keys
+    expect(finalKeysCount).toEqual(6)
+    const finalSelectedCount = await editor.getSelectedCount()
+    expect(finalSelectedCount).toEqual(3)
 
     // Take baseline screenshot (the mirror operation should be visible in the screenshot)
     await expect(page.getByTestId('canvas-main')).toHaveScreenshot(
@@ -254,16 +253,14 @@ test.describe('Mirror Functionality', () => {
     await editor.expectKeyCount(2)
     await editor.properties.setLabel('center', 'Y')
 
-    // Select all keys by clicking on each one while holding Ctrl
-    await editor.canvas.clickAt(47, 47, { modifiers: ['Control'], force: true })
-    await editor.canvas.clickAt(101, 47, { modifiers: ['Control'], force: true })
+    await editor.canvas.selectAll()
 
     // Wait for multi-select to complete
     await waitHelpers.waitForQuadAnimationFrame()
 
-    // Verify all keys are selected (flexible - accept whatever keys we have)
+    // Verify all keys are selected
     const selectedCount = await editor.getSelectedCount()
-    expect(selectedCount).toBeGreaterThanOrEqual(1) // At least 1 key should be selected
+    expect(selectedCount).toEqual(2)
 
     // Switch to vertical mirror mode (default button)
     await toolbarHelper.selectMirrorVertical()
@@ -284,8 +281,10 @@ test.describe('Mirror Functionality', () => {
 
     // Verify that mirror operation worked - should have more keys than before
     const finalKeysCount = await editor.getKeyCount()
-    // We should have at least the original keys plus the selected mirrored keys
-    expect(finalKeysCount).toBeGreaterThan(2) // Should have more than 2 keys
+    // We should have 4 keys plus the selected mirrored keys
+    expect(finalKeysCount).toEqual(4)
+    const finalSelectedCount = await editor.getSelectedCount()
+    expect(finalSelectedCount).toEqual(2)
 
     // Take baseline screenshot (the mirror operation should be visible in the screenshot)
     await expect(page.getByTestId('canvas-main')).toHaveScreenshot(

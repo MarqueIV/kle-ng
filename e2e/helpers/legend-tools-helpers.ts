@@ -39,7 +39,7 @@ export class LegendToolsHelper {
    * Get the Extra Tools dropdown container locator.
    */
   getExtraToolsDropdown(): Locator {
-    return this.page.locator('.extra-tools-dropdown')
+    return this.page.locator('.extra-tools-group .dropdown-menu')
   }
 
   /**

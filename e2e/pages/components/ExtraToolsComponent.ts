@@ -24,8 +24,8 @@ export class ExtraToolsComponent {
     private readonly page: Page,
     private readonly waitHelpers: WaitHelpers,
   ) {
-    this.extraToolsButton = page.locator('.extra-tools-group button')
-    this.dropdown = page.locator('.extra-tools-dropdown')
+    this.extraToolsButton = page.locator('.extra-tools-group > button')
+    this.dropdown = page.locator('.extra-tools-group .dropdown-menu')
   }
 
   /**

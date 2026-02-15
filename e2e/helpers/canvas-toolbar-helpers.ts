@@ -104,7 +104,7 @@ export class CanvasToolbarHelper {
   async selectMirrorHorizontal(): Promise<void> {
     await this.getMirrorDropdownButton().click()
     await this.page
-      .locator('.mirror-dropdown .dropdown-item')
+      .locator('.mirror-group .dropdown-menu .dropdown-item')
       .filter({ hasText: 'Mirror Horizontal' })
       .click()
     await expect(this.getMirrorButton()).toHaveClass(/active/)

@@ -31,13 +31,10 @@
       </button>
 
       <!-- Mirror Button Group -->
-      <div class="btn-group-vertical mirror-group">
+      <div class="mirror-group">
         <button
-          :class="{
-            'tool-button': true,
-            'primary-mirror-btn': true,
-            active: canvasMode === 'mirror-v' || canvasMode === 'mirror-h',
-          }"
+          class="tool-button primary-mirror-btn"
+          :class="{ active: canvasMode === 'mirror-v' || canvasMode === 'mirror-h' }"
           :disabled="!canUseMirrorTools"
           data-testid="toolbar-mirror-vertical"
           @click="$emit('set-mode', 'mirror-v')"
@@ -45,76 +42,65 @@
         >
           <BiSymmetryVertical />
         </button>
-        <button
-          ref="mirrorDropdownBtnRef"
-          class="tool-button dropdown-btn"
-          :disabled="!canUseMirrorTools"
-          @click="$emit('toggle-mirror-dropdown')"
-          title="Mirror Options"
-        >
-          <BiChevronDown />
-        </button>
-      </div>
 
-      <!-- Mirror Dropdown -->
-      <div
-        v-if="showMirrorDropdown"
-        ref="mirrorDropdownRef"
-        class="mirror-dropdown"
-        style="opacity: 0"
-      >
-        <div class="dropdown-header">Mirror Direction</div>
-        <button
-          @click="$emit('select-mirror-mode', 'mirror-v')"
-          class="dropdown-item"
-          :class="{ active: canvasMode === 'mirror-v' }"
-          title="Mirror keys across a vertical line"
-        >
-          <BiSymmetryVertical />
-          Mirror Vertical
-        </button>
-        <button
-          @click="$emit('select-mirror-mode', 'mirror-h')"
-          class="dropdown-item"
-          :class="{ active: canvasMode === 'mirror-h' }"
-          title="Mirror keys across a horizontal line"
-        >
-          <BiSymmetryHorizontal />
-          Mirror Horizontal
-        </button>
+        <div class="btn-group-vertical dropend">
+          <button
+            class="tool-button dropdown-btn dropdown-toggle"
+            :disabled="!canUseMirrorTools"
+            data-bs-toggle="dropdown"
+          >
+            <BiChevronDown />
+          </button>
+
+          <ul class="dropdown-menu">
+            <li>
+              <button
+                @click="$emit('select-mirror-mode', 'mirror-v')"
+                class="dropdown-item"
+                title="Mirror keys across a vertical line"
+              >
+                <BiSymmetryVertical />
+                Mirror Vertical
+              </button>
+            </li>
+            <li>
+              <button
+                @click="$emit('select-mirror-mode', 'mirror-h')"
+                class="dropdown-item"
+                title="Mirror keys across a horizontal line"
+              >
+                <BiSymmetryHorizontal />
+                Mirror Horizontal
+              </button>
+            </li>
+          </ul>
+        </div>
       </div>
 
       <!-- Extra Tools Dropdown -->
-      <div class="btn-group-vertical extra-tools-group">
+      <div class="btn-group-vertical extra-tools-group dropend">
         <button
-          ref="extraToolsBtnRef"
-          class="tool-button"
-          @click="$emit('toggle-extra-tools')"
+          class="tool-button dropdown-toggle"
+          data-bs-toggle="dropdown"
+          aria-expanded="false"
           title="Extra Tools"
         >
           <BiTools />
         </button>
+        <ul class="dropdown-menu">
+          <li v-for="tool in extraTools" :key="tool.id">
+            <button
+              class="dropdown-item"
+              :class="{ disabled: tool.disabled }"
+              @click="tool.disabled ? null : $emit('execute-extra-tool', tool)"
+              :title="tool.description"
+              :disabled="tool.disabled"
+            >
+              {{ tool.name }}
+            </button>
+          </li>
+        </ul>
       </div>
-    </div>
-
-    <!-- Extra Tools Dropdown -->
-    <div
-      v-if="showExtraToolsDropdown"
-      ref="extraToolsDropdownRef"
-      class="extra-tools-dropdown"
-      style="opacity: 0"
-    >
-      <div class="dropdown-header">Extra Tools</div>
-      <button
-        v-for="tool in extraTools"
-        :key="tool.id"
-        @click="tool.disabled ? null : $emit('execute-extra-tool', tool)"
-        :class="['dropdown-item', { disabled: tool.disabled }]"
-        :title="tool.description"
-        :disabled="tool.disabled"
-      >
-        {{ tool.name }}
-      </button>
     </div>
   </div>
 </template>
@@ -127,7 +113,6 @@ import BiSymmetryVertical from 'bootstrap-icons/icons/symmetry-vertical.svg'
 import BiSymmetryHorizontal from 'bootstrap-icons/icons/symmetry-horizontal.svg'
 import BiChevronDown from 'bootstrap-icons/icons/chevron-down.svg'
 import BiTools from 'bootstrap-icons/icons/tools.svg'
-import { ref } from 'vue'
 
 interface ExtraTool {
   id: string
@@ -142,28 +127,19 @@ defineProps<{
   canUseMoveExactlyTool: boolean
   canUseRotateTool: boolean
   canUseMirrorTools: boolean
-  showMirrorDropdown: boolean
-  showExtraToolsDropdown: boolean
   extraTools: ExtraTool[]
 }>()
 
 defineEmits<{
   'set-mode': [mode: 'select' | 'mirror-h' | 'mirror-v' | 'rotate' | 'move-exactly']
-  'toggle-mirror-dropdown': []
   'select-mirror-mode': [mode: 'mirror-v' | 'mirror-h']
-  'toggle-extra-tools': []
   'execute-extra-tool': [tool: ExtraTool]
 }>()
-
-const mirrorDropdownBtnRef = ref<HTMLElement>()
-const mirrorDropdownRef = ref<HTMLElement>()
-const extraToolsBtnRef = ref<HTMLElement>()
-const extraToolsDropdownRef = ref<HTMLElement>()
-
-defineExpose({
-  mirrorDropdownBtnRef,
-  mirrorDropdownRef,
-  extraToolsBtnRef,
-  extraToolsDropdownRef,
-})
 </script>
+
+<style scoped>
+.mirror-group .dropdown-toggle::after,
+.extra-tools-group .dropdown-toggle::after {
+  display: none;
+}
+</style>

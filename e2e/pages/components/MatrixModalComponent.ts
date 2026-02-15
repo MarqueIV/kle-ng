@@ -40,9 +40,9 @@ export class MatrixModalComponent {
    * Open the matrix coordinates modal
    */
   async open() {
-    await this.page.locator('.extra-tools-group button').click()
+    await this.page.locator('.extra-tools-group > button').click()
     await this.page
-      .locator('.extra-tools-dropdown .dropdown-item')
+      .locator('.extra-tools-group .dropdown-menu .dropdown-item')
       .filter({
         hasText: 'Add Switch Matrix Coordinates',
       })

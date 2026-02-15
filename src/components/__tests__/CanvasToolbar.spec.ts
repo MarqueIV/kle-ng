@@ -10,31 +10,19 @@ describe('CanvasToolbar', () => {
   })
 
   describe('special keys functionality', () => {
-    it('should toggle special keys dropdown', async () => {
+    it('should have special keys dropdown with correct items', () => {
       const wrapper = mount(CanvasToolbar, {
         global: {
           plugins: [createPinia()],
         },
       })
 
-      // Initially dropdown should be hidden
-      expect(wrapper.find('.special-keys-dropdown').exists()).toBe(false)
-
-      // Click the special keys dropdown button (within add-key-group)
-      const dropdownBtn = wrapper.find('.add-key-group .dropdown-btn')
-      expect(dropdownBtn.exists()).toBe(true)
-
-      await dropdownBtn.trigger('click')
-      await wrapper.vm.$nextTick()
-
-      // Dropdown should now be visible
-      expect(wrapper.find('.special-keys-dropdown').exists()).toBe(true)
-
-      // Should have dropdown header
-      expect(wrapper.find('.dropdown-header').text()).toBe('Special Keys')
+      // Dropdown menu should exist in DOM (Bootstrap handles visibility)
+      const dropdownMenu = wrapper.find('.add-key-group .dropdown-menu')
+      expect(dropdownMenu.exists()).toBe(true)
 
       // Should have exactly 2 special key items
-      const dropdownItems = wrapper.findAll('.dropdown-item')
+      const dropdownItems = dropdownMenu.findAll('.dropdown-item')
       expect(dropdownItems.length).toBe(2)
 
       // Check for specific special keys
@@ -53,12 +41,7 @@ describe('CanvasToolbar', () => {
       const store = useKeyboardStore()
       const initialKeyCount = store.keys.length
 
-      // Open dropdown
-      const dropdownBtn = wrapper.find('.add-key-group .dropdown-btn')
-      await dropdownBtn.trigger('click')
-      await wrapper.vm.$nextTick()
-
-      // Click on ISO Enter
+      // Click on ISO Enter directly (Bootstrap handles dropdown visibility)
       const isoEnterItem = wrapper
         .findAll('.dropdown-item')
         .find((item) => item.text() === 'ISO Enter')
@@ -79,9 +62,6 @@ describe('CanvasToolbar', () => {
       expect(newKey!.height2).toBe(1)
       expect(newKey!.x2).toBe(-0.25)
       expect(newKey!.labels[4]).toBe('Enter')
-
-      // Dropdown should be closed after selection
-      expect(wrapper.find('.special-keys-dropdown').exists()).toBe(false)
     })
 
     it('should add standard key with regular add button', async () => {

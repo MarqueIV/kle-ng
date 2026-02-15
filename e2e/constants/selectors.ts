@@ -126,9 +126,9 @@ export const SELECTORS = {
    * Should be migrated to data-testid attributes in the future.
    */
   EXTRA_TOOLS: {
-    BUTTON: '.extra-tools-group button',
-    DROPDOWN: '.extra-tools-dropdown',
-    DROPDOWN_ITEM: '.extra-tools-dropdown .dropdown-item',
+    BUTTON: '.extra-tools-group > button',
+    DROPDOWN: '.extra-tools-group .dropdown-menu',
+    DROPDOWN_ITEM: '.extra-tools-group .dropdown-menu .dropdown-item',
   },
 
   /**
