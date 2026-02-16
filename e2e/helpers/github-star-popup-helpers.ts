@@ -3,12 +3,7 @@ import { WaitHelpers } from './wait-helpers'
 
 /**
  * Helper class for GitHub Star Popup interactions in E2E tests.
- *
- * Provides reusable methods for:
- * - Popup element locators
- * - Showing/hiding popup
- * - Popup state assertions
- * - LocalStorage state management
+ * The popup is now rendered as a Bootstrap toast via the toast system.
  *
  * @example
  * ```typescript
@@ -29,52 +24,53 @@ export class GitHubStarPopupHelper {
   // ============================================================================
 
   /**
-   * Get the GitHub star popup container locator.
+   * Get the GitHub star popup toast locator.
+   * The popup is a success-type toast with the specific title.
    */
   getPopup(): Locator {
-    return this.page.locator('.github-star-popup')
+    return this.page.locator('.toast.toast-success.show')
   }
 
   /**
    * Get the close button locator.
    */
   getCloseButton(): Locator {
-    return this.page.locator('.close-btn')
+    return this.getPopup().locator('.btn-close')
   }
 
   /**
    * Get the star button (GitHub link) locator.
    */
   getStarButton(): Locator {
-    return this.page.locator('.star-button')
+    return this.getPopup().locator('.toast-body a.btn')
   }
 
   /**
    * Get the popup title locator.
    */
   getPopupTitle(): Locator {
-    return this.page.locator('.popup-title')
+    return this.getPopup().locator('.toast-header strong')
   }
 
   /**
    * Get the popup text locator.
    */
   getPopupText(): Locator {
-    return this.page.locator('.popup-text')
+    return this.getPopup().locator('.toast-body')
   }
 
   /**
    * Get the close button icon locator.
    */
   getCloseIcon(): Locator {
-    return this.page.locator('.close-btn')
+    return this.getCloseButton()
   }
 
   /**
    * Get the GitHub icon in star button locator.
    */
   getGitHubIcon(): Locator {
-    return this.page.locator('.star-button')
+    return this.getStarButton()
   }
 
   // ============================================================================
@@ -85,11 +81,6 @@ export class GitHubStarPopupHelper {
    * Initialize the page for popup testing.
    * Clears localStorage and sets the E2E test flag in sessionStorage.
    * Using sessionStorage ensures the flag persists across page navigations and reloads.
-   *
-   * @example
-   * ```typescript
-   * await popupHelper.initializeForTesting()
-   * ```
    */
   async initializeForTesting(): Promise<void> {
     await this.page.evaluate(() => {
@@ -103,11 +94,6 @@ export class GitHubStarPopupHelper {
    * Simulate a first visit at a specific time in the past.
    *
    * @param millisecondsAgo - Time in milliseconds ago when first visit occurred
-   *
-   * @example
-   * ```typescript
-   * await popupHelper.simulateFirstVisit(120000) // 2 minutes ago
-   * ```
    */
   async simulateFirstVisit(millisecondsAgo: number): Promise<void> {
     const timeAgo = Date.now() - millisecondsAgo
@@ -118,11 +104,6 @@ export class GitHubStarPopupHelper {
 
   /**
    * Set the popup dismissed flag in localStorage.
-   *
-   * @example
-   * ```typescript
-   * await popupHelper.setDismissedFlag()
-   * ```
    */
   async setDismissedFlag(): Promise<void> {
     await this.page.evaluate(() => {
@@ -134,11 +115,6 @@ export class GitHubStarPopupHelper {
    * Get the popup dismissed state from localStorage.
    *
    * @returns The dismissed state ('true' or null)
-   *
-   * @example
-   * ```typescript
-   * const dismissed = await popupHelper.getDismissedState()
-   * ```
    */
   async getDismissedState(): Promise<string | null> {
     return await this.page.evaluate(() => {
@@ -155,19 +131,13 @@ export class GitHubStarPopupHelper {
    * Waits for the popup to be visible after reload to ensure component has mounted.
    *
    * @param millisecondsAgo - Time in milliseconds ago (default: 120000 = 2 minutes)
-   *
-   * @example
-   * ```typescript
-   * await popupHelper.showPopupAfterDelay(120000)
-   * ```
    */
   async showPopupAfterDelay(millisecondsAgo: number = 120000): Promise<void> {
     await this.simulateFirstVisit(millisecondsAgo)
     await this.page.reload()
     await this.page.waitForLoadState('domcontentloaded')
-    // Wait for the popup to appear - it shows immediately when time condition is met (line 106 in component)
-    // The popup has a 0.4s CSS animation, so we wait for it to be visible with a reasonable timeout
-    await this.getPopup().waitFor({ state: 'visible', timeout: 2000 })
+    // Wait for the toast to appear with Bootstrap's .show class
+    await this.getPopup().waitFor({ state: 'visible', timeout: 5000 })
   }
 
   // ============================================================================
@@ -176,11 +146,6 @@ export class GitHubStarPopupHelper {
 
   /**
    * Close the popup by clicking the close button.
-   *
-   * @example
-   * ```typescript
-   * await popupHelper.closePopup()
-   * ```
    */
   async closePopup(): Promise<void> {
     await this.getCloseButton().click()
@@ -191,12 +156,6 @@ export class GitHubStarPopupHelper {
    * Returns the new page that was opened.
    *
    * @returns Promise resolving to the new page
-   *
-   * @example
-   * ```typescript
-   * const newPage = await popupHelper.clickStarButton()
-   * await newPage.close()
-   * ```
    */
   async clickStarButton(): Promise<Page> {
     const [newPage] = await Promise.all([
@@ -214,11 +173,6 @@ export class GitHubStarPopupHelper {
    * Assert that the popup is visible.
    *
    * @param timeout - Optional timeout in milliseconds (default: 5000)
-   *
-   * @example
-   * ```typescript
-   * await popupHelper.expectPopupVisible()
-   * ```
    */
   async expectPopupVisible(timeout: number = 5000): Promise<void> {
     await expect(this.getPopup()).toBeVisible({ timeout })
@@ -226,11 +180,6 @@ export class GitHubStarPopupHelper {
 
   /**
    * Assert that the popup is NOT visible.
-   *
-   * @example
-   * ```typescript
-   * await popupHelper.expectPopupNotVisible()
-   * ```
    */
   async expectPopupNotVisible(): Promise<void> {
     await expect(this.getPopup()).not.toBeVisible()
@@ -239,11 +188,6 @@ export class GitHubStarPopupHelper {
   /**
    * Assert that the popup is NOT visible after waiting for animations to complete.
    * Uses RAF waits instead of hard timeout for deterministic waiting.
-   *
-   * @example
-   * ```typescript
-   * await popupHelper.expectPopupNotVisibleAfterWait()
-   * ```
    */
   async expectPopupNotVisibleAfterWait(): Promise<void> {
     // Wait for any potential animations or delayed rendering
@@ -253,11 +197,6 @@ export class GitHubStarPopupHelper {
 
   /**
    * Assert that the popup has correct GitHub link attributes.
-   *
-   * @example
-   * ```typescript
-   * await popupHelper.expectCorrectGitHubLink()
-   * ```
    */
   async expectCorrectGitHubLink(): Promise<void> {
     const starButton = this.getStarButton()
@@ -268,11 +207,6 @@ export class GitHubStarPopupHelper {
 
   /**
    * Assert that the popup contains expected content.
-   *
-   * @example
-   * ```typescript
-   * await popupHelper.expectPopupContent()
-   * ```
    */
   async expectPopupContent(): Promise<void> {
     await expect(this.getPopupTitle()).toContainText('Enjoying KLE-NG?')
@@ -282,11 +216,6 @@ export class GitHubStarPopupHelper {
 
   /**
    * Assert that the popup dismissed state is stored in localStorage.
-   *
-   * @example
-   * ```typescript
-   * await popupHelper.expectDismissedStateStored()
-   * ```
    */
   async expectDismissedStateStored(): Promise<void> {
     const dismissedState = await this.getDismissedState()

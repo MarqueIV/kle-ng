@@ -1,56 +1,35 @@
 <template>
-  <div v-if="isVisible" class="github-star-popup">
-    <button
-      @click="close"
-      class="btn btn-sm btn-outline-secondary close-btn"
-      type="button"
-      aria-label="Close"
-    >
-      <BiX />
-    </button>
-    <div class="popup-content">
-      <div class="popup-message">
-        <h6 class="popup-title">Enjoying KLE-NG?</h6>
-        <p class="popup-text">
-          If you find this tool useful, please consider starring it on GitHub to support the
-          project!
-        </p>
-      </div>
-      <a
-        href="https://github.com/adamws/kle-ng"
-        target="_blank"
-        rel="noopener noreferrer"
-        class="star-button"
-        @click="handleStarClick"
-      >
-        <BiGithub />
-        Star on GitHub
-      </a>
-    </div>
-  </div>
+  <div />
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from 'vue'
-import BiX from 'bootstrap-icons/icons/x.svg'
-import BiGithub from 'bootstrap-icons/icons/github.svg'
+import { onMounted, onUnmounted } from 'vue'
+import { toast } from '@/composables/useToast'
 
 const STORAGE_KEY = 'kle-ng-github-star-popup-dismissed'
 const VISIT_TIME_KEY = 'kle-ng-first-visit-time'
 const DISPLAY_DELAY = 60000 // 1 minute in milliseconds
 
-const isVisible = ref(false)
 let timeoutId: number | null = null
+let toastId: string | null = null
 
-const close = () => {
-  isVisible.value = false
-  // Store in local storage that popup was dismissed
-  localStorage.setItem(STORAGE_KEY, 'true')
-}
-
-const handleStarClick = () => {
-  // Close popup when user clicks the star button
-  close()
+const showPopup = () => {
+  if (toastId) return
+  toastId = toast.showToast({
+    message:
+      'If you find this tool useful, please consider starring it on GitHub to support the project!',
+    title: 'Enjoying KLE-NG?',
+    type: 'success',
+    duration: 0,
+    showIcon: true,
+    showCloseButton: true,
+    actionLabel: 'Star on GitHub',
+    actionUrl: 'https://github.com/adamws/kle-ng',
+    onClose: () => {
+      localStorage.setItem(STORAGE_KEY, 'true')
+      toastId = null
+    },
+  })
 }
 
 const checkAndShowPopup = () => {
@@ -86,7 +65,7 @@ const checkAndShowPopup = () => {
     timeoutId = window.setTimeout(() => {
       // Check again if popup wasn't dismissed in the meantime
       if (localStorage.getItem(STORAGE_KEY) !== 'true') {
-        isVisible.value = true
+        showPopup()
       }
     }, DISPLAY_DELAY)
   } else {
@@ -98,12 +77,12 @@ const checkAndShowPopup = () => {
       const remainingTime = DISPLAY_DELAY - timeSinceFirstVisit
       timeoutId = window.setTimeout(() => {
         if (localStorage.getItem(STORAGE_KEY) !== 'true') {
-          isVisible.value = true
+          showPopup()
         }
       }, remainingTime)
     } else {
       // User has been here for more than 1 minute, show popup immediately
-      isVisible.value = true
+      showPopup()
     }
   }
 }
@@ -118,104 +97,3 @@ onUnmounted(() => {
   }
 })
 </script>
-
-<style scoped>
-.github-star-popup {
-  position: fixed;
-  bottom: 20px;
-  right: 20px;
-  background: var(--bs-body-bg);
-  color: var(--bs-body-color);
-  border: 2px solid var(--bs-warning);
-  border-radius: 12px;
-  box-shadow:
-    0 8px 24px rgba(0, 0, 0, 0.15),
-    0 0 0 1px rgba(0, 0, 0, 0.05);
-  max-width: 360px;
-  z-index: 1050;
-  animation: slideIn 0.4s ease-out;
-}
-
-@keyframes slideIn {
-  from {
-    transform: translateY(20px);
-    opacity: 0;
-  }
-  to {
-    transform: translateY(0);
-    opacity: 1;
-  }
-}
-
-.close-btn {
-  position: absolute;
-  top: 20px;
-  right: 20px;
-  width: 20px;
-  height: 20px;
-  padding: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.popup-content {
-  padding: 20px;
-}
-
-.popup-message {
-  margin-bottom: 16px;
-}
-
-.popup-title {
-  font-size: 16px;
-  font-weight: 600;
-  margin-bottom: 16px;
-  color: var(--bs-body-color);
-}
-
-.popup-text {
-  font-size: 14px;
-  color: var(--bs-secondary-color);
-  margin: 0;
-  line-height: 1.5;
-}
-
-.star-button {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  width: 100%;
-  padding: 10px 16px;
-  background: linear-gradient(135deg, #ffc107 0%, #ff9800 100%);
-  color: white;
-  border: none;
-  border-radius: 8px;
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-  transition:
-    transform 0.15s ease,
-    box-shadow 0.15s ease;
-  text-decoration: none;
-}
-
-.star-button:hover {
-  box-shadow: 0 4px 12px rgba(255, 193, 7, 0.4);
-}
-
-.star-button:active {
-  transform: translateY(0);
-}
-
-/* Responsive adjustments */
-@media (max-width: 640px) {
-  .github-star-popup {
-    bottom: 16px;
-    right: 16px;
-    left: 16px;
-    max-width: none;
-  }
-}
-</style>

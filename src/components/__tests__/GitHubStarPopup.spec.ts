@@ -24,17 +24,8 @@ describe('GitHubStarPopup', () => {
     it('should not show popup in test environment', () => {
       const wrapper = mount(GitHubStarPopup)
 
-      // The component detects test environment (via import.meta.env.MODE === 'test',
-      // globalThis.describe, or navigator.webdriver) and prevents popup from showing
-      expect(wrapper.find('.github-star-popup').exists()).toBe(false)
-    })
-
-    it('should render as HTML comment when not visible', () => {
-      const wrapper = mount(GitHubStarPopup)
-      const html = wrapper.html()
-
-      // v-if renders as HTML comment when condition is false
-      expect(html).toBe('<!--v-if-->')
+      // The component detects test environment and does not trigger toast
+      expect(wrapper.html()).toBe('<div></div>')
     })
 
     it('should not set localStorage visit time in test environment', () => {
@@ -99,26 +90,18 @@ describe('GitHubStarPopup', () => {
       // This test documents the expected behavior:
       // 1. New user visits the site
       // 2. First visit time is stored in localStorage
-      // 3. After 1 minute, popup appears
+      // 3. After 1 minute, popup appears as a toast notification
       // 4. When user closes or clicks star, dismissal is stored
       // 5. Popup never shows again for that user
 
       // In test environment, this behavior is disabled
       const wrapper = mount(GitHubStarPopup)
-      expect(wrapper.find('.github-star-popup').exists()).toBe(false)
+      expect(wrapper.exists()).toBe(true)
     })
 
     it('should not show if already dismissed (even after 1 minute)', () => {
       // Documents: Once dismissed, popup never shows again
       localStorage.setItem('kle-ng-github-star-popup-dismissed', 'true')
-
-      const wrapper = mount(GitHubStarPopup)
-      expect(wrapper.find('.github-star-popup').exists()).toBe(false)
-    })
-
-    it('should provide link to GitHub repository', () => {
-      // Documents: Popup contains link to https://github.com/adamws/kle-ng
-      // This will be verified in E2E tests where the component is actually visible
 
       const wrapper = mount(GitHubStarPopup)
       expect(wrapper.exists()).toBe(true)

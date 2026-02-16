@@ -15,10 +15,6 @@ import { WaitHelpers } from '../../helpers/wait-helpers'
  * // Working with specific toast in a stack
  * await toast.expectToastAtIndex(0, 'Toast 1')
  * await toast.close(0)
- *
- * @remarks
- * ⚠️ TECH DEBT: This component currently uses CSS class selectors (.toast-notification)
- * instead of data-testid attributes. These should be migrated to data-testid in the future.
  */
 export class ToastComponent {
   private readonly toastContainer: Locator
@@ -27,7 +23,7 @@ export class ToastComponent {
     private readonly page: Page,
     private readonly waitHelpers: WaitHelpers,
   ) {
-    this.toastContainer = page.locator('.toast-notification')
+    this.toastContainer = page.locator('.toast.show')
   }
 
   /**
@@ -38,7 +34,7 @@ export class ToastComponent {
     await expect(this.toastContainer.first()).toBeVisible()
 
     if (title) {
-      const toastTitle = this.toastContainer.first().locator('.toast-title')
+      const toastTitle = this.toastContainer.first().locator('.toast-header strong')
       await expect(toastTitle).toContainText(title)
     }
   }
@@ -56,7 +52,7 @@ export class ToastComponent {
    * @param message - Expected message text
    */
   async expectToastMessage(message: string): Promise<void> {
-    const toastText = this.toastContainer.first().locator('.toast-text')
+    const toastText = this.toastContainer.first().locator('.toast-body')
     await expect(toastText).toContainText(message)
   }
 
@@ -65,7 +61,7 @@ export class ToastComponent {
    * @param title - Expected title text
    */
   async expectToastTitle(title: string): Promise<void> {
-    const toastTitle = this.toastContainer.first().locator('.toast-title')
+    const toastTitle = this.toastContainer.first().locator('.toast-header strong')
     await expect(toastTitle).toHaveText(title)
   }
 
@@ -75,7 +71,7 @@ export class ToastComponent {
    * @param title - Expected title text
    */
   async expectToastAtIndex(index: number, title: string): Promise<void> {
-    const toastTitle = this.toastContainer.nth(index).locator('.toast-title')
+    const toastTitle = this.toastContainer.nth(index).locator('.toast-header strong')
     await expect(toastTitle).toHaveText(title)
   }
 
@@ -84,7 +80,7 @@ export class ToastComponent {
    * @param index - Index of the toast to close (default: 0 for first toast)
    */
   async close(index: number = 0): Promise<void> {
-    const closeButton = this.toastContainer.nth(index).locator('.toast-close, button.btn-close')
+    const closeButton = this.toastContainer.nth(index).locator('.btn-close')
     await closeButton.click()
     await this.waitHelpers.waitForDoubleAnimationFrame()
   }

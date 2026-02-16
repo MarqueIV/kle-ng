@@ -1,50 +1,53 @@
 <template>
   <div
-    v-if="visible"
-    class="toast-notification"
-    :class="[`toast-${type}`, { 'toast-with-icon': showIcon }]"
+    ref="toastEl"
+    class="toast fade"
+    :class="`toast-${type}`"
     role="alert"
     aria-live="polite"
+    aria-atomic="true"
   >
-    <div class="toast-content">
-      <div v-if="showIcon" class="toast-icon">
-        <BiCheckCircleFill v-if="type === 'success'" />
-        <BiExclamationTriangleFill v-else-if="type === 'error'" />
-        <BiExclamationTriangleFill v-else-if="type === 'warning'" />
-        <BiInfoCircleFill v-else />
-      </div>
-      <div class="toast-message">
-        <div v-if="title" class="toast-title">{{ title }}</div>
-        <div class="toast-text">{{ message }}</div>
-      </div>
+    <div class="toast-header">
+      <BiCheckCircleFill v-if="type === 'success'" class="toast-type-icon me-2" />
+      <BiExclamationTriangleFill v-else-if="type === 'error'" class="toast-type-icon me-2" />
+      <BiExclamationTriangleFill v-else-if="type === 'warning'" class="toast-type-icon me-2" />
+      <BiInfoCircleFill v-else class="toast-type-icon me-2" />
+      <strong v-if="title" class="me-auto">{{ title }}</strong>
+      <span v-else class="me-auto">{{ typeLabel }}</span>
       <button
         v-if="showCloseButton"
-        @click="close"
-        class="toast-close"
         type="button"
+        class="btn-close"
+        data-bs-dismiss="toast"
         aria-label="Close notification"
-      >
-        <BiX />
-      </button>
+      />
+    </div>
+    <div class="toast-body">
+      {{ message }}
+      <div v-if="actionLabel && actionUrl" class="mt-2 text-center">
+        <a
+          :href="actionUrl"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="btn btn-sm btn-warning fw-semibold d-inline-flex align-items-center gap-1"
+          @click="handleAction"
+        >
+          <BiGithub v-if="actionUrl.includes('github')" />
+          {{ actionLabel }}
+        </a>
+      </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
+import BsToast from 'bootstrap/js/dist/toast'
+import type { ToastProps } from '@/composables/useToast'
 import BiCheckCircleFill from 'bootstrap-icons/icons/check-circle-fill.svg'
 import BiExclamationTriangleFill from 'bootstrap-icons/icons/exclamation-triangle-fill.svg'
 import BiInfoCircleFill from 'bootstrap-icons/icons/info-circle-fill.svg'
-import BiX from 'bootstrap-icons/icons/x.svg'
-
-export interface ToastProps {
-  message: string
-  title?: string
-  type?: 'success' | 'error' | 'warning' | 'info'
-  duration?: number
-  showIcon?: boolean
-  showCloseButton?: boolean
-}
+import BiGithub from 'bootstrap-icons/icons/github.svg'
 
 const props = withDefaults(defineProps<ToastProps>(), {
   type: 'info',
@@ -57,166 +60,61 @@ const emit = defineEmits<{
   close: []
 }>()
 
-const visible = ref(true)
-let timeoutId: number | null = null
+const toastEl = ref<HTMLElement | null>(null)
 
-const close = () => {
-  visible.value = false
-  if (timeoutId) {
-    clearTimeout(timeoutId)
-    timeoutId = null
+const typeLabel = computed(() => {
+  const labels: Record<string, string> = {
+    success: 'Success',
+    error: 'Error',
+    warning: 'Warning',
+    info: 'Info',
   }
-  // Wait for exit transition to complete
-  setTimeout(() => {
-    emit('close')
-  }, 300)
+  return labels[props.type] || 'Info'
+})
+
+const handleAction = () => {
+  if (!toastEl.value) return
+  const instance = BsToast.getInstance(toastEl.value)
+  instance?.hide()
 }
 
 onMounted(() => {
-  if (props.duration > 0) {
-    timeoutId = window.setTimeout(() => {
-      close()
-    }, props.duration)
-  }
-})
+  if (!toastEl.value) return
+  const instance = new BsToast(toastEl.value, {
+    autohide: props.duration > 0,
+    delay: props.duration,
+    animation: true,
+  })
+  instance.show()
 
-onUnmounted(() => {
-  if (timeoutId) {
-    clearTimeout(timeoutId)
-  }
+  toastEl.value.addEventListener('hidden.bs.toast', () => {
+    emit('close')
+  })
 })
 </script>
 
 <style scoped>
-.toast-notification {
-  position: relative;
-  min-width: 320px;
-  max-width: 500px;
-  background: var(--bs-body-bg);
-  color: var(--bs-body-color);
-  border: 1px solid var(--bs-border-color);
-  border-radius: 8px;
-  box-shadow: var(--bs-box-shadow);
-  border-left: 4px solid;
-  overflow: hidden;
-  pointer-events: auto;
+.toast {
+  --bs-toast-bg: var(--bs-body-bg);
 }
 
-.toast-content {
-  display: flex;
-  align-items: flex-start;
-  padding: 16px;
-  gap: 12px;
-  overflow: hidden;
-}
-
-.toast-icon {
-  flex-shrink: 0;
-  font-size: 20px;
-  margin-top: 2px;
-}
-
-.toast-message {
-  flex: 1;
-  min-width: 0;
-  overflow-wrap: break-word;
-  word-break: break-word;
-}
-
-.toast-title {
-  font-weight: 600;
-  font-size: 14px;
-  margin-bottom: 4px;
-  line-height: 1.3;
-}
-
-.toast-text {
-  font-size: 14px;
-  line-height: 1.4;
-  color: var(--bs-secondary-color);
-}
-
-.toast-close {
-  flex-shrink: 0;
-  background: none;
-  border: none;
-  font-size: 16px;
-  color: var(--bs-secondary-color);
-  cursor: pointer;
-  padding: 4px;
-  border-radius: 2px;
-  transition:
-    color 0.15s ease,
-    background-color 0.15s ease;
-  margin-top: -2px;
-  margin-left: 4px;
-}
-
-.toast-close:hover {
-  color: var(--bs-secondary-color);
-  background-color: rgba(0, 0, 0, 0.05);
-}
-
-/* Toast type variants */
-.toast-success {
-  border-left-color: var(--bs-success);
-}
-
-.toast-success .toast-icon {
+.toast-success .toast-type-icon,
+.toast-success :deep(.toast-header strong) {
   color: var(--bs-success);
 }
 
-.toast-success .toast-title {
-  color: var(--bs-success);
-}
-
-.toast-error {
-  border-left-color: var(--bs-danger);
-}
-
-.toast-error .toast-icon {
+.toast-error .toast-type-icon,
+.toast-error :deep(.toast-header strong) {
   color: var(--bs-danger);
 }
 
-.toast-error .toast-title {
-  color: var(--bs-danger);
-}
-
-.toast-warning {
-  border-left-color: var(--bs-warning);
-}
-
-.toast-warning .toast-icon {
+.toast-warning .toast-type-icon,
+.toast-warning :deep(.toast-header strong) {
   color: var(--bs-warning-text);
 }
 
-.toast-warning .toast-title {
-  color: var(--bs-warning-text);
-}
-
-.toast-info {
-  border-left-color: var(--bs-info);
-}
-
-.toast-info .toast-icon {
+.toast-info .toast-type-icon,
+.toast-info :deep(.toast-header strong) {
   color: var(--bs-info);
-}
-
-.toast-info .toast-title {
-  color: var(--bs-info);
-}
-
-/* Responsive adjustments */
-@media (max-width: 640px) {
-  .toast-notification {
-    min-width: auto;
-    max-width: calc(100vw - 40px);
-    width: 100%;
-  }
-
-  .toast-content {
-    padding: 12px;
-    gap: 8px;
-  }
 }
 </style>

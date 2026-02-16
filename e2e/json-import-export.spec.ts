@@ -60,9 +60,9 @@ test.describe('JSON Import/Export Functionality', () => {
       await helper.importFromFile('e2e/fixtures/invalid.json')
 
       // Wait for error toast notification to appear
-      await expect(page.locator('.toast-notification')).toBeVisible()
-      await expect(page.locator('.toast-notification')).toHaveClass(/toast-error/)
-      await expect(page.locator('.toast-title')).toContainText('Error loading file')
+      await expect(page.locator('.toast.show')).toBeVisible()
+      await expect(page.locator('.toast.show')).toHaveClass(/toast-error/)
+      await expect(page.locator('.toast-header strong')).toContainText('Error loading file')
 
       // Should remain at 0 keys after error
       await expect(page.getByTestId('counter-keys')).toContainText('Keys: 0')
@@ -81,8 +81,8 @@ test.describe('JSON Import/Export Functionality', () => {
       await helper.importFromFile('e2e/fixtures/via-layout.json', 8)
 
       // Verify success message indicates VIA format
-      await expect(page.locator('.toast-notification')).toBeVisible()
-      await expect(page.locator('.toast-title')).toContainText('Import successful')
+      await expect(page.locator('.toast.show')).toBeVisible()
+      await expect(page.locator('.toast-header strong')).toContainText('Import successful')
 
       // Take screenshot to verify VIA layout was imported
       await expect(page.getByTestId('canvas-main')).toHaveScreenshot('via-layout-imported.png')

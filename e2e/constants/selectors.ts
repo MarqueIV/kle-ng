@@ -114,10 +114,10 @@ export const SELECTORS = {
    * Should be migrated to data-testid attributes in the future.
    */
   TOAST: {
-    NOTIFICATION: '.toast-notification',
-    TITLE: '.toast-title',
-    TEXT: '.toast-text',
-    CLOSE: '.toast-close, button.btn-close',
+    NOTIFICATION: '.toast.show',
+    TITLE: '.toast-header strong',
+    TEXT: '.toast-body',
+    CLOSE: '.btn-close',
   },
 
   /**

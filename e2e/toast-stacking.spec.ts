@@ -22,32 +22,31 @@ test.describe('Toast Stacking System', () => {
     await waitHelpers.waitForDoubleAnimationFrame()
   })
 
-  test('should display single toast correctly positioned below navbar', async ({ page }) => {
+  test('should display single toast correctly positioned in bottom-right', async ({ page }) => {
     // Trigger a single toast via the global helper
     await page.evaluate(() => {
       window.__kleToast.showSuccess('Test toast message', 'Test Title')
     })
 
-    // Wait for toast to appear
-    const toast = page.locator('.toast-notification').first()
+    // Wait for toast to appear (Bootstrap adds .show class)
+    const toast = page.locator('.toast.show').first()
     await expect(toast).toBeVisible()
 
-    // Check that toast is positioned below the navbar
-    const navbar = page.locator('.app-header')
-    const navbarBox = await navbar.boundingBox()
+    const viewportSize = page.viewportSize()
     const toastBox = await toast.boundingBox()
 
-    expect(navbarBox).toBeTruthy()
+    expect(viewportSize).toBeTruthy()
     expect(toastBox).toBeTruthy()
 
-    if (navbarBox && toastBox) {
-      // Toast should be below the navbar
-      expect(toastBox.y).toBeGreaterThan(navbarBox.y + navbarBox.height)
+    if (viewportSize && toastBox) {
+      // Toast should be in the bottom-right area
+      expect(toastBox.x + toastBox.width).toBeGreaterThan(viewportSize.width - 100)
+      expect(toastBox.y + toastBox.height).toBeGreaterThan(viewportSize.height / 2)
     }
 
     // Check toast contains correct content
-    await expect(toast.locator('.toast-title')).toHaveText('Test Title')
-    await expect(toast.locator('.toast-text')).toHaveText('Test toast message')
+    await expect(toast.locator('.toast-header strong')).toHaveText('Test Title')
+    await expect(toast.locator('.toast-body')).toContainText('Test toast message')
   })
 
   test('should stack multiple toasts vertically without overlapping', async ({ page }) => {
@@ -65,7 +64,7 @@ test.describe('Toast Stacking System', () => {
     })
 
     // Wait for all 3 toasts to appear
-    const toasts = page.locator('.toast-notification')
+    const toasts = page.locator('.toast.show')
     await expect(toasts).toHaveCount(3, { timeout: 5000 })
 
     // Allow animations to complete using RAF
@@ -84,20 +83,21 @@ test.describe('Toast Stacking System', () => {
 
     // Verify toasts are positioned vertically with no overlap
     for (let i = 0; i < toastBoxes.length - 1; i++) {
-      const currentToast = toastBoxes[i]
-      const nextToast = toastBoxes[i + 1]
+      const a = toastBoxes[i]
+      const b = toastBoxes[i + 1]
 
-      // Next toast should be below current toast (no overlap)
-      expect(nextToast.y).toBeGreaterThanOrEqual(currentToast.y + currentToast.height)
+      // Toasts must not overlap vertically
+      const noOverlap = b.y >= a.y + a.height - 1 || a.y >= b.y + b.height - 1
+      expect(noOverlap).toBe(true)
     }
 
-    // Verify content is correct
-    await expect(toasts.nth(0).locator('.toast-title')).toHaveText('Toast 1')
-    await expect(toasts.nth(1).locator('.toast-title')).toHaveText('Toast 2')
-    await expect(toasts.nth(2).locator('.toast-title')).toHaveText('Toast 3')
+    // Verify content is correct (reversed DOM order, newest first)
+    await expect(toasts.nth(0).locator('.toast-header strong')).toHaveText('Toast 3')
+    await expect(toasts.nth(1).locator('.toast-header strong')).toHaveText('Toast 2')
+    await expect(toasts.nth(2).locator('.toast-header strong')).toHaveText('Toast 1')
   })
 
-  test('should handle toast removal and remaining toasts should move up', async ({ page }) => {
+  test('should handle toast removal and remaining toasts reflow correctly', async ({ page }) => {
     // Show multiple toasts with long duration
     await page.evaluate(() => {
       window.__kleToast.showSuccess('First toast', 'Toast 1', { duration: 10000 })
@@ -112,34 +112,34 @@ test.describe('Toast Stacking System', () => {
     // Wait for all toasts to appear using RAF
     await waitHelpers.waitForQuadAnimationFrame()
 
-    const toasts = page.locator('.toast-notification')
+    const toasts = page.locator('.toast.show')
     await expect(toasts).toHaveCount(3)
 
-    // Get initial positions
-    const initialPositions = []
-    for (let i = 0; i < 3; i++) {
-      const box = await toasts.nth(i).boundingBox()
-      if (box) initialPositions.push(box.y)
-    }
+    // Close the top toast (newest = Toast 3, which is nth(0) in reversed DOM order)
+    await toasts.nth(0).locator('.btn-close').click()
 
-    // Close the first toast by clicking its close button
-    await toasts.nth(0).locator('.toast-close').click()
-
-    // Wait for animation to complete using RAF
-    await waitHelpers.waitForQuadAnimationFrame()
+    // Wait for Bootstrap fade-out animation + DOM removal
+    await page.waitForTimeout(500)
 
     // Check that only 2 toasts remain
     await expect(toasts).toHaveCount(2)
 
-    // Verify remaining toasts moved up
-    const finalPositions = []
+    // Verify remaining toasts are properly stacked without overlap
+    const finalBoxes = []
     for (let i = 0; i < 2; i++) {
       const box = await toasts.nth(i).boundingBox()
-      if (box) finalPositions.push(box.y)
+      expect(box).toBeTruthy()
+      if (box) finalBoxes.push(box)
     }
 
-    // The second toast should have moved to where the first toast was
-    expect(finalPositions[0]).toBeLessThan(initialPositions[1])
+    const noOverlap =
+      finalBoxes[1].y >= finalBoxes[0].y + finalBoxes[0].height - 1 ||
+      finalBoxes[0].y >= finalBoxes[1].y + finalBoxes[1].height - 1
+    expect(noOverlap).toBe(true)
+
+    // Verify content is correct (Toast 3 was removed, remaining in reversed order)
+    await expect(toasts.nth(0).locator('.toast-header strong')).toHaveText('Toast 2')
+    await expect(toasts.nth(1).locator('.toast-header strong')).toHaveText('Toast 1')
   })
 
   test('should display different toast types with correct styling', async ({ page }) => {
@@ -160,14 +160,14 @@ test.describe('Toast Stacking System', () => {
     // Wait for all toast types to appear using RAF
     await waitHelpers.waitForAnimationFrames(5)
 
-    const toasts = page.locator('.toast-notification')
+    const toasts = page.locator('.toast.show')
     await expect(toasts).toHaveCount(4)
 
-    // Check that each toast has the correct type class
-    await expect(toasts.nth(0)).toHaveClass(/toast-success/)
-    await expect(toasts.nth(1)).toHaveClass(/toast-error/)
-    await expect(toasts.nth(2)).toHaveClass(/toast-warning/)
-    await expect(toasts.nth(3)).toHaveClass(/toast-info/)
+    // Check that each toast has the correct type class (reversed DOM order)
+    await expect(toasts.nth(0)).toHaveClass(/toast-info/)
+    await expect(toasts.nth(1)).toHaveClass(/toast-warning/)
+    await expect(toasts.nth(2)).toHaveClass(/toast-error/)
+    await expect(toasts.nth(3)).toHaveClass(/toast-success/)
   })
 
   test('should auto-dismiss toasts after specified duration', async ({ page }) => {
@@ -176,12 +176,12 @@ test.describe('Toast Stacking System', () => {
       window.__kleToast.showSuccess('Short duration toast', 'Test', { duration: 1000 })
     })
 
-    const toast = page.locator('.toast-notification').first()
+    const toast = page.locator('.toast.show').first()
     await expect(toast).toBeVisible()
 
-    // Wait for auto-dismiss (1000ms + buffer)
-    await waitHelpers.waitForAnimationFrames(12) // ~1200ms at 60fps
-    await expect(toast).not.toBeVisible()
+    // Wait for auto-dismiss (1000ms delay + 150ms Bootstrap fade-out + buffer)
+    await page.waitForTimeout(1500)
+    await expect(page.locator('.toast.show')).toHaveCount(0)
   })
 
   test('should be responsive on mobile viewports', async ({ page }) => {
@@ -193,16 +193,16 @@ test.describe('Toast Stacking System', () => {
       window.__kleToast.showSuccess('Mobile toast test', 'Mobile Test')
     })
 
-    const toast = page.locator('.toast-notification').first()
+    const toast = page.locator('.toast.show').first()
     await expect(toast).toBeVisible()
 
     const toastBox = await toast.boundingBox()
     expect(toastBox).toBeTruthy()
 
     if (toastBox) {
-      // Toast should fit within viewport width with proper margins
-      expect(toastBox.x).toBeGreaterThanOrEqual(20) // Left margin
-      expect(toastBox.x + toastBox.width).toBeLessThanOrEqual(375 - 20) // Right margin
+      // Toast should fit within viewport width
+      expect(toastBox.x).toBeGreaterThanOrEqual(0)
+      expect(toastBox.x + toastBox.width).toBeLessThanOrEqual(375)
     }
   })
 
@@ -217,7 +217,7 @@ test.describe('Toast Stacking System', () => {
     // Wait for rapid creation to complete using RAF
     await waitHelpers.waitForAnimationFrames(3)
 
-    const toasts = page.locator('.toast-notification')
+    const toasts = page.locator('.toast.show')
     const toastCount = await toasts.count()
 
     // Should have created all toasts
@@ -232,9 +232,10 @@ test.describe('Toast Stacking System', () => {
 
     // Verify no overlaps
     for (let i = 0; i < positions.length - 1; i++) {
-      const current = positions[i]
-      const next = positions[i + 1]
-      expect(next.y).toBeGreaterThanOrEqual(current.y + current.height)
+      const a = positions[i]
+      const b = positions[i + 1]
+      const noOverlap = b.y >= a.y + a.height - 1 || a.y >= b.y + b.height - 1
+      expect(noOverlap).toBe(true)
     }
   })
 
@@ -243,15 +244,16 @@ test.describe('Toast Stacking System', () => {
       window.__kleToast.showSuccess('Accessibility test', 'A11y Test')
     })
 
-    const toast = page.locator('.toast-notification').first()
+    const toast = page.locator('.toast.show').first()
     await expect(toast).toBeVisible()
 
     // Check accessibility attributes
     await expect(toast).toHaveAttribute('role', 'alert')
     await expect(toast).toHaveAttribute('aria-live', 'polite')
+    await expect(toast).toHaveAttribute('aria-atomic', 'true')
 
     // Check close button accessibility
-    const closeButton = toast.locator('.toast-close')
+    const closeButton = toast.locator('.btn-close')
     await expect(closeButton).toHaveAttribute('aria-label', 'Close notification')
     await expect(closeButton).toHaveAttribute('type', 'button')
   })

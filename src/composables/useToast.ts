@@ -1,5 +1,16 @@
 import { ref } from 'vue'
-import type { ToastProps } from '@/components/ToastNotification.vue'
+
+export interface ToastProps {
+  message: string
+  title?: string
+  type?: 'success' | 'error' | 'warning' | 'info'
+  duration?: number
+  showIcon?: boolean
+  showCloseButton?: boolean
+  actionLabel?: string
+  actionUrl?: string
+  onClose?: () => void
+}
 
 export interface Toast extends ToastProps {
   id: string
@@ -26,7 +37,8 @@ export function useToast() {
   const removeToast = (id: string) => {
     const index = toasts.value.findIndex((toast) => toast.id === id)
     if (index > -1) {
-      toasts.value.splice(index, 1)
+      const removed = toasts.value.splice(index, 1)[0]
+      removed?.onClose?.()
     }
   }
 

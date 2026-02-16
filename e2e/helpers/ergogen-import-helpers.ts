@@ -117,14 +117,14 @@ export class ErgogenImportHelper {
    * ```
    */
   async verifyImportSuccess(expectedMessage?: string): Promise<void> {
-    const toast = this.page.locator('.toast-notification')
+    const toast = this.page.locator('.toast.show')
     await expect(toast).toBeVisible({ timeout: 5000 })
 
-    const toastTitle = toast.locator('.toast-title')
+    const toastTitle = toast.locator('.toast-header strong')
     await expect(toastTitle).toContainText('Import Successful')
 
     if (expectedMessage) {
-      const toastText = toast.locator('.toast-text')
+      const toastText = toast.locator('.toast-body')
       await expect(toastText).toContainText(expectedMessage)
     }
   }
@@ -140,15 +140,15 @@ export class ErgogenImportHelper {
    * ```
    */
   async verifyImportError(expectedMessage?: string): Promise<void> {
-    const toast = this.page.locator('.toast-notification').first()
+    const toast = this.page.locator('.toast.show').first()
     await expect(toast).toBeVisible({ timeout: 5000 })
 
-    const toastTitle = toast.locator('.toast-title')
+    const toastTitle = toast.locator('.toast-header strong')
     // Error toast might have title "Import Failed" or "Error"
     await expect(toastTitle).toBeVisible()
 
     if (expectedMessage) {
-      const toastText = toast.locator('.toast-text')
+      const toastText = toast.locator('.toast-body')
       await expect(toastText).toContainText(expectedMessage)
     }
   }

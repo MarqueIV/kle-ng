@@ -46,11 +46,11 @@ test.describe('GitHub Star Popup', () => {
     // Validate link attributes
     await popupHelper.expectCorrectGitHubLink()
 
-    // Validate icons
+    // Validate close button and star button are visible
     await expect(popupHelper.getCloseIcon()).toBeVisible()
     await expect(popupHelper.getGitHubIcon()).toBeVisible()
 
-    // Validate positioning (bottom right)
+    // Validate positioning (bottom right via toast container)
     const popup = popupHelper.getPopup()
     const box = await popup.boundingBox()
 
@@ -58,13 +58,17 @@ test.describe('GitHub Star Popup', () => {
     if (box) {
       const viewportSize = page.viewportSize()
       if (viewportSize) {
+        // Toast should be in the right half of the viewport
         expect(box.x + box.width).toBeGreaterThan(viewportSize.width - 100)
-        expect(box.y + box.height).toBeGreaterThan(viewportSize.height - 200)
+        // Toast should be in the bottom half of the viewport
+        expect(box.y + box.height).toBeGreaterThan(viewportSize.height / 2)
       }
     }
 
     // Test close functionality
     await popupHelper.closePopup()
+    // Wait for Bootstrap fade-out animation
+    await page.waitForTimeout(500)
     await popupHelper.expectPopupNotVisible()
   })
 
@@ -77,6 +81,8 @@ test.describe('GitHub Star Popup', () => {
 
     // Close popup
     await popupHelper.closePopup()
+    // Wait for Bootstrap fade-out animation
+    await page.waitForTimeout(500)
     await popupHelper.expectPopupNotVisible()
 
     // Verify localStorage was updated
@@ -93,11 +99,12 @@ test.describe('GitHub Star Popup', () => {
     await popupHelper.setDismissedFlag()
     await popupHelper.simulateFirstVisit(120000)
     await page.reload()
+    await page.waitForLoadState('domcontentloaded')
     await waitHelpers.waitForDoubleAnimationFrame()
     await popupHelper.expectPopupNotVisibleAfterWait()
   })
 
-  test('should close popup and open new tab when star button is clicked', async () => {
+  test('should close popup and open new tab when star button is clicked', async ({ page }) => {
     await waitHelpers.waitForDoubleAnimationFrame()
 
     // Show popup (this also waits for it to be visible)
@@ -109,6 +116,9 @@ test.describe('GitHub Star Popup', () => {
 
     // Close the new page
     await newPage.close()
+
+    // Wait for Bootstrap fade-out animation
+    await page.waitForTimeout(500)
 
     // Verify popup disappears
     await popupHelper.expectPopupNotVisible()
