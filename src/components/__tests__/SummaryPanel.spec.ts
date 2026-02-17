@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import SummaryPanel from '../SummaryPanel.vue'
@@ -404,6 +404,125 @@ describe('SummaryPanel', () => {
       const thirdHeader = headers[2]
       expect(thirdHeader).toBeDefined()
       expect(thirdHeader!.text()).toBe('Count')
+    })
+  })
+
+  describe('CSV Export', () => {
+    let lastBlobContent: string
+
+    const OrigBlob = globalThis.Blob
+
+    beforeEach(() => {
+      lastBlobContent = ''
+
+      // Override Blob constructor to capture content
+      globalThis.Blob = class extends OrigBlob {
+        constructor(parts?: BlobPart[], options?: BlobPropertyBag) {
+          super(parts, options)
+          lastBlobContent = (parts || []).join('')
+        }
+      } as typeof Blob
+
+      // jsdom doesn't implement these, so assign directly
+      URL.createObjectURL = vi.fn(() => 'blob:mock-url')
+      URL.revokeObjectURL = vi.fn()
+
+      // Intercept the anchor click to prevent navigation
+      vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {})
+    })
+
+    afterEach(() => {
+      globalThis.Blob = OrigBlob
+      vi.restoreAllMocks()
+    })
+
+    // Helper: trigger download and return captured CSV
+    const getCsvContent = async (wrapper: ReturnType<typeof mount>) => {
+      lastBlobContent = ''
+      await findCsvBtn(wrapper).trigger('click')
+      return lastBlobContent
+    }
+
+    const findCsvBtn = (wrapper: ReturnType<typeof mount>) =>
+      wrapper.findAll('button').find((b) => b.text().includes('Download CSV'))!
+
+    it('should disable download button when no keys', () => {
+      store.keys = []
+      const wrapper = mount(SummaryPanel, { global: { plugins: [pinia] } })
+      const csvBtn = findCsvBtn(wrapper)
+      expect((csvBtn.element as HTMLButtonElement).disabled).toBe(true)
+    })
+
+    it('should enable download button when keys exist', () => {
+      store.keys = [createKey({ x: 0, y: 0 })]
+      const wrapper = mount(SummaryPanel, { global: { plugins: [pinia] } })
+      const csvBtn = findCsvBtn(wrapper)
+      expect((csvBtn.element as HTMLButtonElement).disabled).toBe(false)
+    })
+
+    it('should generate CSV with correct header and data rows', async () => {
+      store.keys = [
+        createKey({ x: 0, y: 0, width: 1, height: 1 }),
+        createKey({ x: 1, y: 0, width: 2, height: 1 }),
+      ]
+      const wrapper = mount(SummaryPanel, { global: { plugins: [pinia] } })
+      const csv = await getCsvContent(wrapper)
+
+      const lines = csv.trim().split('\n')
+      expect(lines[0]).toBe('#,Center X (U),Center Y (U),Width (U),Height (U),Rotation (deg)')
+      expect(lines).toHaveLength(3) // header + 2 keys
+      expect(lines[1]).toBe('0,0.5,0.5,1,1,0')
+      expect(lines[2]).toBe('1,2,0.5,2,1,0')
+    })
+
+    it('should exclude ghost and decal keys by default', async () => {
+      store.keys = [
+        createKey({ x: 0, y: 0, width: 1, height: 1 }),
+        createKey({ x: 1, y: 0, width: 1, height: 1, ghost: true }),
+        createKey({ x: 2, y: 0, width: 1, height: 1, decal: true }),
+      ]
+      const wrapper = mount(SummaryPanel, { global: { plugins: [pinia] } })
+      const csv = await getCsvContent(wrapper)
+
+      const lines = csv.trim().split('\n')
+      expect(lines).toHaveLength(2) // header + 1 regular key
+    })
+
+    it('should include ghost keys when checkbox is checked', async () => {
+      store.keys = [
+        createKey({ x: 0, y: 0, width: 1, height: 1 }),
+        createKey({ x: 1, y: 0, width: 1, height: 1, ghost: true }),
+      ]
+      const wrapper = mount(SummaryPanel, { global: { plugins: [pinia] } })
+      await wrapper.find('#export-include-ghost').setValue(true)
+      const csv = await getCsvContent(wrapper)
+
+      const lines = csv.trim().split('\n')
+      expect(lines).toHaveLength(3) // header + 2 keys
+    })
+
+    it('should include decal keys when checkbox is checked', async () => {
+      store.keys = [
+        createKey({ x: 0, y: 0, width: 1, height: 1 }),
+        createKey({ x: 1, y: 0, width: 1, height: 1, decal: true }),
+      ]
+      const wrapper = mount(SummaryPanel, { global: { plugins: [pinia] } })
+      await wrapper.find('#export-include-decal').setValue(true)
+      const csv = await getCsvContent(wrapper)
+
+      const lines = csv.trim().split('\n')
+      expect(lines).toHaveLength(3) // header + 2 keys
+    })
+
+    it('should use mm header when mm units selected', async () => {
+      store.keys = [createKey({ x: 0, y: 0, width: 1, height: 1 })]
+      const wrapper = mount(SummaryPanel, { global: { plugins: [pinia] } })
+      await wrapper.find('#export-units-mm').setValue(true)
+      const csv = await getCsvContent(wrapper)
+
+      const lines = csv.trim().split('\n')
+      expect(lines[0]).toContain('Center X (mm)')
+      expect(lines[0]).toContain('Center Y (mm)')
     })
   })
 

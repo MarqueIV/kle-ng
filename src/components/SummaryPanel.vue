@@ -165,8 +165,8 @@
         </div>
       </div>
 
-      <!-- Column 3: Keyboard Dimensions -->
-      <div class="col-lg-3 col-md-6">
+      <!-- Column 3: Keyboard Dimensions + Export -->
+      <div class="col-lg-3 col-md-6 d-flex flex-column">
         <div class="property-group">
           <div class="d-flex justify-content-between align-items-center mb-0">
             <h6 class="property-group-title mb-2">Keyboard Dimensions</h6>
@@ -234,6 +234,67 @@
             <p class="mb-0 small">No keys</p>
           </div>
         </div>
+
+        <!-- Export Summary -->
+        <div class="property-group mt-3">
+          <div class="d-flex justify-content-between align-items-center mb-0">
+            <h6 class="property-group-title mb-2">Export</h6>
+            <div
+              style="margin-top: -8px"
+              class="btn-group"
+              role="group"
+              aria-label="Export unit mode"
+            >
+              <input
+                type="radio"
+                class="btn-check"
+                id="export-units-u"
+                value="U"
+                v-model="exportUnits"
+                autocomplete="off"
+              />
+              <label class="btn btn-outline-primary btn-xs" for="export-units-u">U</label>
+
+              <input
+                type="radio"
+                class="btn-check"
+                id="export-units-mm"
+                value="mm"
+                v-model="exportUnits"
+                autocomplete="off"
+              />
+              <label class="btn btn-outline-primary btn-xs" for="export-units-mm">mm</label>
+            </div>
+          </div>
+          <div class="d-flex gap-3 mb-2">
+            <div class="form-check form-check-inline mb-0">
+              <input
+                class="form-check-input"
+                type="checkbox"
+                id="export-include-ghost"
+                v-model="exportIncludeGhost"
+              />
+              <label class="form-check-label small" for="export-include-ghost">Include Ghost</label>
+            </div>
+            <div class="form-check form-check-inline mb-0">
+              <input
+                class="form-check-input"
+                type="checkbox"
+                id="export-include-decal"
+                v-model="exportIncludeDecal"
+              />
+              <label class="form-check-label small" for="export-include-decal">Include Decal</label>
+            </div>
+          </div>
+          <button
+            class="btn btn-sm btn-outline-primary w-100"
+            :disabled="totalKeys === 0"
+            @click="downloadCsv"
+          >
+            <BiDownload class="me-1" />
+            Download CSV
+          </button>
+        </div>
       </div>
     </div>
   </div>
@@ -246,6 +307,8 @@ import { calculateKeyboardDimensions } from '@/utils/keyboard-dimensions'
 import { isIsoEnter, isBigAssEnter, isNonRectangular } from '@/utils/key-utils'
 import KeyCentersTable from './KeyCentersTable.vue'
 import BiGrid3x3 from 'bootstrap-icons/icons/grid-3x3.svg'
+import BiDownload from 'bootstrap-icons/icons/download.svg'
+import { getKeyCenter, getKeyCenterMm } from '@/utils/keyboard-geometry'
 
 const keyboardStore = useKeyboardStore()
 
@@ -255,6 +318,9 @@ const viewMode = ref<'size' | 'size-color'>('size')
 // Unit toggles for key centers and dimensions (default to 'U')
 const keyCenterUnits = ref<'U' | 'mm'>('U')
 const dimensionUnits = ref<'U' | 'mm'>('U')
+const exportUnits = ref<'U' | 'mm'>('U')
+const exportIncludeGhost = ref(false)
+const exportIncludeDecal = ref(false)
 
 // Get spacing information from metadata (default to 19.05x19.05 if missing)
 const spacingInfo = computed(() => {
@@ -396,6 +462,45 @@ const keysBySizeAndColor = computed(() => {
     return (a.color || '').localeCompare(b.color || '')
   })
 })
+
+// Format a number: up to 6 decimal places, strip trailing zeros
+const formatNum = (n: number): string => n.toFixed(6).replace(/\.?0+$/, '')
+
+const downloadCsv = () => {
+  const keys = keyboardStore.keys.filter((key) => {
+    if (key.ghost && !exportIncludeGhost.value) return false
+    if (key.decal && !exportIncludeDecal.value) return false
+    return true
+  })
+  if (keys.length === 0) return
+
+  const useMm = exportUnits.value === 'mm'
+  const unitLabel = useMm ? 'mm' : 'U'
+  const header = `#,Center X (${unitLabel}),Center Y (${unitLabel}),Width (U),Height (U),Rotation (deg)\n`
+
+  let csv = header
+  keys.forEach((key, i) => {
+    let cx: number, cy: number
+    if (useMm) {
+      const center = getKeyCenterMm(key, spacingInfo.value.x, spacingInfo.value.y)
+      cx = center.x
+      cy = center.y
+    } else {
+      const center = getKeyCenter(key)
+      cx = center.x
+      cy = center.y
+    }
+    csv += `${i},${formatNum(cx)},${formatNum(cy)},${formatNum(key.width || 1)},${formatNum(key.height || 1)},${formatNum(key.rotation_angle || 0)}\n`
+  })
+
+  const blob = new Blob([csv], { type: 'text/csv' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = `${keyboardStore.filename || keyboardStore.metadata.name || 'keyboard-layout'}-summary.csv`
+  a.click()
+  URL.revokeObjectURL(url)
+}
 </script>
 
 <style scoped>
@@ -425,6 +530,11 @@ const keysBySizeAndColor = computed(() => {
   border-radius: 6px;
   padding: 12px;
   height: 100%;
+}
+
+/* When stacking multiple property-groups in a flex column, don't force height */
+.d-flex.flex-column > .property-group {
+  height: auto;
 }
 
 .property-group-title {
