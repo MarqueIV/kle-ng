@@ -440,9 +440,15 @@ const downloadPng = async () => {
     return
   }
 
+  // Re-render without container background to preserve transparency in export
+  canvas.dispatchEvent(new Event('render-for-export'))
+
   // Generate canvas with rounded background
   const radiiValue = keyboardStore.metadata.radii?.trim() || '6px'
   const tempCanvas = createCanvasWithRoundedBackground(canvas, radiiValue)
+
+  // Restore normal rendering with container background
+  canvas.dispatchEvent(new Event('restore-render'))
 
   // If matrix overlay is visible, composite it on top
   if (matrixDrawingStore.isModalOpen) {

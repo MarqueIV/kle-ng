@@ -726,7 +726,7 @@ const drawMirrorAxis = (ctx: CanvasRenderingContext2D) => {
   ctx.restore()
 }
 
-const renderKeyboard = () => {
+const renderKeyboard = (options?: { skipContainerBackground?: boolean }) => {
   if (renderer.value) {
     try {
       const ctx = renderer.value.getContext()
@@ -744,9 +744,12 @@ const renderKeyboard = () => {
       const radiiValue = keyboardStore.metadata.radii?.trim() || '6px'
 
       // Fill entire canvas with container background color first
-      const containerColor = getComputedStyle(containerRef.value!).backgroundColor
-      ctx.fillStyle = containerColor
-      ctx.fillRect(0, 0, canvasWidth.value, canvasHeight.value)
+      // Skip when rendering for export to preserve background transparency
+      if (!options?.skipContainerBackground) {
+        const containerColor = getComputedStyle(containerRef.value!).backgroundColor
+        ctx.fillStyle = containerColor
+        ctx.fillRect(0, 0, canvasWidth.value, canvasHeight.value)
+      }
 
       // Then draw rounded rectangle with keyboard background color on top
       ctx.fillStyle = renderOptions.value.background
@@ -1953,7 +1956,25 @@ onUnmounted(() => {
   }
 })
 
-// Expose functions to parent component (currently none needed)
+// Listen for export events to re-render without container background (preserves transparency)
+const onRenderForExport = () => renderKeyboard({ skipContainerBackground: true })
+const onRestoreRender = () => renderKeyboard()
+
+onMounted(() => {
+  const canvas = canvasRef.value
+  if (canvas) {
+    canvas.addEventListener('render-for-export', onRenderForExport)
+    canvas.addEventListener('restore-render', onRestoreRender)
+  }
+})
+onUnmounted(() => {
+  const canvas = canvasRef.value
+  if (canvas) {
+    canvas.removeEventListener('render-for-export', onRenderForExport)
+    canvas.removeEventListener('restore-render', onRestoreRender)
+  }
+})
+
 defineExpose({})
 </script>
 
