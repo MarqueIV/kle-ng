@@ -11,12 +11,10 @@ import {
   getMaxStabilizerFilletRadius,
   validateCustomCutoutDimension,
 } from '@/utils/plate/cutout-generator'
-import { useKeyboardStore } from '@/stores/keyboard'
 import CustomNumberInput from './CustomNumberInput.vue'
 
 const plateStore = usePlateGeneratorStore()
 const { settings } = storeToRefs(plateStore)
-const keyboardStore = useKeyboardStore()
 
 // Get cutout options for dropdown
 const cutoutOptions = getCutoutOptions()
@@ -66,18 +64,15 @@ const stabilizerFilletInputClass = computed(() =>
 )
 
 // Custom cutout dimension validation
-const spacingX = computed(() => keyboardStore.metadata.spacing_x || 19.05)
-const spacingY = computed(() => keyboardStore.metadata.spacing_y || 19.05)
-
 const customWidthError = computed(() =>
   settings.value.cutoutType === 'custom-rectangle'
-    ? validateCustomCutoutDimension(settings.value.customCutoutWidth, spacingX.value, 'width')
+    ? validateCustomCutoutDimension(settings.value.customCutoutWidth, 'width')
     : null,
 )
 
 const customHeightError = computed(() =>
   settings.value.cutoutType === 'custom-rectangle'
-    ? validateCustomCutoutDimension(settings.value.customCutoutHeight, spacingY.value, 'height')
+    ? validateCustomCutoutDimension(settings.value.customCutoutHeight, 'height')
     : null,
 )
 
@@ -130,7 +125,7 @@ const customHeightInputClass = computed(() =>
               v-model="settings.customCutoutWidth"
               :step="0.01"
               :min="0.01"
-              :max="spacingX"
+              :max="50"
               :class="customWidthInputClass"
               size="default"
               title="Custom cutout width in millimeters"
@@ -147,7 +142,7 @@ const customHeightInputClass = computed(() =>
               v-model="settings.customCutoutHeight"
               :step="0.01"
               :min="0.01"
-              :max="spacingY"
+              :max="50"
               :class="customHeightInputClass"
               size="default"
               title="Custom cutout height in millimeters"

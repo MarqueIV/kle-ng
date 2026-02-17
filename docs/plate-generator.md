@@ -258,7 +258,7 @@ and are negated internally for maker.js (counter-clockwise positive).
 **Validation functions:**
 - `validateFilletRadius()` — Ensures radius does not exceed `min(width, height) / 2`.
 - `validateStabilizerFilletRadius()` — Checks against the per-type maximum.
-- `validateCustomCutoutDimension()` — Validates custom width/height bounds.
+- `validateCustomCutoutDimension()` — Validates custom width/height are between 0 and 50mm.
 
 **Size adjustment (kerf compensation):**
 The `sizeAdjust` value represents the total kerf width — the full width of material removed by the cutting tool.

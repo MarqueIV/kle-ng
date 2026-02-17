@@ -354,11 +354,8 @@ export const usePlateGeneratorStore = defineStore('plateGenerator', () => {
     if (validateFilletRadius(s.cutoutType, s.filletRadius, cw, ch)) return true
     if (validateStabilizerFilletRadius(s.stabilizerType, s.stabilizerFilletRadius)) return true
     if (s.cutoutType === 'custom-rectangle') {
-      const keyboardStore = useKeyboardStore()
-      const sx = keyboardStore.metadata.spacing_x || 19.05
-      const sy = keyboardStore.metadata.spacing_y || 19.05
-      if (validateCustomCutoutDimension(cw, sx, 'width')) return true
-      if (validateCustomCutoutDimension(ch, sy, 'height')) return true
+      if (validateCustomCutoutDimension(cw, 'width')) return true
+      if (validateCustomCutoutDimension(ch, 'height')) return true
     }
     return false
   }

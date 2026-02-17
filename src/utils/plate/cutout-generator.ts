@@ -391,16 +391,12 @@ export function getCutoutGenerator(
  * Validate a custom cutout dimension (width or height).
  * Returns an error message if invalid, or null if valid.
  */
-export function validateCustomCutoutDimension(
-  value: number,
-  maxValue: number,
-  label: string,
-): string | null {
+export function validateCustomCutoutDimension(value: number, label: string): string | null {
   if (value <= 0) {
     return `Custom cutout ${label} must be greater than 0.`
   }
-  if (value > maxValue) {
-    return `Custom cutout ${label} cannot exceed ${maxValue}mm (key spacing).`
+  if (value > 50) {
+    return `Custom cutout ${label} cannot exceed 50mm.`
   }
   return null
 }
