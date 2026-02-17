@@ -107,7 +107,12 @@
           </ul>
         </div>
 
-        <button class="btn btn-primary" @click="shareLayout" type="button">
+        <button
+          class="btn btn-primary"
+          @click="shareLayout"
+          type="button"
+          title="Copy share URL to clipboard"
+        >
           <span class="d-none d-sm-inline" style="white-space: nowrap">Share Link</span>
           <span class="d-inline d-sm-none">Share</span>
         </button>
