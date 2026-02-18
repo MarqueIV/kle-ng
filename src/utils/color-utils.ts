@@ -90,9 +90,9 @@ export function rgbToHsv(r: number, g: number, b: number): HSV {
   }
 }
 
-// Convert HEX to RGB
+// Convert HEX to RGB (handles both 6-digit and 8-digit hex, ignoring alpha bytes)
 export function hexToRgb(hex: string): RGB {
-  const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex)
+  const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})?$/i.exec(hex)
   return result
     ? {
         r: parseInt(result[1] ?? '0', 16),
@@ -123,9 +123,25 @@ export function hsvToHex(h: number, s: number, v: number): string {
   return rgbToHex(rgb.r, rgb.g, rgb.b)
 }
 
-// Validate HEX color
+// Validate HEX color (6-digit or 8-digit)
 export function isValidHex(hex: string): boolean {
-  return /^#?[0-9A-F]{6}$/i.test(hex)
+  return /^#?[0-9A-F]{6}([0-9A-F]{2})?$/i.test(hex)
+}
+
+// Extract alpha value (0-100) from 8-digit hex. Returns 100 for 6-digit hex.
+export function hexToAlpha(hex: string): number {
+  const match = /^#?[0-9A-F]{6}([0-9A-F]{2})$/i.exec(hex)
+  if (!match) return 100
+  return Math.round((parseInt(match[1] ?? 'ff', 16) / 255) * 100)
+}
+
+// Combine 6-digit hex + alpha (0-100) into 8-digit hex
+export function hexWithAlpha(hex6: string, alpha: number): string {
+  const normalized = hex6.startsWith('#') ? hex6 : `#${hex6}`
+  const base = normalized.substring(0, 7) // ensure only #RRGGBB
+  const alphaByte = Math.round((Math.max(0, Math.min(100, alpha)) / 100) * 255)
+  const alphaHex = alphaByte.toString(16).padStart(2, '0')
+  return `${base}${alphaHex}`
 }
 
 // Ensure HEX has # prefix

@@ -11,6 +11,7 @@ interface Props {
   class?: string
   style?: string | Record<string, string | number>
   title?: string
+  showAlpha?: boolean
 }
 
 interface Emits {
@@ -22,6 +23,7 @@ interface Emits {
 const props = withDefaults(defineProps<Props>(), {
   disabled: false,
   size: 'sm',
+  showAlpha: false,
 })
 
 const emit = defineEmits<Emits>()
@@ -172,7 +174,9 @@ onUnmounted(() => {
       :title="title"
       class="color-picker-button"
     >
-      <div class="color-preview-swatch" :style="{ backgroundColor: safeColorValue }"></div>
+      <div class="color-preview-swatch" :class="{ 'has-alpha': showAlpha }">
+        <div class="color-preview-color" :style="{ backgroundColor: safeColorValue }"></div>
+      </div>
     </div>
 
     <!-- Custom color picker popup -->
@@ -180,6 +184,7 @@ onUnmounted(() => {
       <CustomColorPicker
         ref="customColorPickerRef"
         :model-value="colorValue"
+        :show-alpha="showAlpha"
         @update:model-value="handleColorChange"
       />
 
@@ -230,6 +235,26 @@ onUnmounted(() => {
   height: 100%;
   border-radius: 0;
   min-height: auto;
+  position: relative;
+}
+
+.color-preview-swatch.has-alpha {
+  background-image:
+    linear-gradient(45deg, #ccc 25%, transparent 25%),
+    linear-gradient(-45deg, #ccc 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, #ccc 75%),
+    linear-gradient(-45deg, transparent 75%, #ccc 75%);
+  background-size: 8px 8px;
+  background-position:
+    0 0,
+    0 4px,
+    4px -4px,
+    -4px 0;
+}
+
+.color-preview-color {
+  width: 100%;
+  height: 100%;
 }
 
 .color-picker-popup {

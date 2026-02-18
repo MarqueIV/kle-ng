@@ -8,18 +8,23 @@ import {
   hexToHsv,
   isValidHex,
   normalizeHex,
+  hexToAlpha,
+  hexWithAlpha,
 } from '../utils/color-utils'
 import { recentlyUsedColorsManager } from '../utils/recently-used-colors'
 
 interface Props {
   modelValue: string
+  showAlpha?: boolean
 }
 
 interface Emits {
   (e: 'update:modelValue', value: string): void
 }
 
-const props = defineProps<Props>()
+const props = withDefaults(defineProps<Props>(), {
+  showAlpha: false,
+})
 const emit = defineEmits<Emits>()
 
 // HSV state
@@ -33,11 +38,16 @@ const rInput = ref(0)
 const gInput = ref(0)
 const bInput = ref(0)
 
+// Alpha state
+const alpha = ref(100)
+
 // UI refs
 const saturationCanvas = ref<HTMLCanvasElement>()
 const hueSlider = ref<HTMLElement>()
+const alphaSlider = ref<HTMLElement>()
 const isDraggingSaturation = ref(false)
 const isDraggingHue = ref(false)
+const isDraggingAlpha = ref(false)
 
 // Preset colors
 const presetColors = [
@@ -87,7 +97,20 @@ const huePointerStyle = computed(() => ({
   left: `${(hue.value / 360) * 100}%`,
 }))
 
-const currentColor = computed(() => hsvToHex(hue.value, saturation.value, value.value))
+const currentColor = computed(() => {
+  const hex6 = hsvToHex(hue.value, saturation.value, value.value)
+  return props.showAlpha ? hexWithAlpha(hex6, alpha.value) : hex6
+})
+
+const opaqueColor = computed(() => hsvToHex(hue.value, saturation.value, value.value))
+
+const alphaSliderStyle = computed(() => ({
+  background: `linear-gradient(to right, transparent, ${opaqueColor.value})`,
+}))
+
+const alphaPointerStyle = computed(() => ({
+  left: `${alpha.value}%`,
+}))
 
 // Initialize from prop value
 const initializeFromHex = (hex: string) => {
@@ -97,17 +120,25 @@ const initializeFromHex = (hex: string) => {
   value.value = hsv.v
 
   const rgb = hexToRgb(hex)
-  hexInput.value = hex.replace('#', '')
   rInput.value = rgb.r
   gInput.value = rgb.g
   bInput.value = rgb.b
+
+  if (props.showAlpha) {
+    alpha.value = hexToAlpha(hex)
+    // Show 8-digit hex (without #) for alpha mode
+    const hex6 = rgbToHex(rgb.r, rgb.g, rgb.b)
+    hexInput.value = hexWithAlpha(hex6, alpha.value).replace('#', '')
+  } else {
+    hexInput.value = hex.replace('#', '').substring(0, 6)
+  }
 }
 
 // Watch for external changes
 watch(
   () => props.modelValue,
   (newValue) => {
-    if (newValue !== currentColor.value) {
+    if (newValue.toLowerCase() !== currentColor.value.toLowerCase()) {
       initializeFromHex(newValue)
     }
   },
@@ -200,12 +231,54 @@ const handleHueMouseUp = () => {
   document.removeEventListener('mouseup', handleHueMouseUp)
 }
 
+// Alpha slider handlers
+const updateAlpha = (event: MouseEvent) => {
+  if (!alphaSlider.value) return
+
+  const rect = alphaSlider.value.getBoundingClientRect()
+  const x = Math.max(0, Math.min(event.clientX - rect.left, rect.width))
+  alpha.value = Math.round((x / rect.width) * 100)
+
+  updateInputsFromHsv()
+  emitColorChange()
+}
+
+const handleAlphaMouseDown = (event: MouseEvent) => {
+  isDraggingAlpha.value = true
+  updateAlpha(event)
+  document.addEventListener('mousemove', handleAlphaMouseMove)
+  document.addEventListener('mouseup', handleAlphaMouseUp)
+}
+
+const handleAlphaMouseMove = (event: MouseEvent) => {
+  if (isDraggingAlpha.value) {
+    updateAlpha(event)
+  }
+}
+
+const handleAlphaMouseUp = () => {
+  isDraggingAlpha.value = false
+  document.removeEventListener('mousemove', handleAlphaMouseMove)
+  document.removeEventListener('mouseup', handleAlphaMouseUp)
+}
+
+// Alpha input handler
+const handleAlphaInput = (value: number | undefined) => {
+  alpha.value = Math.max(0, Math.min(100, value ?? 100))
+  updateInputsFromHsv()
+  emitColorChange()
+}
+
 // Input field handlers
 const updateInputsFromHsv = () => {
   const hex = hsvToHex(hue.value, saturation.value, value.value)
   const rgb = hexToRgb(hex)
 
-  hexInput.value = hex.replace('#', '')
+  if (props.showAlpha) {
+    hexInput.value = hexWithAlpha(hex, alpha.value).replace('#', '')
+  } else {
+    hexInput.value = hex.replace('#', '')
+  }
   rInput.value = rgb.r
   gInput.value = rgb.g
   bInput.value = rgb.b
@@ -219,12 +292,17 @@ const handleHexInput = (event: Event) => {
     value = value.substring(1)
   }
 
-  value = value.replace(/[^0-9a-fA-F]/g, '').substring(0, 6)
+  const maxLen = props.showAlpha ? 8 : 6
+  value = value.replace(/[^0-9a-fA-F]/g, '').substring(0, maxLen)
   target.value = value
   hexInput.value = value
 
-  if (value.length === 6 && isValidHex(`#${value}`)) {
+  const validLen = props.showAlpha ? value.length === 6 || value.length === 8 : value.length === 6
+  if (validLen && isValidHex(`#${value}`)) {
     const hex = normalizeHex(value)
+    if (props.showAlpha && value.length === 8) {
+      alpha.value = hexToAlpha(hex)
+    }
     initializeFromHex(hex)
     emitColorChange()
   }
@@ -254,6 +332,8 @@ onUnmounted(() => {
   document.removeEventListener('mouseup', handleSaturationMouseUp)
   document.removeEventListener('mousemove', handleHueMouseMove)
   document.removeEventListener('mouseup', handleHueMouseUp)
+  document.removeEventListener('mousemove', handleAlphaMouseMove)
+  document.removeEventListener('mouseup', handleAlphaMouseUp)
 })
 </script>
 
@@ -279,31 +359,43 @@ onUnmounted(() => {
 
     <!-- Controls -->
     <div class="sketch-controls">
-      <!-- Hue slider -->
-      <div class="hue-slider-wrap">
-        <div ref="hueSlider" class="hue-slider" @mousedown="handleHueMouseDown">
-          <div class="hue-pointer" :style="huePointerStyle">
-            <div class="hue-picker"></div>
+      <div class="sketch-sliders">
+        <!-- Hue slider -->
+        <div class="hue-slider-wrap">
+          <div ref="hueSlider" class="hue-slider" @mousedown="handleHueMouseDown">
+            <div class="hue-pointer" :style="huePointerStyle">
+              <div class="hue-picker"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Alpha slider -->
+        <div v-if="showAlpha" class="alpha-slider-wrap">
+          <div ref="alphaSlider" class="alpha-slider" @mousedown="handleAlphaMouseDown">
+            <div class="alpha-slider-bg" :style="alphaSliderStyle"></div>
+            <div class="alpha-pointer" :style="alphaPointerStyle">
+              <div class="alpha-picker"></div>
+            </div>
           </div>
         </div>
       </div>
 
       <!-- Color preview -->
-      <div class="sketch-color-wrap">
+      <div class="sketch-color-wrap" :class="{ 'has-alpha': showAlpha }">
         <div class="sketch-active-color" :style="{ background: currentColor }"></div>
       </div>
     </div>
 
     <!-- Input fields -->
     <div class="color-inputs">
-      <div class="input-wrapper">
+      <div class="input-wrapper" :class="{ 'hex-alpha': showAlpha }">
         <label class="control-label">hex</label>
         <input
           :value="hexInput"
           @input="handleHexInput"
           class="color-input"
-          maxlength="6"
-          placeholder="000000"
+          :maxlength="showAlpha ? 8 : 6"
+          :placeholder="showAlpha ? '000000ff' : '000000'"
         />
       </div>
 
@@ -338,6 +430,18 @@ onUnmounted(() => {
           @update:model-value="(value) => handleRgbInputNumber('b', value)"
           :min="0"
           :max="255"
+          :step="1"
+          size="compact"
+        />
+      </div>
+
+      <div v-if="showAlpha" class="input-wrapper">
+        <label class="control-label">a</label>
+        <CustomNumberInput
+          :model-value="alpha"
+          @update:model-value="handleAlphaInput"
+          :min="0"
+          :max="100"
           :step="1"
           size="compact"
         />
@@ -441,9 +545,15 @@ onUnmounted(() => {
   margin-bottom: 10px;
 }
 
+.sketch-sliders {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
 /* Hue Slider */
 .hue-slider-wrap {
-  flex: 1;
   height: 10px;
 }
 
@@ -481,6 +591,69 @@ onUnmounted(() => {
   transform: translateX(0);
 }
 
+/* Alpha Slider */
+.alpha-slider-wrap {
+  height: 10px;
+}
+
+.alpha-slider {
+  position: relative;
+  height: 10px;
+  border-radius: 2px;
+  cursor: pointer;
+  background-image:
+    linear-gradient(45deg, #ccc 25%, transparent 25%),
+    linear-gradient(-45deg, #ccc 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, #ccc 75%),
+    linear-gradient(-45deg, transparent 75%, #ccc 75%);
+  background-size: 8px 8px;
+  background-position:
+    0 0,
+    0 4px,
+    4px -4px,
+    -4px 0;
+}
+
+.alpha-slider-bg {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  border-radius: 2px;
+}
+
+.alpha-pointer {
+  position: absolute;
+  top: 0;
+  width: 4px;
+  height: 10px;
+  transform: translateX(-2px);
+}
+
+.alpha-picker {
+  width: 4px;
+  height: 10px;
+  border-radius: 1px;
+  background: #fff;
+  box-shadow: 0 0 2px rgba(0, 0, 0, 0.6);
+}
+
+/* Checkerboard pattern for transparency preview */
+.checkerboard {
+  background-image:
+    linear-gradient(45deg, #ccc 25%, transparent 25%),
+    linear-gradient(-45deg, #ccc 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, #ccc 75%),
+    linear-gradient(-45deg, transparent 75%, #ccc 75%);
+  background-size: 8px 8px;
+  background-position:
+    0 0,
+    0 4px,
+    4px -4px,
+    -4px 0;
+}
+
 /* Color Preview */
 .sketch-color-wrap {
   width: 32px;
@@ -488,6 +661,20 @@ onUnmounted(() => {
   border: 1px solid var(--bs-border-color);
   border-radius: 2px;
   position: relative;
+}
+
+.sketch-color-wrap.has-alpha {
+  background-image:
+    linear-gradient(45deg, #ccc 25%, transparent 25%),
+    linear-gradient(-45deg, #ccc 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, #ccc 75%),
+    linear-gradient(-45deg, transparent 75%, #ccc 75%);
+  background-size: 8px 8px;
+  background-position:
+    0 0,
+    0 4px,
+    4px -4px,
+    -4px 0;
 }
 
 .sketch-active-color {
@@ -509,6 +696,10 @@ onUnmounted(() => {
   flex-direction: column;
   min-width: 0;
   flex: 1;
+}
+
+.input-wrapper.hex-alpha {
+  flex: 1.5;
 }
 
 .control-label {

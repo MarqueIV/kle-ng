@@ -8,6 +8,8 @@ import {
   hsvToHex,
   isValidHex,
   normalizeHex,
+  hexToAlpha,
+  hexWithAlpha,
   type RGB,
 } from '../color-utils'
 
@@ -167,7 +169,7 @@ describe('Color Utils', () => {
     it('rejects invalid hex colors', () => {
       expect(isValidHex('#GG0000')).toBe(false)
       expect(isValidHex('#FF00')).toBe(false)
-      expect(isValidHex('#FF000000')).toBe(false)
+      expect(isValidHex('#FF000000')).toBe(true) // 8-digit hex with alpha is valid
       expect(isValidHex('invalid')).toBe(false)
       expect(isValidHex('')).toBe(false)
       expect(isValidHex('#')).toBe(false)
@@ -244,6 +246,58 @@ describe('Color Utils', () => {
       // Verify we tested both types
       expect(exactColors.length).toBeGreaterThan(0)
       expect(tolerantColors.length).toBeGreaterThan(0)
+    })
+  })
+
+  describe('hexToAlpha', () => {
+    it('returns 100 for 6-digit hex', () => {
+      expect(hexToAlpha('#FF0000')).toBe(100)
+      expect(hexToAlpha('AABBCC')).toBe(100)
+    })
+
+    it('extracts alpha from 8-digit hex', () => {
+      expect(hexToAlpha('#FF0000FF')).toBe(100)
+      expect(hexToAlpha('#FF000000')).toBe(0)
+      expect(hexToAlpha('#FF000080')).toBe(50)
+    })
+  })
+
+  describe('hexWithAlpha', () => {
+    it('combines 6-digit hex with alpha', () => {
+      expect(hexWithAlpha('#FF0000', 100)).toBe('#FF0000ff')
+      expect(hexWithAlpha('#FF0000', 0)).toBe('#FF000000')
+      expect(hexWithAlpha('#FF0000', 50)).toBe('#FF000080')
+    })
+
+    it('handles hex without # prefix', () => {
+      expect(hexWithAlpha('FF0000', 100)).toBe('#FF0000ff')
+    })
+
+    it('clamps alpha to 0-100', () => {
+      expect(hexWithAlpha('#FF0000', -10)).toBe('#FF000000')
+      expect(hexWithAlpha('#FF0000', 150)).toBe('#FF0000ff')
+    })
+  })
+
+  describe('hexToRgb with 8-digit hex', () => {
+    it('parses 8-digit hex ignoring alpha', () => {
+      const rgb = hexToRgb('#FF000080')
+      expect(rgb.r).toBe(255)
+      expect(rgb.g).toBe(0)
+      expect(rgb.b).toBe(0)
+    })
+  })
+
+  describe('isValidHex with 8-digit hex', () => {
+    it('accepts 8-digit hex', () => {
+      expect(isValidHex('#FF0000FF')).toBe(true)
+      expect(isValidHex('#eeeeee00')).toBe(true)
+      expect(isValidHex('aabbccdd')).toBe(true)
+    })
+
+    it('rejects invalid 8-digit hex', () => {
+      expect(isValidHex('#FF00GG00')).toBe(false)
+      expect(isValidHex('#FF0000000')).toBe(false) // 9 digits
     })
   })
 })

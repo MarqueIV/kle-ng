@@ -35,6 +35,7 @@
                     v-model="currentBackcolor"
                     @change="updateBackcolor"
                     @input="updateBackcolorPreview"
+                    :show-alpha="true"
                     class="form-control form-control-color key-color-input"
                     style="width: 24px; flex: none; border-radius: 0"
                     title="Background Color"
