@@ -96,6 +96,16 @@
             </li>
             <li>
               <a
+                class="dropdown-item"
+                data-testid="export-download-html"
+                href="#"
+                @click.prevent="downloadHtmlFile"
+              >
+                Download HTML
+              </a>
+            </li>
+            <li>
+              <a
                 class="dropdown-item d-flex icon-link align-items-baseline"
                 data-testid="export-ergogen-web-gui"
                 href="#"
@@ -196,6 +206,7 @@ import { isQmkFormat, convertQmkToKle } from '@/utils/qmk-import'
 import { stringifyWithRounding } from '@/utils/serialization'
 import { decodeLayoutFromUrl, fetchGistLayout, loadErgogenKeyboard } from '@/utils/url-sharing'
 import { parseErgogenConfig, encodeKeyboardToErgogenUrl } from '@/utils/ergogen-loader'
+import { normalizeLayoutInput, htmlLayoutRenderer } from '@/utils/layout-export'
 import LZString from 'lz-string'
 
 import BiBoxArrowUpRight from 'bootstrap-icons/icons/box-arrow-up-right.svg'
@@ -523,6 +534,54 @@ const downloadPng = async () => {
       console.error('Unknown error downloading PNG:', error)
       toast.showError('Failed to save PNG image', 'Save Failed')
     }
+  }
+}
+
+const downloadHtmlFile = async () => {
+  try {
+    const keys = keyboardStore.keys
+    if (!keys || keys.length === 0) {
+      toast.showError('No keys to export. Please load a layout first.', 'Export Failed')
+      return
+    }
+
+    const input = normalizeLayoutInput(keys, keyboardStore.metadata, keyboardStore.filename)
+    const htmlContent = htmlLayoutRenderer.render(input)
+
+    const htmlBlob = new Blob([htmlContent], { type: 'text/html' })
+    const suggestedName = `${keyboardStore.filename || keyboardStore.metadata.name || 'keyboard-layout'}.html`
+
+    const fsWindow = window as unknown as SaveFilePickerWindow
+    if (typeof fsWindow.showSaveFilePicker === 'function') {
+      const handle = await fsWindow.showSaveFilePicker({
+        suggestedName,
+        types: [{ description: 'HTML files', accept: { 'text/html': ['.html'] } }],
+      })
+      const writable = await handle.createWritable()
+      await writable.write(htmlBlob)
+      await writable.close()
+      toast.showSuccess('HTML file saved successfully', 'Export Successful')
+    } else {
+      const url = URL.createObjectURL(htmlBlob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = suggestedName
+      a.click()
+      URL.revokeObjectURL(url)
+      toast.showSuccess('HTML file download started', 'Export Started')
+    }
+  } catch (err: unknown) {
+    console.error('Error saving HTML file:', err)
+    if (
+      err instanceof Error &&
+      (err.name === 'AbortError' ||
+        err.message.includes('aborted') ||
+        err.message.includes('cancelled'))
+    ) {
+      return
+    }
+    const errorMessage = err instanceof Error ? err.message : 'Unknown error'
+    toast.showError(`Failed to save HTML file: ${errorMessage}`, 'Export Failed')
   }
 }
 
