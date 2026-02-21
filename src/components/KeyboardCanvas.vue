@@ -1997,7 +1997,7 @@ function closeCanvasSearch(): void {
   keySearch.closeSearch()
   canvasRef.value?.focus()
   // Note: whichever match was last navigated to remains the selected key after
-  // closing. This is intentional (matches VS Code / browser behaviour) but means
+  // closing. This is intentional but means
   // there is no undo path back to the pre-search selection state.
   renderScheduler.schedule(renderKeyboard)
 }

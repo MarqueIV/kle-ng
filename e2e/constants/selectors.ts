@@ -170,4 +170,31 @@ export const SELECTORS = {
     KEY_LABEL: '[data-testid="key-selection-label"]',
     KEY_INFO: '[data-testid="key-selection-info"]',
   },
+
+  /**
+   * Canvas Label Search
+   *
+   * The search bar is rendered with v-if (not v-show), so SEARCH_BAR is absent
+   * from the DOM when closed. TRIGGER_BUTTON uses v-show so it is always present
+   * but toggled between visible/hidden.
+   *
+   * ⚠️ TECH DEBT: TRIGGER_BUTTON and SEARCH_BAR use CSS classes / ARIA roles
+   * instead of data-testid. Should be migrated to data-testid attributes.
+   */
+  SEARCH: {
+    /** Magnifying-glass button shown when the search bar is closed. */
+    TRIGGER_BUTTON: '.canvas-search-trigger',
+    /** Root element of the search bar overlay (present only while open). */
+    SEARCH_BAR: '[role="search"]',
+    /** Text input inside the search bar (narrowed to input to avoid matching the trigger button). */
+    INPUT: 'input[aria-label="Search key labels"]',
+    /** Match count / "No matches" display span. */
+    COUNT_DISPLAY: '.search-count',
+    /** "Previous match" chevron button. */
+    PREV_BUTTON: '[aria-label="Previous match"]',
+    /** "Next match" chevron button. */
+    NEXT_BUTTON: '[aria-label="Next match"]',
+    /** "Close search" X button. */
+    CLOSE_BUTTON: '[aria-label="Close search"]',
+  },
 } as const
