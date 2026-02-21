@@ -18,6 +18,7 @@
   - [Layout Change Event System](#layout-change-event-system)
   - [RenderScheduler](#renderscheduler)
   - [Key Selection Disambiguation](#key-selection-disambiguation)
+  - [Canvas Search](#canvas-search)
 - [Parsers](#parsers)
   - [LabelParser](#labelparser)
   - [LabelAST](#labelast)
@@ -40,6 +41,7 @@ The kle-ng canvas rendering pipeline is a modular, high-performance system for r
 - **Performance optimization** through multi-level caching
 - **Asynchronous image loading** with progressive rendering
 - **Overlapping key disambiguation** with interactive popup selection
+- **Canvas text search** with amber highlight overlays and prev/next navigation
 
 The system is designed with **separation of concerns**, where each component has a single, well-defined responsibility.
 
@@ -73,6 +75,7 @@ The rendering pipeline follows a **layered architecture**:
        │  - HitTester (mouse interaction)         │
        │  - LinkTracker (link hit testing)        │
        │  - RotationRenderer (rotation UI)        │
+       │  - useKeySearch (search state)           │
        └───────┬──────────────────────────────────┘
                │
        ┌───────▼──────────────────────────────────┐
@@ -136,19 +139,22 @@ CanvasRenderer.render(keys, selectedKeys, metadata)
     │   ├─► Non-selected keys first
     │   └─► Selected keys last (on top)
     │
-    ├─► For each key:
+    ├─► For each key (four-pass render order):
     │   │
-    │   ├─► KeyRenderer.drawKey()
-    │   │   ├─► Calculate render parameters
-    │   │   ├─► Apply rotation transformation
-    │   │   ├─► Draw key shape (rect/circle)
-    │   │   └─► Draw selection border (if selected)
+    │   ├─► Pass 1: Regular non-selected, non-match keys
+    │   │   ├─► KeyRenderer.drawKey() — black border
+    │   │   └─► LabelRenderer.drawKeyLabels()
     │   │
-    │   └─► LabelRenderer.drawKeyLabels()
-    │       ├─► Parse labels (with ParseCache)
-    │       ├─► Load images (with ImageCache)
-    │       ├─► Convert SVG (with SVGCache)
-    │       └─► Render text/images
+    │   ├─► Pass 2: Search match keys (non-selected)
+    │   │   ├─► KeyRenderer.drawKey() — amber border (#f59e0b)
+    │   │   └─► LabelRenderer.drawKeyLabels()
+    │   │
+    │   ├─► Pass 3: Selected keys
+    │   │   ├─► KeyRenderer.drawKey() — red border (#dc3545)
+    │   │   └─► LabelRenderer.drawKeyLabels()
+    │   │
+    │   └─► Pass 4: Popup-hovered key (disambiguation)
+    │       └─► KeyRenderer.drawKey() — red border (isHovered)
     │
     └─► RotationRenderer.drawRotationPoints() (if in rotation mode)
 ```
@@ -163,7 +169,8 @@ CanvasRenderer.render(keys, selectedKeys, metadata)
 2. **Sorting Phase**
    - Keys split into selected/non-selected groups
    - Each group sorted by: rotation angle → rotation origin → y position → x position
-   - Ensures proper Z-ordering (selected keys render on top)
+   - Non-selected keys further partitioned into regular and search-match groups in a single pass
+   - Ensures proper Z-ordering: regular → search matches → selected → popup-hovered
 
 3. **Key Rendering Phase** (for each key)
    - **Parameter Calculation**: `KeyRenderer.getRenderParams()`
@@ -219,7 +226,7 @@ class CanvasRenderer {
   // Rendering
   render(keys, selectedKeys, metadata, clearCanvas?, showRotationPoints?,
          hoveredRotationPointId?, selectedRotationOrigin?, popupHoveredKey?,
-         hoveredLinkHref?)
+         hoveredLinkHref?, searchMatchKeys?)
 
   // Configuration
   updateOptions(options: RenderOptions)
@@ -267,7 +274,7 @@ interface RenderOptions {
   - Clears linkTracker at start (for fresh link hit testing)
   - Clears canvas (optional)
   - Draws background with border radius
-  - Sorts keys for proper z-ordering
+  - Partitions keys into four layers (regular → search matches → selected → popup-hovered)
   - Delegates key/label rendering (passing `hoveredLinkHref` for underline styling)
   - Draws popup-hovered key on top with highlight (for overlapping key disambiguation)
   - Draws rotation UI overlays
@@ -393,10 +400,11 @@ interface KeyRenderParams {
 
 ```typescript
 // Visual constants
-SELECTION_COLOR = '#dc3545'  // Red for selected keys
-HOVER_COLOR = '#dc3545'      // Same color for hovered keys (popup disambiguation)
-GHOST_OPACITY = 0.3          // Opacity for ghost keys
-PIXEL_ALIGNMENT_OFFSET = 0.5 // For crisp 1px strokes
+SELECTION_COLOR = '#dc3545'    // Red for selected keys
+HOVER_COLOR = '#dc3545'        // Same color for hovered keys (popup disambiguation)
+SEARCH_MATCH_COLOR = '#f59e0b' // Amber color for search match keys
+GHOST_OPACITY = 0.3            // Opacity for ghost keys
+PIXEL_ALIGNMENT_OFFSET = 0.5   // For crisp 1px strokes
 
 // Homing nub (F/J keys)
 HOMING_NUB_WIDTH = 10
@@ -1201,10 +1209,12 @@ if (popupHoveredKey) {
 
 // In KeyRenderer.drawKey()
 const borderColor = options.isHovered
-  ? KeyRenderer.HOVER_COLOR    // Red highlight
+  ? KeyRenderer.HOVER_COLOR         // Red highlight
   : options.isSelected
-    ? KeyRenderer.SELECTION_COLOR
-    : '#000000'
+    ? KeyRenderer.SELECTION_COLOR   // Red
+    : options.isSearchMatch
+      ? KeyRenderer.SEARCH_MATCH_COLOR  // Amber
+      : '#000000'
 ```
 
 **State Management**:
@@ -1224,6 +1234,157 @@ showKeySelectionPopup(x, y, overlappingKeys, extendSelection)
 hideKeySelectionPopup()
 selectKeyFromPopup(key)
 setPopupHoveredKey(key | null)
+```
+
+---
+
+### Canvas Search
+
+**Locations**:
+- `src/composables/useKeySearch.ts` — search state and logic
+- `src/components/CanvasSearchBar.vue` — search UI component
+- `src/components/KeyboardCanvas.vue` — integration (shortcut, wiring, render call)
+
+**Purpose**: Allow users to find keys by label text on the canvas. Matching keys are highlighted with an amber outline. The current match is also selected (red border). Users navigate with Enter/Shift+Enter or the up/down buttons.
+
+**Architecture**:
+
+```
+User presses '/' (canvas focused)
+    │
+    ▼
+KeyboardCanvas.vue opens CanvasSearchBar (v-if mounts component)
+    │
+    ▼
+CanvasSearchBar auto-focuses input (onMounted → setTimeout 0)
+    │
+    ▼
+User types query
+    │
+    ▼
+useKeySearch.matchingKeys recomputes
+    │   (labelParser.getPlainText on all 12 labels, case-insensitive)
+    │
+    ├─► selectCurrentSearchMatch() → keyboardStore.selectKey(currentMatchKey)
+    │
+    └─► renderScheduler.schedule(renderKeyboard)
+            │
+            ▼
+        renderer.render(..., searchMatchKeys)
+            │
+            ├─► regular non-selected keys (black border)
+            ├─► search match keys (amber border, 2px stroke)
+            ├─► selected key / current match (red border, 2px stroke)
+            └─► popup-hovered key
+```
+
+**State Management** (`useKeySearch` composable):
+
+```typescript
+// State
+isSearchOpen: Ref<boolean>
+searchQuery: Ref<string>
+currentMatchIndex: Ref<number>     // internal; not exposed in UseKeySearch interface
+allKeys: Ref<Key[]>                // internal; synced via setKeys()
+
+// Computed
+matchingKeys: ComputedRef<Key[]>   // pure; trims query before matching
+currentMatchKey: ComputedRef<Key | null>
+matchCount: ComputedRef<number>
+matchCountDisplay: ComputedRef<string>  // e.g. "3 / 12" | "No matches" | ""
+
+// Actions
+setKeys(keys: Key[]): void         // called by KeyboardCanvas watcher
+openSearch(): void
+closeSearch(): void                // resets query and index; does NOT clear allKeys
+nextMatch(): void                  // wraps around
+previousMatch(): void              // wraps around
+```
+
+**Key implementation notes**:
+
+- `matchingKeys` is a pure computed with no side effects. Index clamping (when matches shrink) is handled by a separate `watch(matchingKeys)` to avoid circular reactive dependency.
+- `searchQuery` change resets `currentMatchIndex` to 0 via an internal `watch(searchQuery, ..., { flush: 'sync' })` — no public `onQueryChange()` method is needed.
+- `closeSearch()` does not clear `allKeys` because the watcher `watch(keyboardStore.keys, setKeys)` only fires on key list changes, not on search open/close. Clearing `allKeys` on close would leave the composable without key data on reopen until the next key edit.
+- `useKeySearch()` creates **non-shared local state** per call. It must be called once per canvas instance, not shared across components.
+
+**Focus and event handling**:
+
+- `CanvasSearchBar` uses `v-if` on the component element in `KeyboardCanvas.vue` (not on an internal div), so `onMounted` fires at mount time and `setTimeout(0)` reliably focuses the input.
+- The search bar wrapper has `@mousedown.stop @click.stop` to prevent the canvas container's `handleContainerMouseDown` / `handleContainerClick` from stealing focus.
+- `onKeyDown` in `CanvasSearchBar` stops propagation for all keys **except Tab** (WCAG 2.1 SC 2.1.2 compliance), preventing canvas shortcuts from firing while the search bar is active.
+- Ctrl+F toggles: if search is already open, it closes it.
+- Escape while search is open calls `closeCanvasSearch()` instead of `unselectAll()`.
+
+**Matching logic** (`keyMatchesQuery`):
+
+```typescript
+function keyMatchesQuery(key: Key, query: string): boolean {
+  const q = query.toLowerCase()
+  for (const label of key.labels) {
+    if (!label) continue
+    const nodes = labelParser.parse(label)       // uses ParseCache
+    const text = labelParser.getPlainText(nodes) // strips HTML formatting
+    if (text.toLowerCase().includes(q)) return true
+  }
+  return false
+}
+```
+
+HTML-formatted labels (e.g. `<b>Shift</b>`) are matched correctly because `getPlainText` strips the tags before comparison. The query is trimmed before matching; a whitespace-only query returns no matches.
+
+**Rendering integration**:
+
+The `render()` call in `KeyboardCanvas.vue` passes the current match list as the 10th argument:
+
+```typescript
+const searchMatchKeys = keySearch.isSearchOpen.value ? keySearch.matchingKeys.value : []
+renderer.value.render(
+  keyboardStore.keys,
+  keysToHighlight,
+  keyboardStore.metadata,
+  false,
+  showRotation,
+  hoveredRotationPointId.value || undefined,
+  keyboardStore.rotationOrigin,
+  keyboardStore.popupHoveredKey,
+  hoveredLinkHref.value,
+  searchMatchKeys,    // ← 10th arg; empty array when search is closed
+)
+```
+
+Inside `CanvasRenderer.render()`, a `Set` is built from `searchMatchKeys` for O(1) lookup, then the non-selected keys are partitioned in a single pass:
+
+```typescript
+const searchMatchSet = new Set(searchMatchKeys)
+
+const regularKeys: Key[] = []
+const matchKeys: Key[] = []
+for (const key of sortedNonSelectedKeys) {
+  if (searchMatchSet.has(key)) matchKeys.push(key)
+  else regularKeys.push(key)
+}
+
+regularKeys.forEach((key) => this.drawKey(key, false, false, hoveredLinkHref, false))
+matchKeys.forEach((key) => this.drawKey(key, false, false, hoveredLinkHref, true))
+```
+
+The two-layer draw order ensures the amber border of a search match is never painted over by the black border of an adjacent regular key.
+
+**Decal key support**:
+
+Decal keys (`key.decal = true`) normally render with no fill and no border. The search match condition is explicitly included in the decal border guard so that matching decal keys receive the amber outline:
+
+```typescript
+// KeyRenderer.ts
+if (key.decal && (options.isSelected || options.isHovered || options.isSearchMatch)) {
+  const decalBorderColor = options.isHovered
+    ? KeyRenderer.HOVER_COLOR
+    : options.isSelected
+      ? KeyRenderer.SELECTION_COLOR
+      : KeyRenderer.SEARCH_MATCH_COLOR
+  // ... draw outline
+}
 ```
 
 ---
@@ -2049,6 +2210,35 @@ Prior to commit `595127f`, the RenderScheduler used an array to store callbacks,
 ---
 
 ## Recent Improvements
+
+### Canvas Text Search (Commit 8512b55)
+
+Added key-label search with amber highlighting, prev/next navigation, and a magnifier trigger button.
+
+**New files**:
+- `src/composables/useKeySearch.ts` — composable owning all transient search state
+- `src/components/CanvasSearchBar.vue` — self-contained search UI (input, count, nav buttons, close)
+
+**Modified files**:
+- `src/utils/renderers/KeyRenderer.ts` — added `isSearchMatch` to `KeyRenderOptions`, `SEARCH_MATCH_COLOR` constant (`#f59e0b`), decal border fix
+- `src/utils/canvas-renderer.ts` — added `searchMatchKeys` 10th parameter to `render()`, single-pass partition for four-layer draw order
+- `src/components/KeyboardCanvas.vue` — shortcut handler, magnifier button, `useKeySearch` wiring
+
+**Key design decisions**:
+
+1. **Four-pass render order** — regular non-selected → search matches → selected → popup-hovered. This ensures amber borders are never occluded by neighbouring regular-key borders.
+
+2. **Composable (not store)** — search state is transient UI state with no persistence requirement. `useKeySearch()` creates local, non-shared state per canvas instance.
+
+3. **Pure computed for `matchingKeys`** — index clamping is a side effect moved to `watch(matchingKeys)` to avoid a Vue 3 circular reactive dependency bug.
+
+4. **`v-if` on the component element** — `CanvasSearchBar` is mounted/unmounted (not hidden) so `onMounted` fires at the right time for auto-focus. `setTimeout(0)` (macrotask) is required because `nextTick` fires too early during the keyboard event path.
+
+5. **`@mousedown.stop @click.stop` on search bar** — prevents the canvas container's focus-management handlers from stealing focus back to the canvas while the search bar is active.
+
+6. **`labelParser.getPlainText()`** — search strips HTML formatting from labels so queries like "shift" match `<b>Shift</b>`.
+
+---
 
 ### Link Support and Label Parser Refactoring (Commit ca665d9)
 
