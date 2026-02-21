@@ -161,6 +161,13 @@
               <div>Change height of selected keys</div>
             </div>
           </div>
+          <div class="control-item">
+            <div class="kbd-combo"><kbd>/</kbd></div>
+            <div>
+              <strong>Search</strong>
+              <div>Toggle label search bar</div>
+            </div>
+          </div>
         </div>
       </div>
     </div>

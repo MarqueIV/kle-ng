@@ -28,6 +28,8 @@ export interface KeyRenderOptions {
   isSelected?: boolean
   /** Whether this key is hovered (popup disambiguation) */
   isHovered?: boolean
+  /** Whether this key matches a text search */
+  isSearchMatch?: boolean
 }
 
 /**
@@ -80,6 +82,7 @@ export class KeyRenderer {
   // Visual constants
   private static readonly SELECTION_COLOR = '#dc3545' // Red color for selected keys
   private static readonly HOVER_COLOR = KeyRenderer.SELECTION_COLOR // Same color for hovered keys (popup disambiguation)
+  private static readonly SEARCH_MATCH_COLOR = '#f59e0b' // Amber color for search match keys
   private static readonly GHOST_OPACITY = 0.3 // Opacity for ghost keys
   private static readonly PIXEL_ALIGNMENT_OFFSET = 0.5 // Offset for crisp stroke rendering
 
@@ -491,7 +494,9 @@ export class KeyRenderer {
       ...(options.roundOuter !== undefined && { roundOuter: options.roundOuter }),
       ...(options.roundInner !== undefined && { roundInner: options.roundInner }),
       unit: options.unit,
-      strokeWidth: options.strokeWidth || (options.isSelected || options.isHovered ? 2 : 1),
+      strokeWidth:
+        options.strokeWidth ||
+        (options.isSelected || options.isHovered || options.isSearchMatch ? 2 : 1),
     }
 
     ctx.save()
@@ -696,7 +701,9 @@ export class KeyRenderer {
         ? KeyRenderer.HOVER_COLOR
         : options.isSelected
           ? KeyRenderer.SELECTION_COLOR
-          : '#000000'
+          : options.isSearchMatch
+            ? KeyRenderer.SEARCH_MATCH_COLOR
+            : '#000000'
 
       if (isRotaryEncoder) {
         // Render as circle for rotary encoders (uses 'w' only, ignores 'h')
@@ -723,11 +730,13 @@ export class KeyRenderer {
       }
     }
 
-    // For decal keys, only draw outline if selected or hovered
-    if (key.decal && (options.isSelected || options.isHovered)) {
+    // For decal keys, only draw outline if selected, hovered, or search match
+    if (key.decal && (options.isSelected || options.isHovered || options.isSearchMatch)) {
       const decalBorderColor = options.isHovered
         ? KeyRenderer.HOVER_COLOR
-        : KeyRenderer.SELECTION_COLOR
+        : options.isSelected
+          ? KeyRenderer.SELECTION_COLOR
+          : KeyRenderer.SEARCH_MATCH_COLOR
 
       if (isRotaryEncoder) {
         // Draw circular outline for rotary encoder decals

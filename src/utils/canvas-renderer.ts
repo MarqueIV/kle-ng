@@ -209,12 +209,14 @@ export class CanvasRenderer {
     isSelected = false,
     isHovered = false,
     hoveredLinkHref?: string | null,
+    isSearchMatch = false,
   ) {
     // Use KeyRenderer for shape rendering
     keyRenderer.drawKey(this.ctx, key, {
       unit: this.options.unit,
       isSelected,
       isHovered,
+      isSearchMatch,
     })
 
     // Get params for label rendering
@@ -314,6 +316,7 @@ export class CanvasRenderer {
     selectedRotationOrigin?: { x: number; y: number } | null,
     popupHoveredKey?: Key | null,
     hoveredLinkHref?: string | null,
+    searchMatchKeys: Key[] = [],
   ) {
     // Clear link tracker at start of each render
     linkTracker.clear()
@@ -342,6 +345,7 @@ export class CanvasRenderer {
 
     // Create sets for efficient lookup
     const selectedKeySet = new Set(selectedKeys)
+    const searchMatchSet = new Set(searchMatchKeys)
 
     // Separate keys into selected and non-selected
     const nonSelectedKeys = keys.filter((key) => !selectedKeySet.has(key))
@@ -367,10 +371,18 @@ export class CanvasRenderer {
       )
     })
 
-    // Draw non-selected keys first (bottom layer)
-    sortedNonSelectedKeys.forEach((key) => {
-      this.drawKey(key, false, false, hoveredLinkHref)
-    })
+    // Partition non-selected keys in a single pass to preserve layer order:
+    // regular keys drawn first (bottom), then match keys on top so the amber
+    // border is never occluded by a neighbouring regular key.
+    const regularKeys: Key[] = []
+    const matchKeys: Key[] = []
+    for (const key of sortedNonSelectedKeys) {
+      if (searchMatchSet.has(key)) matchKeys.push(key)
+      else regularKeys.push(key)
+    }
+
+    regularKeys.forEach((key) => this.drawKey(key, false, false, hoveredLinkHref, false))
+    matchKeys.forEach((key) => this.drawKey(key, false, false, hoveredLinkHref, true))
 
     // Draw selected keys on top of non-selected keys (with red selection stroke)
     sortedSelectedKeys.forEach((key) => {

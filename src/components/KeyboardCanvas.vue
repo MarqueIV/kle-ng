@@ -39,6 +39,31 @@
         aria-label="Interactive keyboard layout canvas."
       />
 
+      <!-- Canvas search trigger button (shown when search is closed) -->
+      <button
+        type="button"
+        v-show="!keySearch.isSearchOpen.value"
+        class="canvas-search-trigger"
+        title="Search key labels (/)"
+        aria-label="Search key labels"
+        @click.stop="openCanvasSearch"
+      >
+        <BiSearch />
+      </button>
+
+      <!-- Canvas search bar (mounted only when search is open) -->
+      <CanvasSearchBar
+        v-if="keySearch.isSearchOpen.value"
+        :match-count="keySearch.matchCount.value"
+        :count-display="keySearch.matchCountDisplay.value"
+        :has-query="!!keySearch.searchQuery.value.trim()"
+        :query="keySearch.searchQuery.value"
+        @close="closeCanvasSearch"
+        @next="handleSearchNext"
+        @previous="handleSearchPrevious"
+        @query-change="handleSearchQueryChange"
+      />
+
       <!-- Matrix Annotation Overlay -->
       <MatrixAnnotationOverlay
         ref="matrixOverlayRef"
@@ -128,6 +153,9 @@ import MatrixAnnotationOverlay from '@/components/MatrixAnnotationOverlay.vue'
 import DebugOverlay from '@/components/DebugOverlay.vue'
 import DebugControlButton from '@/components/DebugControlButton.vue'
 import KeySelectionPopup from '@/components/KeySelectionPopup.vue'
+import CanvasSearchBar from '@/components/CanvasSearchBar.vue'
+import BiSearch from 'bootstrap-icons/icons/search.svg'
+import { useKeySearch } from '@/composables/useKeySearch'
 
 // Visual border around rendered keycaps (in pixels)
 const CANVAS_BORDER = 9
@@ -138,6 +166,7 @@ const isDevMode = import.meta.env.DEV
 const keyboardStore = useKeyboardStore()
 const matrixDrawingStore = useMatrixDrawingStore()
 const fontStore = useFontStore()
+const keySearch = useKeySearch()
 
 // Define a type for the internal KLE format
 interface InternalKleFormat {
@@ -428,6 +457,29 @@ watch(
     }
   },
 )
+
+// Feed the current key list into the search composable.  The main render watcher
+// below already responds to keys array reference changes, but label edits mutate
+// key objects in-place — they don't change the array reference.  This watcher
+// runs on every keys change (including deep mutations) so the search index always
+// reflects the latest label text even while search is open.
+watch(
+  () => keyboardStore.keys,
+  (keys) => keySearch.setKeys(keys),
+  { immediate: true },
+)
+
+// Re-render when search matches change while search is open (triggered by label
+// edits or key additions/deletions while the bar is visible). The clamping watcher
+// inside useKeySearch is registered before this one, so currentMatchIndex is
+// already clamped when this callback runs — safe to call selectCurrentSearchMatch()
+// without a nextTick.
+watch(keySearch.matchingKeys, () => {
+  if (keySearch.isSearchOpen.value) {
+    selectCurrentSearchMatch()
+    renderScheduler.schedule(renderKeyboard)
+  }
+})
 
 // Watch for mirror tool mode changes to update canvas size
 watch(
@@ -784,6 +836,7 @@ const renderKeyboard = (options?: { skipContainerBackground?: boolean }) => {
         return shouldUseTempKeys ? keyboardStore.tempSelectedKeys : keyboardStore.selectedKeys
       })()
 
+      const searchMatchKeys = keySearch.isSearchOpen.value ? keySearch.matchingKeys.value : []
       renderer.value.render(
         keyboardStore.keys,
         keysToHighlight,
@@ -794,6 +847,7 @@ const renderKeyboard = (options?: { skipContainerBackground?: boolean }) => {
         keyboardStore.rotationOrigin,
         keyboardStore.popupHoveredKey,
         hoveredLinkHref.value,
+        searchMatchKeys,
       )
 
       // Draw rectangle selection if active
@@ -1446,9 +1500,21 @@ const handleKeyDown = async (event: KeyboardEvent) => {
         event.preventDefault()
         keyboardStore.deleteKeys()
         break
+      case '/':
+        event.preventDefault()
+        if (keySearch.isSearchOpen.value) {
+          closeCanvasSearch()
+        } else {
+          openCanvasSearch()
+        }
+        break
       case 'Escape':
         event.preventDefault()
-        keyboardStore.unselectAll()
+        if (keySearch.isSearchOpen.value) {
+          closeCanvasSearch()
+        } else {
+          keyboardStore.unselectAll()
+        }
         break
       case 'Insert':
         event.preventDefault()
@@ -1919,6 +1985,48 @@ const handlePopupKeyUnhighlight = () => {
   renderScheduler.schedule(renderKeyboard)
 }
 
+// Canvas search handlers
+function openCanvasSearch(): void {
+  keySearch.openSearch()
+  // Defensively schedule a render so amber highlights appear immediately if a
+  // query is ever preserved across open/close cycles in the future.
+  renderScheduler.schedule(renderKeyboard)
+}
+
+function closeCanvasSearch(): void {
+  keySearch.closeSearch()
+  canvasRef.value?.focus()
+  // Note: whichever match was last navigated to remains the selected key after
+  // closing. This is intentional (matches VS Code / browser behaviour) but means
+  // there is no undo path back to the pre-search selection state.
+  renderScheduler.schedule(renderKeyboard)
+}
+
+function selectCurrentSearchMatch(): void {
+  const match = keySearch.currentMatchKey.value
+  if (match) {
+    keyboardStore.selectKey(match, false)
+  } else {
+    keyboardStore.unselectAll()
+  }
+}
+
+function handleSearchNext(): void {
+  keySearch.nextMatch()
+  selectCurrentSearchMatch()
+}
+
+function handleSearchPrevious(): void {
+  keySearch.previousMatch()
+  selectCurrentSearchMatch()
+}
+
+function handleSearchQueryChange(query: string): void {
+  keySearch.searchQuery.value = query
+  selectCurrentSearchMatch()
+  renderScheduler.schedule(renderKeyboard)
+}
+
 // Cleanup
 const cleanup = () => {
   window.removeEventListener('resize', handleWindowResize)
@@ -1983,6 +2091,10 @@ defineExpose({})
   width: 100%;
   height: 100%;
   position: relative;
+  /* Contain child z-indexes so canvas overlays (search bar, drag indicator)
+     do not escape and appear above page-level floating elements such as
+     modals and dropdowns. */
+  isolation: isolate;
 }
 
 .keyboard-canvas-container {
@@ -2079,6 +2191,26 @@ defineExpose({})
   font-size: 11px;
   font-weight: 600;
   border: 1px solid rgba(0, 0, 0, 0.2);
+}
+
+.canvas-search-trigger {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 1100;
+  background: var(--bs-body-bg, #fff);
+  border: 1px solid var(--bs-border-color, #dee2e6);
+  border-radius: 4px;
+  padding: 5px;
+  cursor: pointer;
+  color: var(--bs-secondary-color, #6c757d);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.canvas-search-trigger:hover {
+  background: var(--bs-secondary-bg, #f8f9fa);
+  color: var(--bs-body-color, #000);
 }
 
 /* Link URL preview shown at bottom of visible viewport */
