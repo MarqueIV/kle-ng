@@ -5,7 +5,9 @@ import {
   sanitizeLabelForHtml,
   getLabelAtIndex,
   normalizeLayoutInput,
+  lightenColor,
   DEFAULT_UNIT,
+  LAYOUT_PADDING,
 } from '../layout-render-utils'
 
 describe('escapeHtml', () => {
@@ -97,13 +99,50 @@ describe('getLabelAtIndex', () => {
   })
 })
 
+describe('lightenColor', () => {
+  it('returns a valid 7-char hex string for a normal color', () => {
+    const result = lightenColor('#cccccc')
+    expect(result).toMatch(/^#[0-9a-f]{6}$/)
+  })
+
+  it('returns a lighter color than the input (L* increased)', () => {
+    // #888888 mid-gray should lighten noticeably
+    const input = '#888888'
+    const result = lightenColor(input)
+    const inputLum = parseInt(input.slice(1, 3), 16)
+    const resultLum = parseInt(result.slice(1, 3), 16)
+    // All channels should be >= input for a gray (no hue shift)
+    expect(resultLum).toBeGreaterThanOrEqual(inputLum)
+    expect(result).not.toBe(input)
+  })
+
+  it('clamps white to white (already max L*)', () => {
+    expect(lightenColor('#ffffff')).toBe('#ffffff')
+  })
+
+  it('returns input unchanged for a non-6-digit hex string', () => {
+    expect(lightenColor('bad')).toBe('bad')
+    expect(lightenColor('#fff')).toBe('#fff')
+    expect(lightenColor('')).toBe('')
+  })
+})
+
 describe('normalizeLayoutInput', () => {
-  const makeKey = (x: number, y: number, w = 1, h = 1, topLabel = '', bottomLabel = ''): Key => {
+  const makeKey = (
+    x: number,
+    y: number,
+    w = 1,
+    h = 1,
+    topLabel = '',
+    bottomLabel = '',
+    color = '',
+  ): Key => {
     const key = new Key()
     key.x = x
     key.y = y
     key.width = w
     key.height = h
+    key.color = color
     const labels = makeLabels(topLabel || null, null, null, null, null, null, bottomLabel || null)
     key.labels = labels
     return key
@@ -120,8 +159,8 @@ describe('normalizeLayoutInput', () => {
     const meta = makeMetadata()
     const result = normalizeLayoutInput(keys, meta, 'test')
 
-    expect(result.boardWidth).toBe(3 * DEFAULT_UNIT)
-    expect(result.boardHeight).toBe(1 * DEFAULT_UNIT)
+    expect(result.boardWidth).toBe(3 * DEFAULT_UNIT + LAYOUT_PADDING * 2)
+    expect(result.boardHeight).toBe(1 * DEFAULT_UNIT + LAYOUT_PADDING * 2)
   })
 
   it('offsets keys relative to minimum x/y', () => {
@@ -129,8 +168,8 @@ describe('normalizeLayoutInput', () => {
     const meta = makeMetadata()
     const result = normalizeLayoutInput(keys, meta, 'test')
 
-    expect(result.keys[0]!.left).toBe(0)
-    expect(result.keys[0]!.top).toBe(0)
+    expect(result.keys[0]!.left).toBe(LAYOUT_PADDING)
+    expect(result.keys[0]!.top).toBe(LAYOUT_PADDING)
   })
 
   it('respects custom unit size', () => {
@@ -140,7 +179,7 @@ describe('normalizeLayoutInput', () => {
     const result = normalizeLayoutInput(keys, meta, 'test', unit)
 
     expect(result.keys[0]!.width).toBe(200)
-    expect(result.boardWidth).toBe(200)
+    expect(result.boardWidth).toBe(200 + LAYOUT_PADDING * 2)
   })
 
   it('uses metadata.name as layoutName when available', () => {
@@ -198,8 +237,36 @@ describe('normalizeLayoutInput', () => {
     const meta = makeMetadata()
     const result = normalizeLayoutInput(keys, meta, 'test')
 
-    expect(result.keys[0]).toMatchObject({ left: 0, top: 0 })
-    expect(result.keys[1]).toMatchObject({ left: DEFAULT_UNIT, top: 0 })
-    expect(result.keys[2]).toMatchObject({ left: 0, top: DEFAULT_UNIT })
+    expect(result.keys[0]).toMatchObject({ left: LAYOUT_PADDING, top: LAYOUT_PADDING })
+    expect(result.keys[1]).toMatchObject({
+      left: DEFAULT_UNIT + LAYOUT_PADDING,
+      top: LAYOUT_PADDING,
+    })
+    expect(result.keys[2]).toMatchObject({
+      left: LAYOUT_PADDING,
+      top: DEFAULT_UNIT + LAYOUT_PADDING,
+    })
+  })
+
+  it('uses key.color as darkColor', () => {
+    const keys = [makeKey(0, 0, 1, 1, '', '', '#ff0000')]
+    const meta = makeMetadata()
+    const result = normalizeLayoutInput(keys, meta, 'test')
+    expect(result.keys[0]!.darkColor).toBe('#ff0000')
+  })
+
+  it('defaults darkColor to #cccccc when key.color is empty', () => {
+    const keys = [makeKey(0, 0, 1, 1, '', '', '')]
+    const meta = makeMetadata()
+    const result = normalizeLayoutInput(keys, meta, 'test')
+    expect(result.keys[0]!.darkColor).toBe('#cccccc')
+  })
+
+  it('computes a valid lightColor from darkColor', () => {
+    const keys = [makeKey(0, 0, 1, 1, '', '', '#888888')]
+    const meta = makeMetadata()
+    const result = normalizeLayoutInput(keys, meta, 'test')
+    const { lightColor } = result.keys[0]!
+    expect(lightColor).toMatch(/^#[0-9a-f]{6}$/)
   })
 })

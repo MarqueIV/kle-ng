@@ -11,9 +11,36 @@ const makeInput = (overrides: Partial<LayoutRenderInput> = {}): LayoutRenderInpu
   boardWidth: 162,
   boardHeight: 54,
   keys: [
-    { left: 0, top: 0, width: 54, height: 54, topLeftLabel: 'A', bottomLeftLabel: '' },
-    { left: 54, top: 0, width: 54, height: 54, topLeftLabel: 'B', bottomLeftLabel: 'fn' },
-    { left: 108, top: 0, width: 54, height: 54, topLeftLabel: '', bottomLeftLabel: '' },
+    {
+      left: 0,
+      top: 0,
+      width: 54,
+      height: 54,
+      topLeftLabel: 'A',
+      bottomLeftLabel: '',
+      darkColor: '#cccccc',
+      lightColor: '#f0f0f0',
+    },
+    {
+      left: 54,
+      top: 0,
+      width: 54,
+      height: 54,
+      topLeftLabel: 'B',
+      bottomLeftLabel: 'fn',
+      darkColor: '#aaaaaa',
+      lightColor: '#dddddd',
+    },
+    {
+      left: 108,
+      top: 0,
+      width: 54,
+      height: 54,
+      topLeftLabel: '',
+      bottomLeftLabel: '',
+      darkColor: '#cccccc',
+      lightColor: '#f0f0f0',
+    },
   ],
   ...overrides,
 })
@@ -84,13 +111,38 @@ describe('HtmlLayoutRenderer', () => {
     expect(keyDivCount).toBe(3)
   })
 
-  it('renders key position and size as inline styles', () => {
+  it('renders a .key-inner div inside each .key', () => {
     const html = renderer.render(makeInput())
-    expect(html).toContain('left:0px;top:0px;width:54px;height:54px')
-    expect(html).toContain('left:54px;top:0px;width:54px;height:54px')
+    const innerCount = (html.match(/class="key-inner"/g) ?? []).length
+    expect(innerCount).toBe(3)
   })
 
-  it('renders top-left label with label-tl span', () => {
+  it('renders key position and size as inline styles on .key (width+1, height+1 for border overlap)', () => {
+    const html = renderer.render(makeInput())
+    // Each key is rendered 1px wider and taller than its nominal grid size so
+    // adjacent keys' inset box-shadows overlap — producing a single 1px border.
+    expect(html).toContain('left:0px;top:0px;width:55px;height:55px')
+    expect(html).toContain('left:54px;top:0px;width:55px;height:55px')
+  })
+
+  it('renders darkColor as background on .key outer div', () => {
+    const html = renderer.render(makeInput())
+    expect(html).toContain('background:#cccccc')
+    expect(html).toContain('background:#aaaaaa')
+  })
+
+  it('renders lightColor as background on .key-inner div', () => {
+    const html = renderer.render(makeInput())
+    expect(html).toContain('background:#f0f0f0')
+    expect(html).toContain('background:#dddddd')
+  })
+
+  it('does not contain --key-bg CSS variable', () => {
+    const html = renderer.render(makeInput())
+    expect(html).not.toContain('--key-bg')
+  })
+
+  it('renders top-left label with label-tl span inside .key-inner', () => {
     const html = renderer.render(makeInput())
     expect(html).toContain('<span class="label-tl">A</span>')
     expect(html).toContain('<span class="label-tl">B</span>')
@@ -103,7 +155,18 @@ describe('HtmlLayoutRenderer', () => {
 
   it('omits label spans when label is empty', () => {
     const input = makeInput({
-      keys: [{ left: 0, top: 0, width: 54, height: 54, topLeftLabel: '', bottomLeftLabel: '' }],
+      keys: [
+        {
+          left: 0,
+          top: 0,
+          width: 54,
+          height: 54,
+          topLeftLabel: '',
+          bottomLeftLabel: '',
+          darkColor: '#cccccc',
+          lightColor: '#f0f0f0',
+        },
+      ],
     })
     const html = renderer.render(input)
     expect(html).not.toContain('<span class="label-tl">')

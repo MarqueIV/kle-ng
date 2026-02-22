@@ -106,6 +106,16 @@
             </li>
             <li>
               <a
+                class="dropdown-item"
+                data-testid="export-download-svg"
+                href="#"
+                @click.prevent="downloadSvgFile"
+              >
+                Download SVG
+              </a>
+            </li>
+            <li>
+              <a
                 class="dropdown-item d-flex icon-link align-items-baseline"
                 data-testid="export-ergogen-web-gui"
                 href="#"
@@ -206,7 +216,7 @@ import { isQmkFormat, convertQmkToKle } from '@/utils/qmk-import'
 import { stringifyWithRounding } from '@/utils/serialization'
 import { decodeLayoutFromUrl, fetchGistLayout, loadErgogenKeyboard } from '@/utils/url-sharing'
 import { parseErgogenConfig, encodeKeyboardToErgogenUrl } from '@/utils/ergogen-loader'
-import { normalizeLayoutInput, htmlLayoutRenderer } from '@/utils/layout-export'
+import { normalizeLayoutInput, htmlLayoutRenderer, svgLayoutRenderer } from '@/utils/layout-export'
 import LZString from 'lz-string'
 
 import BiBoxArrowUpRight from 'bootstrap-icons/icons/box-arrow-up-right.svg'
@@ -281,6 +291,13 @@ interface ExtendedKeyboardMetadata extends KeyboardMetadata {
 interface InternalKleFormat {
   meta: KeyboardMetadata
   keys: Key[]
+}
+
+interface SaveFilePickerWindow {
+  showSaveFilePicker(options?: {
+    suggestedName?: string
+    types?: Array<{ description?: string; accept?: Record<string, string[]> }>
+  }): Promise<FileSystemFileHandle>
 }
 
 // Format detection helper
@@ -582,6 +599,54 @@ const downloadHtmlFile = async () => {
     }
     const errorMessage = err instanceof Error ? err.message : 'Unknown error'
     toast.showError(`Failed to save HTML file: ${errorMessage}`, 'Export Failed')
+  }
+}
+
+const downloadSvgFile = async () => {
+  try {
+    const keys = keyboardStore.keys
+    if (!keys || keys.length === 0) {
+      toast.showError('No keys to export. Please load a layout first.', 'Export Failed')
+      return
+    }
+
+    const input = normalizeLayoutInput(keys, keyboardStore.metadata, keyboardStore.filename)
+    const svgContent = svgLayoutRenderer.render(input)
+
+    const svgBlob = new Blob([svgContent], { type: 'image/svg+xml' })
+    const suggestedName = `${keyboardStore.filename || keyboardStore.metadata.name || 'keyboard-layout'}.svg`
+
+    const fsWindow = window as unknown as SaveFilePickerWindow
+    if (typeof fsWindow.showSaveFilePicker === 'function') {
+      const handle = await fsWindow.showSaveFilePicker({
+        suggestedName,
+        types: [{ description: 'SVG files', accept: { 'image/svg+xml': ['.svg'] } }],
+      })
+      const writable = await handle.createWritable()
+      await writable.write(svgBlob)
+      await writable.close()
+      toast.showSuccess('SVG file saved successfully', 'Export Successful')
+    } else {
+      const url = URL.createObjectURL(svgBlob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = suggestedName
+      a.click()
+      URL.revokeObjectURL(url)
+      toast.showSuccess('SVG file download started', 'Export Started')
+    }
+  } catch (err: unknown) {
+    console.error('Error saving SVG file:', err)
+    if (
+      err instanceof Error &&
+      (err.name === 'AbortError' ||
+        err.message.includes('aborted') ||
+        err.message.includes('cancelled'))
+    ) {
+      return
+    }
+    const errorMessage = err instanceof Error ? err.message : 'Unknown error'
+    toast.showError(`Failed to save SVG file: ${errorMessage}`, 'Export Failed')
   }
 }
 

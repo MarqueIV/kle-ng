@@ -6,6 +6,8 @@ export interface KeyRenderData {
   height: number
   topLeftLabel: string
   bottomLeftLabel: string
+  darkColor: string // key.color (outer/bevel fill), e.g. '#cccccc'
+  lightColor: string // lightenColor(darkColor), e.g. '#f0f0f0'
 }
 
 /** Normalized input consumed by any layout renderer */
