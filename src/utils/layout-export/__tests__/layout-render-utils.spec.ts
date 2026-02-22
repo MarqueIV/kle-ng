@@ -9,6 +9,7 @@ import {
   DEFAULT_UNIT,
   LAYOUT_PADDING,
 } from '../layout-render-utils'
+import type { LabelData } from '../LayoutRendererTypes'
 
 describe('escapeHtml', () => {
   it('escapes ampersands', () => {
@@ -128,14 +129,17 @@ describe('lightenColor', () => {
 })
 
 describe('normalizeLayoutInput', () => {
+  // Build a Key with labels at specific positions and optional overrides
   const makeKey = (
     x: number,
     y: number,
     w = 1,
     h = 1,
-    topLabel = '',
-    bottomLabel = '',
+    labelMap: Record<number, string> = {},
     color = '',
+    textSizeMap: Record<number, number> = {},
+    textColorMap: Record<number, string> = {},
+    rotation: { angle?: number; rx?: number; ry?: number } = {},
   ): Key => {
     const key = new Key()
     key.x = x
@@ -143,8 +147,29 @@ describe('normalizeLayoutInput', () => {
     key.width = w
     key.height = h
     key.color = color
-    const labels = makeLabels(topLabel || null, null, null, null, null, null, bottomLabel || null)
-    key.labels = labels
+
+    const labels = Array(12).fill(null) as Array12<string>
+    for (const [idx, text] of Object.entries(labelMap)) {
+      labels[Number(idx)] = (text || null) as unknown as string
+    }
+    key.labels = labels as unknown as Array12<string>
+
+    const textSizes = Array(12).fill(0) as Array12<number>
+    for (const [idx, size] of Object.entries(textSizeMap)) {
+      textSizes[Number(idx)] = size
+    }
+    key.textSize = textSizes
+
+    const textColors = Array(12).fill('') as Array12<string>
+    for (const [idx, c] of Object.entries(textColorMap)) {
+      textColors[Number(idx)] = c
+    }
+    key.textColor = textColors
+
+    if (rotation.angle !== undefined) key.rotation_angle = rotation.angle
+    if (rotation.rx !== undefined) key.rotation_x = rotation.rx
+    if (rotation.ry !== undefined) key.rotation_y = rotation.ry
+
     return key
   }
 
@@ -224,14 +249,6 @@ describe('normalizeLayoutInput', () => {
     expect(result.radiiValue).toBe('6px')
   })
 
-  it('extracts top-left (index 0) and bottom-left (index 6) labels', () => {
-    const keys = [makeKey(0, 0, 1, 1, 'Ctrl', 'fn')]
-    const meta = makeMetadata()
-    const result = normalizeLayoutInput(keys, meta, 'test')
-    expect(result.keys[0]!.topLeftLabel).toBe('Ctrl')
-    expect(result.keys[0]!.bottomLeftLabel).toBe('fn')
-  })
-
   it('handles multiple keys with correct positions', () => {
     const keys = [makeKey(0, 0), makeKey(1, 0), makeKey(0, 1)]
     const meta = makeMetadata()
@@ -249,24 +266,119 @@ describe('normalizeLayoutInput', () => {
   })
 
   it('uses key.color as darkColor', () => {
-    const keys = [makeKey(0, 0, 1, 1, '', '', '#ff0000')]
+    const keys = [makeKey(0, 0, 1, 1, {}, '#ff0000')]
     const meta = makeMetadata()
     const result = normalizeLayoutInput(keys, meta, 'test')
     expect(result.keys[0]!.darkColor).toBe('#ff0000')
   })
 
   it('defaults darkColor to #cccccc when key.color is empty', () => {
-    const keys = [makeKey(0, 0, 1, 1, '', '', '')]
+    const keys = [makeKey(0, 0, 1, 1, {}, '')]
     const meta = makeMetadata()
     const result = normalizeLayoutInput(keys, meta, 'test')
     expect(result.keys[0]!.darkColor).toBe('#cccccc')
   })
 
   it('computes a valid lightColor from darkColor', () => {
-    const keys = [makeKey(0, 0, 1, 1, '', '', '#888888')]
+    const keys = [makeKey(0, 0, 1, 1, {}, '#888888')]
     const meta = makeMetadata()
     const result = normalizeLayoutInput(keys, meta, 'test')
     const { lightColor } = result.keys[0]!
     expect(lightColor).toMatch(/^#[0-9a-f]{6}$/)
+  })
+
+  // --- Label extraction tests ---
+
+  it('label at index 0 → align left, baseline hanging', () => {
+    const keys = [makeKey(0, 0, 1, 1, { 0: 'A' })]
+    const meta = makeMetadata()
+    const result = normalizeLayoutInput(keys, meta, 'test')
+    const label = result.keys[0]!.labels[0] as LabelData
+    expect(label.text).toBe('A')
+    expect(label.align).toBe('left')
+    expect(label.baseline).toBe('hanging')
+  })
+
+  it('key with only position-4 label non-empty → labels[0].align center, baseline middle', () => {
+    const keys = [makeKey(0, 0, 1, 1, { 4: 'X' })]
+    const meta = makeMetadata()
+    const result = normalizeLayoutInput(keys, meta, 'test')
+    expect(result.keys[0]!.labels).toHaveLength(1)
+    const label = result.keys[0]!.labels[0] as LabelData
+    expect(label.text).toBe('X')
+    expect(label.align).toBe('center')
+    expect(label.baseline).toBe('middle')
+  })
+
+  it('key with no non-empty labels → labels is []', () => {
+    const keys = [makeKey(0, 0, 1, 1, {})]
+    const meta = makeMetadata()
+    const result = normalizeLayoutInput(keys, meta, 'test')
+    expect(result.keys[0]!.labels).toEqual([])
+  })
+
+  it('textSize=3 (default) → fontSize === 12', () => {
+    const keys = [makeKey(0, 0, 1, 1, { 0: 'A' })]
+    const meta = makeMetadata()
+    const result = normalizeLayoutInput(keys, meta, 'test')
+    // key.textSize[0] = 0 (use default), key.default.textSize = 3 → 6 + 2*3 = 12
+    expect(result.keys[0]!.labels[0]!.fontSize).toBe(12)
+  })
+
+  it('textSize=5 → fontSize === 16', () => {
+    const keys = [makeKey(0, 0, 1, 1, { 0: 'A' }, '', { 0: 5 })]
+    const meta = makeMetadata()
+    const result = normalizeLayoutInput(keys, meta, 'test')
+    expect(result.keys[0]!.labels[0]!.fontSize).toBe(16)
+  })
+
+  it('front legend (index 9) → fontSize ≤ 10, relY === height - 8', () => {
+    const keys = [makeKey(0, 0, 1, 1, { 9: 'fn' })]
+    const meta = makeMetadata()
+    const result = normalizeLayoutInput(keys, meta, 'test')
+    const label = result.keys[0]!.labels[0] as LabelData
+    expect(label.fontSize).toBeLessThanOrEqual(10)
+    expect(label.relY).toBe(DEFAULT_UNIT - 8)
+  })
+
+  it('rotationAngle passes through correctly', () => {
+    const keys = [makeKey(1, 1, 1, 1, {}, '', {}, {}, { angle: 15, rx: 2, ry: 3 })]
+    const meta = makeMetadata()
+    const result = normalizeLayoutInput(keys, meta, 'test')
+    expect(result.keys[0]!.rotationAngle).toBe(15)
+  })
+
+  it('rotationAngle defaults to 0 when not set', () => {
+    const keys = [makeKey(0, 0)]
+    const meta = makeMetadata()
+    const result = normalizeLayoutInput(keys, meta, 'test')
+    expect(result.keys[0]!.rotationAngle).toBe(0)
+  })
+
+  it('rotation origin coords are correct for non-rotated keys (0° = same as simple offset)', () => {
+    // With 0° rotation, BoundsCalculator uses the simple rectangle path, so the
+    // result must match the straightforward formula: (rx - minX) * unit + LAYOUT_PADDING
+    const keys = [makeKey(1, 1, 1, 1, {}, '', {}, {}, { angle: 0, rx: 2, ry: 3 })]
+    const meta = makeMetadata()
+    const result = normalizeLayoutInput(keys, meta, 'test')
+    // bounds.x = 1 * 54, so rotationOriginX = 2*54 - 1*54 + 9 = 54 + 9 = 63
+    expect(result.keys[0]!.rotationOriginX).toBe((2 - 1) * DEFAULT_UNIT + LAYOUT_PADDING)
+    expect(result.keys[0]!.rotationOriginY).toBe((3 - 1) * DEFAULT_UNIT + LAYOUT_PADDING)
+  })
+
+  it('board dimensions account for rotated key extents (rotation-aware bounding box)', () => {
+    // A 1×1 key rotated 45° around its own centre has a larger AABB than unrotated.
+    // (diagonal of a unit square = √2 ≈ 1.414 units per side)
+    const cx = 0.5 // centre of the key
+    const cy = 0.5
+    const rotatedKey = makeKey(0, 0, 1, 1, {}, '', {}, {}, { angle: 45, rx: cx, ry: cy })
+    const nonRotatedKey = makeKey(0, 0, 1, 1)
+    const meta = makeMetadata()
+
+    const rotatedResult = normalizeLayoutInput([rotatedKey], meta, 'test')
+    const plainResult = normalizeLayoutInput([nonRotatedKey], meta, 'test')
+
+    expect(rotatedResult.boardWidth).toBeGreaterThan(plainResult.boardWidth)
+    expect(rotatedResult.boardHeight).toBeGreaterThan(plainResult.boardHeight)
   })
 })

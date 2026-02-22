@@ -1,4 +1,9 @@
-import type { LayoutRenderer, LayoutRenderInput, KeyRenderData } from './LayoutRendererTypes'
+import type {
+  LayoutRenderer,
+  LayoutRenderInput,
+  KeyRenderData,
+  LabelData,
+} from './LayoutRendererTypes'
 import { escapeHtml } from './layout-render-utils'
 
 export class HtmlLayoutRenderer implements LayoutRenderer {
@@ -52,7 +57,7 @@ export class HtmlLayoutRenderer implements LayoutRenderer {
       height: var(--board-height);
       background: ${backColor};
       border-radius: ${radiiValue};
-      overflow: hidden;
+      overflow: visible;
       box-shadow: var(--board-shadow);
     }
     .key {
@@ -76,22 +81,13 @@ export class HtmlLayoutRenderer implements LayoutRenderer {
       border-radius: 3px;
       overflow: hidden;
     }
-    .label-tl,
-    .label-bl {
+    .key-label {
       position: absolute;
-      left: 8px;
-      color: var(--text);
-      font-size: 11px;
-      line-height: 1;
+      overflow: hidden;
+      overflow-wrap: break-word;
+      word-break: break-word;
+      line-height: 1.2;
       pointer-events: none;
-      white-space: nowrap;
-      text-align: left;
-    }
-    .label-tl {
-      top: 6px;
-    }
-    .label-bl {
-      bottom: 6px;
     }
     .keyboard-footer {
       margin-top: 15px;
@@ -114,13 +110,52 @@ export class HtmlLayoutRenderer implements LayoutRenderer {
 </html>`
   }
 
+  private renderLabel(label: LabelData): string {
+    const { text, fontSize, color, align, baseline, relX, relY, maxWidth } = label
+    const lineHeight = fontSize * 1.2
+
+    const cssLeft =
+      align === 'left' ? relX : align === 'right' ? relX - maxWidth : relX - maxWidth / 2
+
+    // Position the span so its baseline type aligns with relY.
+    // CSS lacks explicit baseline-aware positioning for absolute elements; we approximate
+    // using the typical baseline fraction within a line-height-1.2 box:
+    //   hanging    → span top at relY  (hanging baseline ≈ top of em box)
+    //   middle     → span center at relY  (span top = relY − lineHeight/2)
+    //   alphabetic → alphabetic baseline ≈ 75% down the span  (span top = relY − 0.75·lineHeight)
+    const cssTop =
+      baseline === 'hanging'
+        ? relY
+        : baseline === 'middle'
+          ? relY - lineHeight / 2
+          : relY - lineHeight * 0.75
+
+    return `<span class="key-label" style="left:${cssLeft}px;top:${cssTop}px;width:${maxWidth}px;font-size:${fontSize}px;color:${color};text-align:${align};">${text}</span>`
+  }
+
   private renderKey(key: KeyRenderData): string {
-    const { left, top, width, height, topLeftLabel, bottomLeftLabel, darkColor, lightColor } = key
-    return `<div class="key" style="left:${left}px;top:${top}px;width:${width + 1}px;height:${height + 1}px;background:${darkColor};">
-          <div class="key-inner" style="background:${lightColor};">
-            ${topLeftLabel ? `<span class="label-tl">${topLeftLabel}</span>` : ''}
-            ${bottomLeftLabel ? `<span class="label-bl">${bottomLeftLabel}</span>` : ''}
-          </div>
+    const {
+      left,
+      top,
+      width,
+      height,
+      labels,
+      rotationAngle,
+      rotationOriginX,
+      rotationOriginY,
+      darkColor,
+      lightColor,
+    } = key
+
+    const rotateCss =
+      rotationAngle !== 0
+        ? `transform:rotate(${rotationAngle}deg);transform-origin:${rotationOriginX - left}px ${rotationOriginY - top}px;`
+        : ''
+
+    const labelsHtml = labels.map((l) => this.renderLabel(l)).join('')
+
+    return `<div class="key" style="left:${left}px;top:${top}px;width:${width + 1}px;height:${height + 1}px;background:${darkColor};${rotateCss}">
+          <div class="key-inner" style="background:${lightColor};"></div>${labelsHtml}
         </div>`
   }
 }

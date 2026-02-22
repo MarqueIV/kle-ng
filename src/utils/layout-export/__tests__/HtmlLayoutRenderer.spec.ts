@@ -1,6 +1,19 @@
 import { describe, it, expect } from 'vitest'
 import { HtmlLayoutRenderer } from '../HtmlLayoutRenderer'
-import type { LayoutRenderInput } from '../LayoutRendererTypes'
+import type { LayoutRenderInput, LabelData } from '../LayoutRendererTypes'
+
+const makeLabel = (overrides: Partial<LabelData> = {}): LabelData => ({
+  text: 'A',
+  fontSize: 12,
+  color: '#000000',
+  align: 'left',
+  baseline: 'hanging',
+  relX: 9,
+  relY: 8,
+  maxWidth: 38,
+  maxHeight: 36,
+  ...overrides,
+})
 
 const makeInput = (overrides: Partial<LayoutRenderInput> = {}): LayoutRenderInput => ({
   layoutName: 'Test Board',
@@ -16,8 +29,10 @@ const makeInput = (overrides: Partial<LayoutRenderInput> = {}): LayoutRenderInpu
       top: 0,
       width: 54,
       height: 54,
-      topLeftLabel: 'A',
-      bottomLeftLabel: '',
+      labels: [makeLabel({ text: 'A' })],
+      rotationAngle: 0,
+      rotationOriginX: 0,
+      rotationOriginY: 0,
       darkColor: '#cccccc',
       lightColor: '#f0f0f0',
     },
@@ -26,8 +41,13 @@ const makeInput = (overrides: Partial<LayoutRenderInput> = {}): LayoutRenderInpu
       top: 0,
       width: 54,
       height: 54,
-      topLeftLabel: 'B',
-      bottomLeftLabel: 'fn',
+      labels: [
+        makeLabel({ text: 'B' }),
+        makeLabel({ text: 'fn', relY: 46, baseline: 'alphabetic', align: 'left' }),
+      ],
+      rotationAngle: 0,
+      rotationOriginX: 0,
+      rotationOriginY: 0,
       darkColor: '#aaaaaa',
       lightColor: '#dddddd',
     },
@@ -36,8 +56,10 @@ const makeInput = (overrides: Partial<LayoutRenderInput> = {}): LayoutRenderInpu
       top: 0,
       width: 54,
       height: 54,
-      topLeftLabel: '',
-      bottomLeftLabel: '',
+      labels: [],
+      rotationAngle: 0,
+      rotationOriginX: 0,
+      rotationOriginY: 0,
       darkColor: '#cccccc',
       lightColor: '#f0f0f0',
     },
@@ -142,18 +164,19 @@ describe('HtmlLayoutRenderer', () => {
     expect(html).not.toContain('--key-bg')
   })
 
-  it('renders top-left label with label-tl span inside .key-inner', () => {
+  it('renders non-empty label as .key-label span with correct text', () => {
     const html = renderer.render(makeInput())
-    expect(html).toContain('<span class="label-tl">A</span>')
-    expect(html).toContain('<span class="label-tl">B</span>')
+    expect(html).toContain('class="key-label"')
+    expect(html).toContain('>A<')
+    expect(html).toContain('>B<')
   })
 
-  it('renders bottom-left label with label-bl span', () => {
+  it('renders bottom label text', () => {
     const html = renderer.render(makeInput())
-    expect(html).toContain('<span class="label-bl">fn</span>')
+    expect(html).toContain('>fn<')
   })
 
-  it('omits label spans when label is empty', () => {
+  it('keys with labels: [] produce no .key-label spans', () => {
     const input = makeInput({
       keys: [
         {
@@ -161,16 +184,111 @@ describe('HtmlLayoutRenderer', () => {
           top: 0,
           width: 54,
           height: 54,
-          topLeftLabel: '',
-          bottomLeftLabel: '',
+          labels: [],
+          rotationAngle: 0,
+          rotationOriginX: 0,
+          rotationOriginY: 0,
           darkColor: '#cccccc',
           lightColor: '#f0f0f0',
         },
       ],
     })
     const html = renderer.render(input)
-    expect(html).not.toContain('<span class="label-tl">')
-    expect(html).not.toContain('<span class="label-bl">')
+    expect(html).not.toContain('<span class="key-label"')
+  })
+
+  it('center-aligned label → text-align:center in span style', () => {
+    const input = makeInput({
+      keys: [
+        {
+          left: 0,
+          top: 0,
+          width: 54,
+          height: 54,
+          labels: [makeLabel({ align: 'center', relX: 27 })],
+          rotationAngle: 0,
+          rotationOriginX: 0,
+          rotationOriginY: 0,
+          darkColor: '#cccccc',
+          lightColor: '#f0f0f0',
+        },
+      ],
+    })
+    const html = renderer.render(input)
+    expect(html).toContain('text-align:center')
+  })
+
+  it('baseline alphabetic → top offset positions alphabetic baseline at relY', () => {
+    // fontSize=10, lineHeight=12, relY=40: cssTop = 40 - 12*0.75 = 40 - 9 = 31
+    const input = makeInput({
+      keys: [
+        {
+          left: 0,
+          top: 0,
+          width: 54,
+          height: 54,
+          labels: [makeLabel({ baseline: 'alphabetic', relY: 40, fontSize: 10 })],
+          rotationAngle: 0,
+          rotationOriginX: 0,
+          rotationOriginY: 0,
+          darkColor: '#cccccc',
+          lightColor: '#f0f0f0',
+        },
+      ],
+    })
+    const html = renderer.render(input)
+    expect(html).toContain('top:31px')
+  })
+
+  it('rotated key → .key style includes transform:rotate and transform-origin', () => {
+    const input = makeInput({
+      keys: [
+        {
+          left: 50,
+          top: 50,
+          width: 54,
+          height: 54,
+          labels: [],
+          rotationAngle: 30,
+          rotationOriginX: 100,
+          rotationOriginY: 100,
+          darkColor: '#cccccc',
+          lightColor: '#f0f0f0',
+        },
+      ],
+    })
+    const html = renderer.render(input)
+    expect(html).toContain('transform:rotate(30deg)')
+    expect(html).toContain('transform-origin:')
+  })
+
+  it('non-rotated key → no transform:rotate in .key style', () => {
+    const input = makeInput({
+      keys: [
+        {
+          left: 0,
+          top: 0,
+          width: 54,
+          height: 54,
+          labels: [],
+          rotationAngle: 0,
+          rotationOriginX: 0,
+          rotationOriginY: 0,
+          darkColor: '#cccccc',
+          lightColor: '#f0f0f0',
+        },
+      ],
+    })
+    const html = renderer.render(input)
+    expect(html).not.toContain('transform:rotate')
+  })
+
+  it('board CSS rule has overflow: visible', () => {
+    const html = renderer.render(makeInput())
+    // The .board CSS rule must use overflow: visible (not hidden)
+    expect(html).toContain('overflow: visible')
+    // Verify the board <div> itself does not have inline overflow:hidden
+    expect(html).toContain('<div class="board">')
   })
 
   it('includes a footer link to the editor', () => {

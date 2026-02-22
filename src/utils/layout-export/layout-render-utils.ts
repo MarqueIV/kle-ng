@@ -1,5 +1,6 @@
 import type { Key, KeyboardMetadata } from '@adamws/kle-serial'
-import type { LayoutRenderInput, KeyRenderData } from './LayoutRendererTypes'
+import type { LayoutRenderInput, KeyRenderData, LabelData } from './LayoutRendererTypes'
+import { BoundsCalculator } from '../utils/BoundsCalculator'
 
 export const DEFAULT_UNIT = 54
 
@@ -111,6 +112,28 @@ export function lightenColor(color: string, factor = 1.2): string {
 }
 
 /**
+ * Label position table — mirrors LabelRenderer.labelPositions.
+ * Duplicated here to keep export utilities free of canvas/Vue dependencies.
+ */
+const LABEL_POSITIONS: Array<{
+  align: 'left' | 'center' | 'right'
+  baseline: 'hanging' | 'middle' | 'alphabetic'
+}> = [
+  { align: 'left', baseline: 'hanging' }, // 0 — top-left
+  { align: 'center', baseline: 'hanging' }, // 1 — top-center
+  { align: 'right', baseline: 'hanging' }, // 2 — top-right
+  { align: 'left', baseline: 'middle' }, // 3 — center-left
+  { align: 'center', baseline: 'middle' }, // 4 — center-center
+  { align: 'right', baseline: 'middle' }, // 5 — center-right
+  { align: 'left', baseline: 'alphabetic' }, // 6 — bottom-left
+  { align: 'center', baseline: 'alphabetic' }, // 7 — bottom-center
+  { align: 'right', baseline: 'alphabetic' }, // 8 — bottom-right
+  { align: 'left', baseline: 'hanging' }, // 9  — front-left
+  { align: 'center', baseline: 'hanging' }, // 10 — front-center
+  { align: 'right', baseline: 'hanging' }, // 11 — front-right
+]
+
+/**
  * Normalize raw store data into a LayoutRenderInput.
  * Pure function — no Vue/store dependencies.
  */
@@ -120,24 +143,67 @@ export function normalizeLayoutInput(
   filename: string,
   unit: number = DEFAULT_UNIT,
 ): LayoutRenderInput {
-  const minX = Math.min(...keys.map((k) => k.x ?? 0))
-  const minY = Math.min(...keys.map((k) => k.y ?? 0))
-  const maxX = Math.max(...keys.map((k) => (k.x ?? 0) + (k.width ?? 1)))
-  const maxY = Math.max(...keys.map((k) => (k.y ?? 0) + (k.height ?? 1)))
+  // Use BoundsCalculator to get the true axis-aligned bounding box, which
+  // accounts for rotation by transforming all 4 key corners and finding min/max.
+  const boundsCalc = new BoundsCalculator(unit)
+  const bounds = boundsCalc.calculateBounds(keys)
 
-  const boardWidth = Math.max(0, maxX - minX) * unit + LAYOUT_PADDING * 2
-  const boardHeight = Math.max(0, maxY - minY) * unit + LAYOUT_PADDING * 2
+  // Pixel-space minimum corner (may differ from key.x * unit when keys are rotated)
+  const minPxX = bounds.x
+  const minPxY = bounds.y
+
+  const boardWidth = Math.max(0, bounds.width) + LAYOUT_PADDING * 2
+  const boardHeight = Math.max(0, bounds.height) + LAYOUT_PADDING * 2
 
   const normalizedKeys: KeyRenderData[] = keys.map((key) => {
     const darkColor = key.color || '#cccccc'
     const lightColor = lightenColor(darkColor)
+
+    const width = Number(key.width ?? 1) * unit
+    const height = Number(key.height ?? 1) * unit
+    const maxWidth = Math.max(1, width - 16)
+    const maxHeight = Math.max(1, height - 18)
+
+    const labels: LabelData[] = []
+    for (let i = 0; i < 12; i++) {
+      const text = getLabelAtIndex(key, i)
+      if (!text) continue
+
+      const textSize = key.textSize[i] || key.default.textSize || 3
+      let fontSize = 6 + 2 * textSize
+      if (i >= 9) {
+        fontSize = Math.min(10, fontSize * 0.8)
+      }
+
+      const color = key.textColor[i] || key.default.textColor || '#000000'
+      const { align, baseline } = LABEL_POSITIONS[i]!
+
+      let relX: number
+      if (align === 'left') relX = 8
+      else if (align === 'right') relX = width - 8
+      else relX = width / 2
+
+      let relY: number
+      if (i <= 2)
+        relY = 4 // top row: hanging
+      else if (i <= 5)
+        relY = height / 2 - 2 // middle row: middle
+      else if (i <= 8)
+        relY = height - 14 // bottom row: alphabetic
+      else relY = height - 8 // front row: hanging
+
+      labels.push({ text, fontSize, color, align, baseline, relX, relY, maxWidth, maxHeight })
+    }
+
     return {
-      left: (Number(key.x ?? 0) - minX) * unit + LAYOUT_PADDING,
-      top: (Number(key.y ?? 0) - minY) * unit + LAYOUT_PADDING,
-      width: Number(key.width ?? 1) * unit,
-      height: Number(key.height ?? 1) * unit,
-      topLeftLabel: getLabelAtIndex(key, 0),
-      bottomLeftLabel: getLabelAtIndex(key, 6),
+      left: key.x * unit - minPxX + LAYOUT_PADDING,
+      top: key.y * unit - minPxY + LAYOUT_PADDING,
+      width,
+      height,
+      labels,
+      rotationAngle: key.rotation_angle || 0,
+      rotationOriginX: (key.rotation_x || 0) * unit - minPxX + LAYOUT_PADDING,
+      rotationOriginY: (key.rotation_y || 0) * unit - minPxY + LAYOUT_PADDING,
       darkColor,
       lightColor,
     }
