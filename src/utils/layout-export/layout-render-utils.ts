@@ -1,6 +1,9 @@
 import type { Key, KeyboardMetadata } from '@adamws/kle-serial'
 import type { LayoutRenderInput, KeyRenderData, LabelData } from './LayoutRendererTypes'
 import { BoundsCalculator } from '../utils/BoundsCalculator'
+export { lightenColor } from '../color-utils'
+import { lightenColor } from '../color-utils'
+import { LABEL_POSITIONS } from '../label-positions'
 
 export const DEFAULT_UNIT = 54
 
@@ -32,106 +35,6 @@ export function getLabelAtIndex(key: Key, index: number): string {
   }
   return ''
 }
-
-/**
- * Lighten a hex color using the CIE Lab color space for perceptually uniform results.
- * Extracted from KeyRenderer.computeLightenColor — pure function, no canvas dependencies.
- *
- * @param color  - 6-digit hex string, e.g. '#cccccc'
- * @param factor - Lightening factor applied to L* (default 1.2 matches KeyRenderer usage)
- * @returns Lightened hex color, or input unchanged if not a valid 6-digit hex
- */
-export function lightenColor(color: string, factor = 1.2): string {
-  const hex = color.replace('#', '')
-  if (hex.length !== 6) return color
-
-  const r = parseInt(hex.substr(0, 2), 16)
-  const g = parseInt(hex.substr(2, 2), 16)
-  const b = parseInt(hex.substr(4, 2), 16)
-
-  // Convert sRGB to linear RGB for proper color math
-  const toLinear = (c: number) => {
-    const sRGB = c / 255
-    return sRGB <= 0.03928 ? sRGB / 12.92 : Math.pow((sRGB + 0.055) / 1.055, 2.4)
-  }
-
-  const fromLinear = (c: number) => {
-    if (c <= 0.0031308) {
-      return c * 12.92 * 255
-    }
-    return (1.055 * Math.pow(c, 1 / 2.4) - 0.055) * 255
-  }
-
-  // Convert to CIE XYZ then to Lab
-  const rLinear = toLinear(r)
-  const gLinear = toLinear(g)
-  const bLinear = toLinear(b)
-
-  // D65 illuminant, sRGB primaries
-  const x = rLinear * 0.4124564 + gLinear * 0.3575761 + bLinear * 0.1804375
-  const y = rLinear * 0.2126729 + gLinear * 0.7151522 + bLinear * 0.072175
-  const z = rLinear * 0.0193339 + gLinear * 0.119192 + bLinear * 0.9503041
-
-  // Normalize to D65 white point
-  const xn = x / 0.95047
-  const yn = y / 1.0
-  const zn = z / 1.08883
-
-  // Convert to Lab
-  const fx = xn > 0.008856 ? Math.pow(xn, 1 / 3) : 7.787 * xn + 16 / 116
-  const fy = yn > 0.008856 ? Math.pow(yn, 1 / 3) : 7.787 * yn + 16 / 116
-  const fz = zn > 0.008856 ? Math.pow(zn, 1 / 3) : 7.787 * zn + 16 / 116
-
-  let lStar = 116 * fy - 16
-  const aStar = 500 * (fx - fy)
-  const bStar = 200 * (fy - fz)
-
-  // Apply lightening to L* component
-  lStar = Math.min(100, lStar * factor)
-
-  // Convert back to XYZ
-  const fyNew = (lStar + 16) / 116
-  const fxNew = aStar / 500 + fyNew
-  const fzNew = fyNew - bStar / 200
-
-  const xNew = (fxNew > 0.206893 ? Math.pow(fxNew, 3) : (fxNew * 116 - 16) / 903.3) * 0.95047
-  const yNew = lStar > 8 ? Math.pow(fyNew, 3) : lStar / 903.3
-  const zNew = (fzNew > 0.206893 ? Math.pow(fzNew, 3) : (fzNew * 116 - 16) / 903.3) * 1.08883
-
-  // Convert back to sRGB
-  const rNew = xNew * 3.2404542 + yNew * -1.5371385 + zNew * -0.4985314
-  const gNew = xNew * -0.969266 + yNew * 1.8760108 + zNew * 0.041556
-  const bNew = xNew * 0.0556434 + yNew * -0.2040259 + zNew * 1.0572252
-
-  // Convert back to 8-bit values
-  const rFinal = Math.min(255, Math.max(0, Math.round(fromLinear(rNew))))
-  const gFinal = Math.min(255, Math.max(0, Math.round(fromLinear(gNew))))
-  const bFinal = Math.min(255, Math.max(0, Math.round(fromLinear(bNew))))
-
-  return `#${rFinal.toString(16).padStart(2, '0')}${gFinal.toString(16).padStart(2, '0')}${bFinal.toString(16).padStart(2, '0')}`
-}
-
-/**
- * Label position table — mirrors LabelRenderer.labelPositions.
- * Duplicated here to keep export utilities free of canvas/Vue dependencies.
- */
-const LABEL_POSITIONS: Array<{
-  align: 'left' | 'center' | 'right'
-  baseline: 'hanging' | 'middle' | 'alphabetic'
-}> = [
-  { align: 'left', baseline: 'hanging' }, // 0 — top-left
-  { align: 'center', baseline: 'hanging' }, // 1 — top-center
-  { align: 'right', baseline: 'hanging' }, // 2 — top-right
-  { align: 'left', baseline: 'middle' }, // 3 — center-left
-  { align: 'center', baseline: 'middle' }, // 4 — center-center
-  { align: 'right', baseline: 'middle' }, // 5 — center-right
-  { align: 'left', baseline: 'alphabetic' }, // 6 — bottom-left
-  { align: 'center', baseline: 'alphabetic' }, // 7 — bottom-center
-  { align: 'right', baseline: 'alphabetic' }, // 8 — bottom-right
-  { align: 'left', baseline: 'hanging' }, // 9  — front-left
-  { align: 'center', baseline: 'hanging' }, // 10 — front-center
-  { align: 'right', baseline: 'hanging' }, // 11 — front-right
-]
 
 /**
  * Normalize raw store data into a LayoutRenderInput.

@@ -4,6 +4,10 @@ import type { LabelNode, ListNode, TextStyle } from '../parsers/LabelAST'
 import { labelParser } from '../parsers/LabelParser'
 import { svgCache } from '../caches/SVGCache'
 import { linkTracker } from './LinkTracker'
+import type { LabelPosition } from '../label-positions'
+import { LABEL_POSITIONS } from '../label-positions'
+export type { LabelPosition }
+export const labelPositions = LABEL_POSITIONS
 
 /**
  * Rotation context for link hit testing
@@ -35,43 +39,6 @@ export interface LabelRenderOptions {
   /** Font family to use for rendering text labels */
   fontFamily?: string
 }
-
-/**
- * Label position configuration for alignment
- */
-export interface LabelPosition {
-  /** Horizontal alignment (left, center, right) */
-  align: string
-  /** Vertical baseline (hanging, middle, alphabetic) */
-  baseline: string
-}
-
-/**
- * Label positioning grid matching original KLE (12 positions)
- * Defines how labels are aligned and positioned in the 3x3 grid on key top
- * plus the 3 front legend positions.
- */
-export const labelPositions: LabelPosition[] = [
-  // Top row
-  { align: 'left', baseline: 'hanging' }, // 0: top-left
-  { align: 'center', baseline: 'hanging' }, // 1: top-center
-  { align: 'right', baseline: 'hanging' }, // 2: top-right
-
-  // Center row
-  { align: 'left', baseline: 'middle' }, // 3: center-left
-  { align: 'center', baseline: 'middle' }, // 4: center
-  { align: 'right', baseline: 'middle' }, // 5: center-right
-
-  // Bottom row
-  { align: 'left', baseline: 'alphabetic' }, // 6: bottom-left
-  { align: 'center', baseline: 'alphabetic' }, // 7: bottom-center
-  { align: 'right', baseline: 'alphabetic' }, // 8: bottom-right
-
-  // Front legends (side print)
-  { align: 'left', baseline: 'hanging' }, // 9: front-left
-  { align: 'center', baseline: 'hanging' }, // 10: front-center
-  { align: 'right', baseline: 'hanging' }, // 11: front-right
-]
 
 /**
  * LabelRenderer handles the rendering of keyboard key labels.
@@ -129,9 +96,9 @@ export class LabelRenderer {
     hoveredLinkHref?: string | null,
   ): void {
     key.labels.forEach((label, index) => {
-      if (!label || index >= labelPositions.length) return
+      if (!label || index >= LABEL_POSITIONS.length) return
 
-      const pos = labelPositions[index]
+      const pos = LABEL_POSITIONS[index]
       if (!pos) return // Skip if position is undefined
       const textColor = key.textColor[index] || key.default.textColor
 
@@ -255,9 +222,9 @@ export class LabelRenderer {
     hoveredLinkHref?: string | null,
   ): void {
     key.labels.forEach((label, index) => {
-      if (!label || index >= labelPositions.length) return
+      if (!label || index >= LABEL_POSITIONS.length) return
 
-      const pos = labelPositions[index]
+      const pos = LABEL_POSITIONS[index]
       if (!pos) return // Skip if position is undefined
       const textColor = key.textColor[index] || key.default.textColor
 
