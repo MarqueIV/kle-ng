@@ -1,3 +1,5 @@
+import polygonClippingLib from 'polygon-clipping'
+import type { MultiPolygon } from 'polygon-clipping'
 import type {
   LayoutRenderer,
   LayoutRenderInput,
@@ -123,6 +125,88 @@ export class SvgLayoutRenderer implements LayoutRenderer {
 </svg>`
   }
 
+  /** Polygon approximation of a rounded rectangle — same algorithm as KeyRenderer.ts */
+  private makeRoundedRectPolygon(
+    x: number,
+    y: number,
+    w: number,
+    h: number,
+    r: number,
+    seg = 8,
+  ): Array<[number, number]> {
+    const pts: Array<[number, number]> = []
+    const s = Math.max(2, Math.floor(seg))
+    r = Math.min(r, w / 2, h / 2)
+
+    const arc = (cx: number, cy: number, a0: number, a1: number) => {
+      for (let i = 0; i <= s; i++) {
+        const a = a0 + (i / s) * (a1 - a0)
+        pts.push([cx + Math.cos(a) * r, cy + Math.sin(a) * r])
+      }
+    }
+
+    // Build clockwise polygon: top-left → top-right → bottom-right → bottom-left
+    arc(x + r, y + r, Math.PI, 1.5 * Math.PI) // top-left corner
+    pts.push([x + w - r, y]) // top edge
+    arc(x + w - r, y + r, 1.5 * Math.PI, 2 * Math.PI) // top-right corner
+    pts.push([x + w, y + h - r]) // right edge
+    arc(x + w - r, y + h - r, 0, 0.5 * Math.PI) // bottom-right corner
+    pts.push([x + r, y + h]) // bottom edge
+    arc(x + r, y + h - r, 0.5 * Math.PI, Math.PI) // bottom-left corner
+    pts.push([x, y + r]) // left edge
+
+    return pts
+  }
+
+  /** Convert polygon-clipping MultiPolygon to SVG path d attribute */
+  private polygonToSvgPath(multiPolygon: MultiPolygon, scale: number): string {
+    const fmt = (n: number) => parseFloat((n / scale).toFixed(2))
+    let d = ''
+    for (const polygon of multiPolygon) {
+      for (const ring of polygon) {
+        if (!ring || ring.length < 2) continue
+        d += `M ${fmt(ring[0]![0])} ${fmt(ring[0]![1])}`
+        for (let i = 1; i < ring.length; i++) {
+          d += ` L ${fmt(ring[i]![0])} ${fmt(ring[i]![1])}`
+        }
+        d += ' Z'
+      }
+    }
+    return d
+  }
+
+  /**
+   * Compute the vector union of two rectangles and return an SVG path d string.
+   * Returns null if the union computation fails (caller should fall back to two rects).
+   */
+  private createUnionSvgPath(
+    r1: { x: number; y: number; w: number; h: number },
+    r2: { x: number; y: number; w: number; h: number },
+    radius: number,
+  ): string | null {
+    const scale = 1000
+    const p1 = this.makeRoundedRectPolygon(
+      r1.x * scale,
+      r1.y * scale,
+      r1.w * scale,
+      r1.h * scale,
+      radius * scale,
+    )
+    const p2 = this.makeRoundedRectPolygon(
+      r2.x * scale,
+      r2.y * scale,
+      r2.w * scale,
+      r2.h * scale,
+      radius * scale,
+    )
+    try {
+      const result = polygonClippingLib.union([[p1]], [[p2]])
+      return this.polygonToSvgPath(result, scale)
+    } catch {
+      return null
+    }
+  }
+
   private renderCircularKey(
     left: number,
     top: number,
@@ -197,15 +281,47 @@ export class SvgLayoutRenderer implements LayoutRenderer {
     <rect x="${innerX}" y="${innerY}" width="${innerW}" height="${innerH}" fill="${lightColor}" rx="${ROUND_INNER}"/>`
 
       if (left2 !== undefined && width2 !== undefined) {
-        const outerX2 = left2 + 0.5
-        const outerY2 = top2! + 0.5
-        const innerX2 = left2 + INNER_LEFT
-        const innerY2 = top2! + INNER_TOP
-        const innerW2 = width2 - INNER_SIZE_REDUCTION
-        const innerH2 = height2! - INNER_SIZE_REDUCTION
-        content += `
+        // Use polygon union for seamless rendering — eliminates the double-border
+        // seam that two separate stroked <rect> elements produce at the junction.
+        const outerD = this.createUnionSvgPath(
+          { x: left, y: top, w: width, h: height },
+          { x: left2, y: top2!, w: width2, h: height2! },
+          ROUND_OUTER,
+        )
+        const innerD = this.createUnionSvgPath(
+          {
+            x: left + INNER_LEFT,
+            y: top + INNER_TOP,
+            w: width - INNER_SIZE_REDUCTION,
+            h: height - INNER_SIZE_REDUCTION,
+          },
+          {
+            x: left2 + INNER_LEFT,
+            y: top2! + INNER_TOP,
+            w: width2 - INNER_SIZE_REDUCTION,
+            h: height2! - INNER_SIZE_REDUCTION,
+          },
+          ROUND_INNER,
+        )
+
+        if (outerD && innerD) {
+          // Replace the content built above with the union paths
+          content = `<path d="${outerD}" fill="${darkColor}" stroke="#000000" stroke-width="1"/>
+    <path d="${innerD}" fill="${lightColor}"/>`
+        } else {
+          // Fallback: correct layering order (outer1, outer2, inner1, inner2) so that
+          // each successive fill covers the border seam of the previous element.
+          const outerX2 = left2 + 0.5
+          const outerY2 = top2! + 0.5
+          const innerX2 = left2 + INNER_LEFT
+          const innerY2 = top2! + INNER_TOP
+          const innerW2 = width2 - INNER_SIZE_REDUCTION
+          const innerH2 = height2! - INNER_SIZE_REDUCTION
+          content = `<rect x="${outerX}" y="${outerY}" width="${width}" height="${height}" fill="${darkColor}" stroke="#000000" stroke-width="1" rx="${ROUND_OUTER}"/>
     <rect x="${outerX2}" y="${outerY2}" width="${width2}" height="${height2}" fill="${darkColor}" stroke="#000000" stroke-width="1" rx="${ROUND_OUTER}"/>
+    <rect x="${innerX}" y="${innerY}" width="${innerW}" height="${innerH}" fill="${lightColor}" rx="${ROUND_INNER}"/>
     <rect x="${innerX2}" y="${innerY2}" width="${innerW2}" height="${innerH2}" fill="${lightColor}" rx="${ROUND_INNER}"/>`
+        }
       }
 
       if (nub) content += this.renderHomingNub(left, top, width, height)

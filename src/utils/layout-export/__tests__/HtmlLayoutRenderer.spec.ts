@@ -424,15 +424,15 @@ describe('HtmlLayoutRenderer', () => {
   })
 
   describe('non-rectangular key', () => {
-    it('renders two .key divs', () => {
-      const input = makeInput({
+    const makeNonRectInput = () =>
+      makeInput({
         keys: [
           {
             left: 9,
             top: 9,
             width: 67,
             height: 108,
-            labels: [],
+            labels: [makeLabel({ text: 'Enter' })],
             rotationAngle: 0,
             rotationOriginX: 0,
             rotationOriginY: 0,
@@ -445,9 +445,34 @@ describe('HtmlLayoutRenderer', () => {
           },
         ],
       })
-      const html = renderer.render(input)
+
+    it('renders two .key divs (outer1 + outer2)', () => {
+      const html = renderer.render(makeNonRectInput())
       const keyDivCount = (html.match(/class="key"/g) ?? []).length
       expect(keyDivCount).toBe(2)
+    })
+
+    it('renders an overflow:visible container at outer1 position', () => {
+      const html = renderer.render(makeNonRectInput())
+      expect(html).toContain('overflow:visible')
+      expect(html).toContain('left:9px;top:9px')
+    })
+
+    it('renders a filler div (no .key class) inset by 1px to cover the junction seam', () => {
+      const html = renderer.render(makeNonRectInput())
+      expect(html).toContain('left:1px;top:1px')
+      expect(html).toContain('border-radius:5px')
+    })
+
+    it('renders two light-color inner divs', () => {
+      const html = renderer.render(makeNonRectInput())
+      const lightColorCount = (html.match(/background:#f0f0f0/g) ?? []).length
+      expect(lightColorCount).toBe(2)
+    })
+
+    it('still renders labels inside the container', () => {
+      const html = renderer.render(makeNonRectInput())
+      expect(html).toContain('>Enter<')
     })
   })
 })

@@ -174,24 +174,53 @@ export class HtmlLayoutRenderer implements LayoutRenderer {
       return `<div style="position:absolute;left:${left}px;top:${top}px;width:${width}px;height:${height}px;${rotateCss}${ghostCss}">${labelsHtml}</div>`
     }
 
+    // Non-rectangular: use flat DOM structure matching the reference KLE technique.
+    // A 0×0 container at the primary rect's origin handles rotation and ghost opacity
+    // so all children share one stacking context.  Layer order:
+    //   outer1 (border) → outer2 (border) → outer1-filler (no border, covers the
+    //   junction seam) → inner1 (light) → inner2 (light) → labels
+    if (left2 !== undefined && width2 !== undefined) {
+      // Container at outer1's board position; all children use container-relative coords.
+      const containerRotateCss = rotateCss // same origin relative to container pos
+      const rel2L = left2 - left
+      const rel2T = top2! - top
+
+      // 1. outer1 — uses .key class (gets box-shadow border + border-radius:5px)
+      const outer1 = `<div class="key" style="left:0px;top:0px;width:${width + 1}px;height:${height + 1}px;background:${darkColor};"></div>`
+
+      // 2. outer2 — same .key class
+      const outer2 = `<div class="key" style="left:${rel2L}px;top:${rel2T}px;width:${width2 + 1}px;height:${height2! + 1}px;background:${darkColor};"></div>`
+
+      // 3. outer1-filler — NO .key class (no box-shadow), inset by 1px (= shadow width).
+      //    Drawn after outer2 so it covers outer2's bottom-edge shadow at the junction.
+      const filler = `<div style="position:absolute;left:1px;top:1px;width:${width - 1}px;height:${height - 1}px;background:${darkColor};border-radius:5px;pointer-events:none;"></div>`
+
+      // 4. inner1 — positioned in container coords (no .key-inner class to avoid CSS conflicts)
+      const in1 = `<div style="position:absolute;left:6px;top:3px;width:${width - 12}px;height:${height - 12}px;background:${lightColor};border-radius:3px;overflow:hidden;pointer-events:none;"></div>`
+
+      // 5. inner2 — same, but at outer2's container-relative position
+      const in2L = rel2L + 6
+      const in2T = rel2T + 3
+      const in2 = `<div style="position:absolute;left:${in2L}px;top:${in2T}px;width:${width2 - 12}px;height:${height2! - 12}px;background:${lightColor};border-radius:3px;overflow:hidden;pointer-events:none;"></div>`
+
+      // 6. Labels — transparent wrapper at container origin so label's relX/relY work
+      const labelsWrapper = labelsHtml
+        ? `<div style="position:absolute;left:0px;top:0px;width:${width}px;height:${height}px;pointer-events:none;">${labelsHtml}</div>`
+        : ''
+
+      const inner = [outer1, outer2, filler, in1, in2, labelsWrapper].filter(Boolean).join('\n')
+      return `<div style="position:absolute;left:${left}px;top:${top}px;width:0;height:0;overflow:visible;${containerRotateCss}${ghostCss}">${inner}</div>`
+    }
+
     const keyBorderRadius = isRotaryEncoder ? 'border-radius:50%;' : ''
     const innerBorderRadius = isRotaryEncoder
       ? 'border-radius:50%;left:6px;top:6px;right:6px;bottom:6px;'
       : ''
     const nubHtml = nub ? this.renderHomingNub(width, height) : ''
 
-    const primaryHtml = `<div class="key" style="left:${left}px;top:${top}px;width:${width + 1}px;height:${height + 1}px;background:${darkColor};${rotateCss}${ghostCss}${keyBorderRadius}">
+    return `<div class="key" style="left:${left}px;top:${top}px;width:${width + 1}px;height:${height + 1}px;background:${darkColor};${rotateCss}${ghostCss}${keyBorderRadius}">
           <div class="key-inner" style="background:${lightColor};${innerBorderRadius}"></div>${nubHtml}${labelsHtml}
         </div>`
-
-    if (left2 !== undefined && width2 !== undefined) {
-      const secondHtml = `<div class="key" style="left:${left2}px;top:${top2}px;width:${width2 + 1}px;height:${height2! + 1}px;background:${darkColor};${rotateCss}${ghostCss}">
-          <div class="key-inner" style="background:${lightColor};"></div>
-        </div>`
-      return primaryHtml + '\n' + secondHtml
-    }
-
-    return primaryHtml
   }
 }
 

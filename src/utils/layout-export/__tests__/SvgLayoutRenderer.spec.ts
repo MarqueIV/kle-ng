@@ -471,9 +471,8 @@ describe('SvgLayoutRenderer', () => {
   })
 
   describe('non-rectangular key', () => {
-    it('renders 4 key rects (2 outer + 2 inner) plus board background = 5 total', () => {
-      // ISO Enter approximation
-      const input = makeInput({
+    const makeNonRectInput = () =>
+      makeInput({
         keys: [
           {
             left: 9,
@@ -493,9 +492,27 @@ describe('SvgLayoutRenderer', () => {
           },
         ],
       })
-      const svg = renderer.render(input)
+
+    it('renders polygon union as two <path elements (outer + inner) instead of four <rect', () => {
+      const svg = renderer.render(makeNonRectInput())
+      // Only the board background rect should remain; key is rendered as <path
       const rectCount = (svg.match(/<rect/g) ?? []).length
-      expect(rectCount).toBe(5) // 1 board + 2 outer + 2 inner
+      expect(rectCount).toBe(1)
+      const pathCount = (svg.match(/<path/g) ?? []).length
+      expect(pathCount).toBe(2) // outer union path + inner union path
+    })
+
+    it('outer union path has darkColor fill and black stroke', () => {
+      const svg = renderer.render(makeNonRectInput())
+      expect(svg).toContain('fill="#cccccc" stroke="#000000" stroke-width="1"')
+    })
+
+    it('inner union path has lightColor fill and no stroke', () => {
+      const svg = renderer.render(makeNonRectInput())
+      expect(svg).toContain('fill="#f0f0f0"')
+      // The inner path should not have a stroke
+      const innerPath = svg.match(/<path d="[^"]*" fill="#f0f0f0"[^/]*/)?.[0] ?? ''
+      expect(innerPath).not.toContain('stroke=')
     })
   })
 })
