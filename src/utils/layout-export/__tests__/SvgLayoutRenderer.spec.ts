@@ -2,6 +2,19 @@ import { describe, it, expect, vi, afterEach } from 'vitest'
 import { SvgLayoutRenderer } from '../SvgLayoutRenderer'
 import type { LayoutRenderInput, LabelData } from '../LayoutRendererTypes'
 
+const singleKey = {
+  left: 0,
+  top: 0,
+  width: 54,
+  height: 54,
+  labels: [] as LabelData[],
+  rotationAngle: 0,
+  rotationOriginX: 0,
+  rotationOriginY: 0,
+  darkColor: '#cccccc',
+  lightColor: '#f0f0f0',
+}
+
 const makeLabel = (overrides: Partial<LabelData> = {}): LabelData => ({
   text: 'A',
   fontSize: 12,
@@ -467,6 +480,81 @@ describe('SvgLayoutRenderer', () => {
       })
       const svg = renderer.render(input)
       expect(svg).toContain('cx="27" cy="27" r="27"')
+    })
+  })
+
+  describe('entity decoding', () => {
+    it('renders &#96; label as a backtick, not as &amp;#96;', () => {
+      const svg = renderer.render(
+        makeInput({
+          keys: [{ ...singleKey, labels: [makeLabel({ text: '&#96;' })] }],
+        }),
+      )
+      expect(svg).not.toContain('&amp;#96;')
+      expect(svg).not.toContain('&#96;') // should be decoded to literal `
+    })
+  })
+
+  describe('formatted labels', () => {
+    it('renders <b> label with font-weight="bold"', () => {
+      const svg = renderer.render(
+        makeInput({
+          keys: [{ ...singleKey, labels: [makeLabel({ text: '<b>Bold</b>' })] }],
+        }),
+      )
+      expect(svg).toContain('font-weight="bold"')
+      expect(svg).toContain('>Bold<')
+      expect(svg).not.toContain('&lt;b&gt;')
+    })
+
+    it('renders <i> label with font-style="italic"', () => {
+      const svg = renderer.render(
+        makeInput({
+          keys: [{ ...singleKey, labels: [makeLabel({ text: '<i>Italic</i>' })] }],
+        }),
+      )
+      expect(svg).toContain('font-style="italic"')
+      expect(svg).toContain('>Italic<')
+    })
+
+    it('renders <em>/<strong> the same as <i>/<b>', () => {
+      const svg = renderer.render(
+        makeInput({
+          keys: [{ ...singleKey, labels: [makeLabel({ text: '<strong>S</strong>' })] }],
+        }),
+      )
+      expect(svg).toContain('font-weight="bold"')
+    })
+  })
+
+  describe('SVG-only labels', () => {
+    it('renders SVG label as <image> with data URL', () => {
+      const svgLabel =
+        '<svg width="16" height="16" xmlns="http://www.w3.org/2000/svg"><circle cx="8" cy="8" r="8"/></svg>'
+      const svg = renderer.render(
+        makeInput({
+          keys: [{ ...singleKey, labels: [makeLabel({ text: svgLabel })] }],
+        }),
+      )
+      expect(svg).toContain('<image')
+      expect(svg).toContain('data:image/svg+xml')
+      expect(svg).not.toContain('&lt;svg')
+    })
+
+    it('respects SVG dimensions for width/height attributes', () => {
+      const svgLabel = '<svg width="20" height="30" xmlns="http://www.w3.org/2000/svg"></svg>'
+      const svg = renderer.render(
+        makeInput({
+          keys: [
+            {
+              ...singleKey,
+              labels: [makeLabel({ text: svgLabel, maxWidth: 100, maxHeight: 100 })],
+            },
+          ],
+        }),
+      )
+      expect(svg).toContain('width="20"')
+      expect(svg).toContain('height="30"')
     })
   })
 

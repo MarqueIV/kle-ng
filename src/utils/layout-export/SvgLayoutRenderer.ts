@@ -7,6 +7,10 @@ import type {
   LabelData,
 } from './LayoutRendererTypes'
 import { escapeHtml } from './layout-render-utils'
+import { labelParser } from '../parsers/LabelParser'
+import type { LabelNode } from '../parsers/LabelAST'
+import { svgCache } from '../caches/SVGCache'
+import { svgProcessor } from '../parsers/SVGProcessor'
 
 // Bevel constants matching KeyRenderer.defaultSizes
 const BEVEL_MARGIN = 6
@@ -67,10 +71,50 @@ export class SvgLayoutRenderer implements LayoutRenderer {
   private renderLabel(label: LabelData, keyLeft: number, keyTop: number): string {
     const { text, fontSize, color, align, baseline, relX, relY, maxWidth, maxHeight } = label
     const lineHeight = fontSize * 1.2
+    const absX = keyLeft + relX
+    const anchor = align === 'left' ? 'start' : align === 'right' ? 'end' : 'middle'
+    const svgBaseline =
+      baseline === 'hanging' ? 'hanging' : baseline === 'middle' ? 'middle' : 'auto'
+    const commonAttrs = `font-size="${fontSize}" fill="${color}" font-family="sans-serif" text-anchor="${anchor}" dominant-baseline="${svgBaseline}"`
+
+    // Branch 1: SVG-only label → embed as <image> with data URL
+    if (/^<svg[^>]*>[\s\S]*?<\/svg>\s*$/.test(text)) {
+      return this.renderSvgImageLabel(
+        text,
+        align,
+        baseline,
+        relX,
+        relY,
+        maxWidth,
+        maxHeight,
+        keyLeft,
+        keyTop,
+      )
+    }
+
+    // Parse HTML → AST nodes
+    const nodes = labelParser.parse(text)
     const maxLines = Math.max(1, Math.floor(maxHeight / lineHeight))
 
-    const lines = this.wrapText(text, fontSize, maxWidth).slice(0, maxLines)
-    const absX = keyLeft + relX
+    // Branch 2: formatted text (bold/italic) → render segments with tspan style attributes
+    const hasFormatting = nodes.some(
+      (n) => (n.type === 'text' || n.type === 'link') && (n.style?.bold || n.style?.italic),
+    )
+    if (hasFormatting) {
+      return this.renderFormattedLabel(
+        nodes,
+        maxLines,
+        absX,
+        keyTop + relY,
+        baseline,
+        lineHeight,
+        commonAttrs,
+      )
+    }
+
+    // Branch 3: plain text — use decoded plain text, existing wrap/render
+    const plainText = labelParser.getPlainText(nodes)
+    const lines = this.wrapText(plainText, fontSize, maxWidth).slice(0, maxLines)
     const n = lines.length
 
     // Mirror the canvas textBaseline exactly: relY is the anchor point for that
@@ -84,28 +128,107 @@ export class SvgLayoutRenderer implements LayoutRenderer {
     //   hanging:    block flows down from relY → no shift
     //   middle:     center of block at relY → first line up by (n-1)*lineHeight/2
     //   alphabetic: last line's baseline at relY → first line up by (n-1)*lineHeight
-    const svgBaseline =
-      baseline === 'hanging' ? 'hanging' : baseline === 'middle' ? 'middle' : 'auto'
     const startY =
       baseline === 'hanging'
         ? keyTop + relY
         : baseline === 'middle'
           ? keyTop + relY - ((n - 1) * lineHeight) / 2
           : keyTop + relY - (n - 1) * lineHeight
-
-    const anchor = align === 'left' ? 'start' : align === 'right' ? 'end' : 'middle'
     const escapedLines = lines.map((l) => escapeHtml(l))
-
-    const commonAttrs = `font-size="${fontSize}" fill="${color}" font-family="sans-serif" text-anchor="${anchor}" dominant-baseline="${svgBaseline}"`
 
     if (lines.length === 1) {
       return `<text x="${absX}" y="${startY}" ${commonAttrs}>${escapedLines[0]}</text>`
     }
-
     const tspans = escapedLines
       .map((line, i) => `<tspan x="${absX}" dy="${i === 0 ? 0 : lineHeight}">${line}</tspan>`)
       .join('')
     return `<text x="${absX}" y="${startY}" ${commonAttrs}>${tspans}</text>`
+  }
+
+  private renderSvgImageLabel(
+    text: string,
+    align: string,
+    baseline: string,
+    relX: number,
+    relY: number,
+    maxWidth: number,
+    maxHeight: number,
+    keyLeft: number,
+    keyTop: number,
+  ): string {
+    const dataUrl = svgCache.toDataUrl(text)
+    const { width: rawW, height: rawH } = svgProcessor.getDimensions(text)
+    const w = Math.min(rawW ?? 32, maxWidth)
+    const h = Math.min(rawH ?? 32, maxHeight)
+
+    const imgX =
+      align === 'left'
+        ? keyLeft + relX
+        : align === 'right'
+          ? keyLeft + relX - w
+          : keyLeft + relX - w / 2
+
+    const imgY =
+      baseline === 'hanging'
+        ? keyTop + relY
+        : baseline === 'middle'
+          ? keyTop + relY - h / 2
+          : keyTop + relY - h
+
+    return `<image x="${imgX}" y="${imgY}" width="${w}" height="${h}" href="${dataUrl}"/>`
+  }
+
+  private renderFormattedLabel(
+    nodes: LabelNode[],
+    maxLines: number,
+    absX: number,
+    relYAbs: number,
+    baseline: string,
+    lineHeight: number,
+    commonAttrs: string,
+  ): string {
+    // Collect lines of segments
+    const lines: Array<Array<{ text: string; bold: boolean; italic: boolean }>> = [[]]
+    for (const node of nodes) {
+      if (node.type !== 'text' && node.type !== 'link') continue
+      const parts = node.text.split('\n')
+      for (let i = 0; i < parts.length; i++) {
+        if (i > 0) lines.push([])
+        const seg = parts[i] ?? ''
+        if (seg) {
+          lines[lines.length - 1]!.push({
+            text: seg,
+            bold: node.style?.bold ?? false,
+            italic: node.style?.italic ?? false,
+          })
+        }
+      }
+    }
+
+    const renderLines = lines.slice(0, maxLines)
+    const n = renderLines.length
+    const startY =
+      baseline === 'hanging'
+        ? relYAbs
+        : baseline === 'middle'
+          ? relYAbs - ((n - 1) * lineHeight) / 2
+          : relYAbs - (n - 1) * lineHeight
+
+    const tspanLines = renderLines
+      .map((segs, li) => {
+        const dy = li === 0 ? 0 : lineHeight
+        const inner = segs
+          .map((s) => {
+            const fw = s.bold ? ' font-weight="bold"' : ''
+            const fs = s.italic ? ' font-style="italic"' : ''
+            return `<tspan${fw}${fs}>${escapeHtml(s.text)}</tspan>`
+          })
+          .join('')
+        return `<tspan x="${absX}" dy="${dy}">${inner || ''}</tspan>`
+      })
+      .join('')
+
+    return `<text x="${absX}" y="${startY}" ${commonAttrs}>${tspanLines}</text>`
   }
 
   render(input: LayoutRenderInput): string {
