@@ -381,4 +381,79 @@ describe('normalizeLayoutInput', () => {
     expect(rotatedResult.boardWidth).toBeGreaterThan(plainResult.boardWidth)
     expect(rotatedResult.boardHeight).toBeGreaterThan(plainResult.boardHeight)
   })
+
+  // --- Special key rendering flags ---
+
+  it('ghost key → KeyRenderData.ghost === true', () => {
+    const key = makeKey(0, 0)
+    key.ghost = true
+    const meta = makeMetadata()
+    const result = normalizeLayoutInput([key], meta, 'test')
+    expect(result.keys[0]!.ghost).toBe(true)
+  })
+
+  it('non-ghost key → no ghost field', () => {
+    const key = makeKey(0, 0)
+    const meta = makeMetadata()
+    const result = normalizeLayoutInput([key], meta, 'test')
+    expect(result.keys[0]!.ghost).toBeUndefined()
+  })
+
+  it('decal key → KeyRenderData.decal === true', () => {
+    const key = makeKey(0, 0)
+    key.decal = true
+    const meta = makeMetadata()
+    const result = normalizeLayoutInput([key], meta, 'test')
+    expect(result.keys[0]!.decal).toBe(true)
+  })
+
+  it('nub key → KeyRenderData.nub === true', () => {
+    const key = makeKey(0, 0)
+    key.nub = true
+    const meta = makeMetadata()
+    const result = normalizeLayoutInput([key], meta, 'test')
+    expect(result.keys[0]!.nub).toBe(true)
+  })
+
+  it('rotary encoder (sm=rot_ec11) → KeyRenderData.isRotaryEncoder === true', () => {
+    const key = makeKey(0, 0)
+    key.sm = 'rot_ec11'
+    const meta = makeMetadata()
+    const result = normalizeLayoutInput([key], meta, 'test')
+    expect(result.keys[0]!.isRotaryEncoder).toBe(true)
+  })
+
+  it('normal key (sm unset) → no isRotaryEncoder field', () => {
+    const key = makeKey(0, 0)
+    const meta = makeMetadata()
+    const result = normalizeLayoutInput([key], meta, 'test')
+    expect(result.keys[0]!.isRotaryEncoder).toBeUndefined()
+  })
+
+  it('ISO Enter (non-rectangular) → left2/top2/width2/height2 populated', () => {
+    // ISO Enter: width=1.25, height=2, width2=1.5, height2=1, x2=-0.25, y2=0
+    const key = makeKey(0, 0, 1.25, 2)
+    key.width2 = 1.5
+    key.height2 = 1
+    key.x2 = -0.25
+    key.y2 = 0
+    const meta = makeMetadata()
+    const result = normalizeLayoutInput([key], meta, 'test', DEFAULT_UNIT)
+    const k = result.keys[0]!
+    expect(k.left2).toBeDefined()
+    expect(k.top2).toBeDefined()
+    expect(k.width2).toBeCloseTo(1.5 * DEFAULT_UNIT)
+    expect(k.height2).toBe(1 * DEFAULT_UNIT)
+    // left2 = (0 + (-0.25)) * unit - minPxX + LAYOUT_PADDING
+    // minPxX is the left edge = min(0, -0.25) * unit = -0.25 * unit
+    // so left2 = -0.25*54 - (-0.25*54) + 9 = 9
+    expect(k.left2).toBeCloseTo(LAYOUT_PADDING)
+  })
+
+  it('normal rectangular key → no left2 field', () => {
+    const key = makeKey(0, 0, 1, 1)
+    const meta = makeMetadata()
+    const result = normalizeLayoutInput([key], meta, 'test')
+    expect(result.keys[0]!.left2).toBeUndefined()
+  })
 })

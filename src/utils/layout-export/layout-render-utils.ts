@@ -4,6 +4,7 @@ import { BoundsCalculator } from '../utils/BoundsCalculator'
 export { lightenColor } from '../color-utils'
 import { lightenColor } from '../color-utils'
 import { LABEL_POSITIONS } from '../label-positions'
+import { isNonRectangular } from '../key-utils'
 
 export const DEFAULT_UNIT = 54
 
@@ -98,6 +99,24 @@ export function normalizeLayoutInput(
       labels.push({ text, fontSize, color, align, baseline, relX, relY, maxWidth, maxHeight })
     }
 
+    const ghost = key.ghost || false
+    const decal = key.decal || false
+    const nub = key.nub || false
+    const isRotaryEncoder = key.sm === 'rot_ec11'
+    const nonRect = isNonRectangular(key)
+
+    let left2: number | undefined
+    let top2: number | undefined
+    let width2: number | undefined
+    let height2: number | undefined
+
+    if (nonRect) {
+      left2 = (key.x + (key.x2 || 0)) * unit - minPxX + LAYOUT_PADDING
+      top2 = (key.y + (key.y2 || 0)) * unit - minPxY + LAYOUT_PADDING
+      width2 = (key.width2 || key.width) * unit
+      height2 = (key.height2 || key.height) * unit
+    }
+
     return {
       left: key.x * unit - minPxX + LAYOUT_PADDING,
       top: key.y * unit - minPxY + LAYOUT_PADDING,
@@ -109,6 +128,11 @@ export function normalizeLayoutInput(
       rotationOriginY: (key.rotation_y || 0) * unit - minPxY + LAYOUT_PADDING,
       darkColor,
       lightColor,
+      ...(ghost && { ghost }),
+      ...(decal && { decal }),
+      ...(nub && { nub }),
+      ...(isRotaryEncoder && { isRotaryEncoder }),
+      ...(nonRect && { left2, top2, width2, height2 }),
     }
   })
 

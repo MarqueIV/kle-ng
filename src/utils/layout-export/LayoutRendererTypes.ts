@@ -23,6 +23,16 @@ export interface KeyRenderData {
   rotationOriginY: number // board-space px
   darkColor: string // key.color (outer/bevel fill), e.g. '#cccccc'
   lightColor: string // lightenColor(darkColor), e.g. '#f0f0f0'
+  // Special key rendering flags
+  ghost?: boolean // whole key at opacity 0.3
+  decal?: boolean // no key body, only labels
+  nub?: boolean // homing nub bar at 90% down inner cap
+  isRotaryEncoder?: boolean // render as circle (uses width for radius)
+  // Non-rectangular second rectangle (pixel coords, same space as left/top/width/height)
+  left2?: number
+  top2?: number
+  width2?: number
+  height2?: number
 }
 
 /** Normalized input consumed by any layout renderer */

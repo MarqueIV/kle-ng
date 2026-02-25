@@ -323,4 +323,179 @@ describe('SvgLayoutRenderer', () => {
     const svg = renderer.render(input)
     expect(svg).toContain('<tspan')
   })
+
+  describe('ghost key', () => {
+    it('renders with opacity="0.3"', () => {
+      const input = makeInput({
+        keys: [
+          {
+            left: 0,
+            top: 0,
+            width: 54,
+            height: 54,
+            labels: [],
+            rotationAngle: 0,
+            rotationOriginX: 0,
+            rotationOriginY: 0,
+            darkColor: '#cccccc',
+            lightColor: '#f0f0f0',
+            ghost: true,
+          },
+        ],
+      })
+      const svg = renderer.render(input)
+      expect(svg).toContain('opacity="0.3"')
+    })
+  })
+
+  describe('decal key', () => {
+    it('renders no <rect inside key group', () => {
+      const input = makeInput({
+        keys: [
+          {
+            left: 0,
+            top: 0,
+            width: 54,
+            height: 54,
+            labels: [makeLabel({ text: 'Decal' })],
+            rotationAngle: 0,
+            rotationOriginX: 0,
+            rotationOriginY: 0,
+            darkColor: '#cccccc',
+            lightColor: '#f0f0f0',
+            decal: true,
+          },
+        ],
+      })
+      const svg = renderer.render(input)
+      // Board background rect still exists, but no key rect
+      const rectCount = (svg.match(/<rect/g) ?? []).length
+      expect(rectCount).toBe(1) // only the board background rect
+    })
+
+    it('still renders labels', () => {
+      const input = makeInput({
+        keys: [
+          {
+            left: 0,
+            top: 0,
+            width: 54,
+            height: 54,
+            labels: [makeLabel({ text: 'Decal' })],
+            rotationAngle: 0,
+            rotationOriginX: 0,
+            rotationOriginY: 0,
+            darkColor: '#cccccc',
+            lightColor: '#f0f0f0',
+            decal: true,
+          },
+        ],
+      })
+      const svg = renderer.render(input)
+      expect(svg).toContain('>Decal<')
+    })
+  })
+
+  describe('homing nub key', () => {
+    it('renders a nub rect with fill="rgba(0,0,0,0.3)"', () => {
+      const input = makeInput({
+        keys: [
+          {
+            left: 0,
+            top: 0,
+            width: 54,
+            height: 54,
+            labels: [],
+            rotationAngle: 0,
+            rotationOriginX: 0,
+            rotationOriginY: 0,
+            darkColor: '#cccccc',
+            lightColor: '#f0f0f0',
+            nub: true,
+          },
+        ],
+      })
+      const svg = renderer.render(input)
+      expect(svg).toContain('fill="rgba(0,0,0,0.3)"')
+    })
+  })
+
+  describe('rotary encoder key', () => {
+    it('renders <circle elements instead of key <rect', () => {
+      const input = makeInput({
+        keys: [
+          {
+            left: 0,
+            top: 0,
+            width: 54,
+            height: 54,
+            labels: [],
+            rotationAngle: 0,
+            rotationOriginX: 0,
+            rotationOriginY: 0,
+            darkColor: '#cccccc',
+            lightColor: '#f0f0f0',
+            isRotaryEncoder: true,
+          },
+        ],
+      })
+      const svg = renderer.render(input)
+      expect(svg).toContain('<circle')
+      // Only the board background rect should remain
+      const rectCount = (svg.match(/<rect/g) ?? []).length
+      expect(rectCount).toBe(1)
+    })
+
+    it('outer circle has correct cx, cy, r', () => {
+      // left=0, top=0, width=54 → cx=27, cy=27, r=27
+      const input = makeInput({
+        keys: [
+          {
+            left: 0,
+            top: 0,
+            width: 54,
+            height: 54,
+            labels: [],
+            rotationAngle: 0,
+            rotationOriginX: 0,
+            rotationOriginY: 0,
+            darkColor: '#cccccc',
+            lightColor: '#f0f0f0',
+            isRotaryEncoder: true,
+          },
+        ],
+      })
+      const svg = renderer.render(input)
+      expect(svg).toContain('cx="27" cy="27" r="27"')
+    })
+  })
+
+  describe('non-rectangular key', () => {
+    it('renders 4 key rects (2 outer + 2 inner) plus board background = 5 total', () => {
+      // ISO Enter approximation
+      const input = makeInput({
+        keys: [
+          {
+            left: 9,
+            top: 9,
+            width: 67,
+            height: 108,
+            labels: [],
+            rotationAngle: 0,
+            rotationOriginX: 0,
+            rotationOriginY: 0,
+            darkColor: '#cccccc',
+            lightColor: '#f0f0f0',
+            left2: 9,
+            top2: 9,
+            width2: 81,
+            height2: 54,
+          },
+        ],
+      })
+      const svg = renderer.render(input)
+      const rectCount = (svg.match(/<rect/g) ?? []).length
+      expect(rectCount).toBe(5) // 1 board + 2 outer + 2 inner
+    })
+  })
 })

@@ -301,4 +301,153 @@ describe('HtmlLayoutRenderer', () => {
     const html = renderer.render(makeInput({ keys: [] }))
     expect(html).toContain('<div class="board">')
   })
+
+  describe('ghost key', () => {
+    it('renders with opacity:0.3', () => {
+      const input = makeInput({
+        keys: [
+          {
+            left: 0,
+            top: 0,
+            width: 54,
+            height: 54,
+            labels: [],
+            rotationAngle: 0,
+            rotationOriginX: 0,
+            rotationOriginY: 0,
+            darkColor: '#cccccc',
+            lightColor: '#f0f0f0',
+            ghost: true,
+          },
+        ],
+      })
+      const html = renderer.render(input)
+      expect(html).toContain('opacity:0.3')
+    })
+  })
+
+  describe('decal key', () => {
+    it('renders no .key div', () => {
+      const input = makeInput({
+        keys: [
+          {
+            left: 0,
+            top: 0,
+            width: 54,
+            height: 54,
+            labels: [makeLabel({ text: 'Decal' })],
+            rotationAngle: 0,
+            rotationOriginX: 0,
+            rotationOriginY: 0,
+            darkColor: '#cccccc',
+            lightColor: '#f0f0f0',
+            decal: true,
+          },
+        ],
+      })
+      const html = renderer.render(input)
+      expect(html).not.toContain('class="key"')
+    })
+
+    it('still renders labels', () => {
+      const input = makeInput({
+        keys: [
+          {
+            left: 0,
+            top: 0,
+            width: 54,
+            height: 54,
+            labels: [makeLabel({ text: 'Decal' })],
+            rotationAngle: 0,
+            rotationOriginX: 0,
+            rotationOriginY: 0,
+            darkColor: '#cccccc',
+            lightColor: '#f0f0f0',
+            decal: true,
+          },
+        ],
+      })
+      const html = renderer.render(input)
+      expect(html).toContain('>Decal<')
+    })
+  })
+
+  describe('homing nub key', () => {
+    it('renders nub element with correct dimensions and color', () => {
+      const input = makeInput({
+        keys: [
+          {
+            left: 0,
+            top: 0,
+            width: 54,
+            height: 54,
+            labels: [],
+            rotationAngle: 0,
+            rotationOriginX: 0,
+            rotationOriginY: 0,
+            darkColor: '#cccccc',
+            lightColor: '#f0f0f0',
+            nub: true,
+          },
+        ],
+      })
+      const html = renderer.render(input)
+      expect(html).toContain('width:10px')
+      expect(html).toContain('height:2px')
+      expect(html).toContain('rgba(0,0,0,0.3)')
+    })
+  })
+
+  describe('rotary encoder key', () => {
+    it('renders with border-radius:50% on both key and key-inner', () => {
+      const input = makeInput({
+        keys: [
+          {
+            left: 0,
+            top: 0,
+            width: 54,
+            height: 54,
+            labels: [],
+            rotationAngle: 0,
+            rotationOriginX: 0,
+            rotationOriginY: 0,
+            darkColor: '#cccccc',
+            lightColor: '#f0f0f0',
+            isRotaryEncoder: true,
+          },
+        ],
+      })
+      const html = renderer.render(input)
+      const matches = html.match(/border-radius:50%/g) ?? []
+      expect(matches.length).toBeGreaterThanOrEqual(2)
+    })
+  })
+
+  describe('non-rectangular key', () => {
+    it('renders two .key divs', () => {
+      const input = makeInput({
+        keys: [
+          {
+            left: 9,
+            top: 9,
+            width: 67,
+            height: 108,
+            labels: [],
+            rotationAngle: 0,
+            rotationOriginX: 0,
+            rotationOriginY: 0,
+            darkColor: '#cccccc',
+            lightColor: '#f0f0f0',
+            left2: 9,
+            top2: 9,
+            width2: 81,
+            height2: 54,
+          },
+        ],
+      })
+      const html = renderer.render(input)
+      const keyDivCount = (html.match(/class="key"/g) ?? []).length
+      expect(keyDivCount).toBe(2)
+    })
+  })
 })

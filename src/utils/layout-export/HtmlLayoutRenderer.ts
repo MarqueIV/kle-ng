@@ -133,6 +133,14 @@ export class HtmlLayoutRenderer implements LayoutRenderer {
     return `<span class="key-label" style="left:${cssLeft}px;top:${cssTop}px;width:${maxWidth}px;font-size:${fontSize}px;color:${color};text-align:${align};">${text}</span>`
   }
 
+  private renderHomingNub(keyWidth: number, keyHeight: number): string {
+    const innerWidth = keyWidth - 12
+    const nubLeft = 6 + (innerWidth - 10) / 2
+    const innerHeight = keyHeight - 12
+    const nubTop = 3 + innerHeight * 0.9 - 1
+    return `<div style="position:absolute;left:${nubLeft}px;top:${nubTop}px;width:10px;height:2px;background:rgba(0,0,0,0.3);pointer-events:none;"></div>`
+  }
+
   private renderKey(key: KeyRenderData): string {
     const {
       left,
@@ -145,18 +153,45 @@ export class HtmlLayoutRenderer implements LayoutRenderer {
       rotationOriginY,
       darkColor,
       lightColor,
+      ghost,
+      decal,
+      nub,
+      isRotaryEncoder,
+      left2,
+      top2,
+      width2,
+      height2,
     } = key
 
     const rotateCss =
       rotationAngle !== 0
         ? `transform:rotate(${rotationAngle}deg);transform-origin:${rotationOriginX - left}px ${rotationOriginY - top}px;`
         : ''
-
+    const ghostCss = ghost ? 'opacity:0.3;' : ''
     const labelsHtml = labels.map((l) => this.renderLabel(l)).join('')
 
-    return `<div class="key" style="left:${left}px;top:${top}px;width:${width + 1}px;height:${height + 1}px;background:${darkColor};${rotateCss}">
-          <div class="key-inner" style="background:${lightColor};"></div>${labelsHtml}
+    if (decal) {
+      return `<div style="position:absolute;left:${left}px;top:${top}px;width:${width}px;height:${height}px;${rotateCss}${ghostCss}">${labelsHtml}</div>`
+    }
+
+    const keyBorderRadius = isRotaryEncoder ? 'border-radius:50%;' : ''
+    const innerBorderRadius = isRotaryEncoder
+      ? 'border-radius:50%;left:6px;top:6px;right:6px;bottom:6px;'
+      : ''
+    const nubHtml = nub ? this.renderHomingNub(width, height) : ''
+
+    const primaryHtml = `<div class="key" style="left:${left}px;top:${top}px;width:${width + 1}px;height:${height + 1}px;background:${darkColor};${rotateCss}${ghostCss}${keyBorderRadius}">
+          <div class="key-inner" style="background:${lightColor};${innerBorderRadius}"></div>${nubHtml}${labelsHtml}
         </div>`
+
+    if (left2 !== undefined && width2 !== undefined) {
+      const secondHtml = `<div class="key" style="left:${left2}px;top:${top2}px;width:${width2 + 1}px;height:${height2! + 1}px;background:${darkColor};${rotateCss}${ghostCss}">
+          <div class="key-inner" style="background:${lightColor};"></div>
+        </div>`
+      return primaryHtml + '\n' + secondHtml
+    }
+
+    return primaryHtml
   }
 }
 

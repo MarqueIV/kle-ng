@@ -123,6 +123,31 @@ export class SvgLayoutRenderer implements LayoutRenderer {
 </svg>`
   }
 
+  private renderCircularKey(
+    left: number,
+    top: number,
+    width: number,
+    darkColor: string,
+    lightColor: string,
+  ): string {
+    const cx = left + width / 2
+    const cy = top + width / 2
+    const outerR = width / 2
+    const innerR = (width - BEVEL_MARGIN * 2) / 2 + 1
+    return `<circle cx="${cx}" cy="${cy}" r="${outerR}" fill="${darkColor}" stroke="#000000" stroke-width="1"/>
+    <circle cx="${cx}" cy="${cy}" r="${innerR}" fill="${lightColor}"/>`
+  }
+
+  private renderHomingNub(left: number, top: number, width: number, height: number): string {
+    const innerX = left + INNER_LEFT
+    const innerY = top + INNER_TOP
+    const innerW = width - INNER_SIZE_REDUCTION
+    const innerH = height - INNER_SIZE_REDUCTION
+    const nubX = innerX + (innerW - 10) / 2
+    const nubY = innerY + innerH * 0.9 - 1
+    return `\n    <rect x="${nubX}" y="${nubY}" width="10" height="2" fill="rgba(0,0,0,0.3)"/>`
+  }
+
   private renderKey(key: KeyRenderData): string {
     const {
       left,
@@ -135,38 +160,64 @@ export class SvgLayoutRenderer implements LayoutRenderer {
       rotationOriginY,
       darkColor,
       lightColor,
+      ghost,
+      decal,
+      nub,
+      isRotaryEncoder,
+      left2,
+      top2,
+      width2,
+      height2,
     } = key
-
-    // 0.5px offset aligns stroke center to pixel boundary for crisp 1px borders.
-    // Width/height are NOT reduced: the stroke extends 0.5px beyond the nominal key
-    // bounds, so adjacent keys' strokes overlap by 1px — matching canvas behaviour
-    // where two side-by-side keys share a single border pixel rather than each
-    // contributing their own border (which would produce a 2px double-edge).
-    const outerX = left + 0.5
-    const outerY = top + 0.5
-    const outerW = width
-    const outerH = height
-
-    const innerX = left + INNER_LEFT
-    const innerY = top + INNER_TOP
-    const innerW = width - INNER_SIZE_REDUCTION
-    const innerH = height - INNER_SIZE_REDUCTION
 
     const labelsXml = labels.map((l) => this.renderLabel(l, left, top)).join('\n    ')
     const labelsTag = labelsXml ? `\n    ${labelsXml}` : ''
+    const ghostAttr = ghost ? ` opacity="0.3"` : ''
 
-    const content = `<rect x="${outerX}" y="${outerY}" width="${outerW}" height="${outerH}" fill="${darkColor}" stroke="#000000" stroke-width="1" rx="${ROUND_OUTER}"/>
-    <rect x="${innerX}" y="${innerY}" width="${innerW}" height="${innerH}" fill="${lightColor}" rx="${ROUND_INNER}"/>${labelsTag}`
+    let content: string
+
+    if (decal) {
+      content = labelsTag.trimStart()
+    } else if (isRotaryEncoder) {
+      content = this.renderCircularKey(left, top, width, darkColor, lightColor) + labelsTag
+    } else {
+      // 0.5px offset aligns stroke center to pixel boundary for crisp 1px borders.
+      // Width/height are NOT reduced: the stroke extends 0.5px beyond the nominal key
+      // bounds, so adjacent keys' strokes overlap by 1px — matching canvas behaviour
+      // where two side-by-side keys share a single border pixel rather than each
+      // contributing their own border (which would produce a 2px double-edge).
+      const outerX = left + 0.5
+      const outerY = top + 0.5
+      const innerX = left + INNER_LEFT
+      const innerY = top + INNER_TOP
+      const innerW = width - INNER_SIZE_REDUCTION
+      const innerH = height - INNER_SIZE_REDUCTION
+
+      content = `<rect x="${outerX}" y="${outerY}" width="${width}" height="${height}" fill="${darkColor}" stroke="#000000" stroke-width="1" rx="${ROUND_OUTER}"/>
+    <rect x="${innerX}" y="${innerY}" width="${innerW}" height="${innerH}" fill="${lightColor}" rx="${ROUND_INNER}"/>`
+
+      if (left2 !== undefined && width2 !== undefined) {
+        const outerX2 = left2 + 0.5
+        const outerY2 = top2! + 0.5
+        const innerX2 = left2 + INNER_LEFT
+        const innerY2 = top2! + INNER_TOP
+        const innerW2 = width2 - INNER_SIZE_REDUCTION
+        const innerH2 = height2! - INNER_SIZE_REDUCTION
+        content += `
+    <rect x="${outerX2}" y="${outerY2}" width="${width2}" height="${height2}" fill="${darkColor}" stroke="#000000" stroke-width="1" rx="${ROUND_OUTER}"/>
+    <rect x="${innerX2}" y="${innerY2}" width="${innerW2}" height="${innerH2}" fill="${lightColor}" rx="${ROUND_INNER}"/>`
+      }
+
+      if (nub) content += this.renderHomingNub(left, top, width, height)
+      content += labelsTag
+    }
 
     if (rotationAngle !== 0) {
-      return `<g transform="rotate(${rotationAngle}, ${rotationOriginX}, ${rotationOriginY})">
+      return `<g transform="rotate(${rotationAngle}, ${rotationOriginX}, ${rotationOriginY})"${ghostAttr}>
     ${content}
   </g>`
     }
-
-    return `<g>
-    ${content}
-  </g>`
+    return ghostAttr ? `<g${ghostAttr}>\n    ${content}\n  </g>` : `<g>\n    ${content}\n  </g>`
   }
 }
 
