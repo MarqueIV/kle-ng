@@ -325,6 +325,15 @@ kle-ng supports importing and exporting keyboard layouts in multiple formats:
 - Export layouts as PNG images with embedded layout data for documentation and sharing
 - Import PNG files with embedded layout data to recover the editable layout
 
+**HTML and SVG Formats**
+
+- Export layouts as standalone HTML or SVG files for sharing and archiving
+- HTML export produces a self-contained document (embedded CSS, no external dependencies) that renders the keyboard in any browser
+- SVG export produces a vector graphics file suitable for embedding in documents or further editing in vector tools
+- Both formats are visually consistent with the editor canvas, including support for rotated keys, ISO/non-rectangular shapes, homing nubs, rotary encoders, ghost and decal keys
+
+See [docs/layout-export.md](docs/layout-export.md) for technical details.
+
 **VIA/Vial Format**
 
 [VIA](https://www.caniusevia.com/) and [Vial](https://get.vial.today/) are keyboard configuration tools
