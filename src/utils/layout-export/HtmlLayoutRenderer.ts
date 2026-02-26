@@ -5,6 +5,16 @@ import type {
   LabelData,
 } from './LayoutRendererTypes'
 import { escapeHtml } from './layout-render-utils'
+import {
+  INNER_LEFT,
+  INNER_TOP,
+  INNER_SIZE_REDUCTION,
+  ROUND_OUTER,
+  ROUND_INNER,
+  NUB_WIDTH,
+  NUB_HEIGHT,
+} from './layout-render-constants'
+import { computeNubPosition } from './layout-render-geometry'
 
 export class HtmlLayoutRenderer implements LayoutRenderer {
   render(input: LayoutRenderInput): string {
@@ -74,11 +84,11 @@ export class HtmlLayoutRenderer implements LayoutRenderer {
     }
     .key-inner {
       position: absolute;
-      left: 6px;
-      top: 3px;
-      right: 7px;
-      bottom: 10px;
-      border-radius: 3px;
+      left: 6px;    /* INNER_LEFT */
+      top: 3px;     /* INNER_TOP */
+      right: 7px;   /* HTML_INNER_RIGHT = BEVEL_MARGIN + 1 (key element is width+1px for border overlap) */
+      bottom: 10px; /* HTML_INNER_BOTTOM = BEVEL_MARGIN + BEVEL_OFFSET_BOTTOM + 1 */
+      border-radius: 3px; /* ROUND_INNER */
       overflow: hidden;
     }
     .key-label {
@@ -134,11 +144,9 @@ export class HtmlLayoutRenderer implements LayoutRenderer {
   }
 
   private renderHomingNub(keyWidth: number, keyHeight: number): string {
-    const innerWidth = keyWidth - 12
-    const nubLeft = 6 + (innerWidth - 10) / 2
-    const innerHeight = keyHeight - 12
-    const nubTop = 3 + innerHeight * 0.9 - 1
-    return `<div style="position:absolute;left:${nubLeft}px;top:${nubTop}px;width:10px;height:2px;background:rgba(0,0,0,0.3);pointer-events:none;"></div>`
+    // Passes (0, 0, …) — nub position is relative to the key element, not board coords
+    const nub = computeNubPosition(0, 0, keyWidth, keyHeight)
+    return `<div style="position:absolute;left:${nub.x}px;top:${nub.y}px;width:${NUB_WIDTH}px;height:${NUB_HEIGHT}px;background:rgba(0,0,0,0.3);pointer-events:none;"></div>`
   }
 
   private renderKey(key: KeyRenderData): string {
@@ -193,15 +201,15 @@ export class HtmlLayoutRenderer implements LayoutRenderer {
 
       // 3. outer1-filler — NO .key class (no box-shadow), inset by 1px (= shadow width).
       //    Drawn after outer2 so it covers outer2's bottom-edge shadow at the junction.
-      const filler = `<div style="position:absolute;left:1px;top:1px;width:${width - 1}px;height:${height - 1}px;background:${darkColor};border-radius:5px;pointer-events:none;"></div>`
+      const filler = `<div style="position:absolute;left:1px;top:1px;width:${width - 1}px;height:${height - 1}px;background:${darkColor};border-radius:${ROUND_OUTER}px;pointer-events:none;"></div>`
 
       // 4. inner1 — positioned in container coords (no .key-inner class to avoid CSS conflicts)
-      const in1 = `<div style="position:absolute;left:6px;top:3px;width:${width - 12}px;height:${height - 12}px;background:${lightColor};border-radius:3px;overflow:hidden;pointer-events:none;"></div>`
+      const in1 = `<div style="position:absolute;left:${INNER_LEFT}px;top:${INNER_TOP}px;width:${width - INNER_SIZE_REDUCTION}px;height:${height - INNER_SIZE_REDUCTION}px;background:${lightColor};border-radius:${ROUND_INNER}px;overflow:hidden;pointer-events:none;"></div>`
 
       // 5. inner2 — same, but at outer2's container-relative position
-      const in2L = rel2L + 6
-      const in2T = rel2T + 3
-      const in2 = `<div style="position:absolute;left:${in2L}px;top:${in2T}px;width:${width2 - 12}px;height:${height2! - 12}px;background:${lightColor};border-radius:3px;overflow:hidden;pointer-events:none;"></div>`
+      const in2L = rel2L + INNER_LEFT
+      const in2T = rel2T + INNER_TOP
+      const in2 = `<div style="position:absolute;left:${in2L}px;top:${in2T}px;width:${width2 - INNER_SIZE_REDUCTION}px;height:${height2! - INNER_SIZE_REDUCTION}px;background:${lightColor};border-radius:${ROUND_INNER}px;overflow:hidden;pointer-events:none;"></div>`
 
       // 6. Labels — transparent wrapper at container origin so label's relX/relY work
       const labelsWrapper = labelsHtml

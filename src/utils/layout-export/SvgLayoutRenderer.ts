@@ -7,28 +7,16 @@ import type {
   LabelData,
 } from './LayoutRendererTypes'
 import { escapeHtml } from './layout-render-utils'
+import { BEVEL_MARGIN, ROUND_OUTER, ROUND_INNER } from './layout-render-constants'
+import {
+  computeInnerRect,
+  computeNubPosition,
+  computeMultiLineStartY,
+} from './layout-render-geometry'
 import { labelParser } from '../parsers/LabelParser'
 import type { LabelNode } from '../parsers/LabelAST'
 import { svgCache } from '../caches/SVGCache'
 import { svgProcessor } from '../parsers/SVGProcessor'
-
-// Bevel constants matching KeyRenderer.defaultSizes
-const BEVEL_MARGIN = 6
-const BEVEL_OFFSET_TOP = 3
-const BEVEL_OFFSET_BOTTOM = 3
-const ROUND_OUTER = 5
-const ROUND_INNER = 3
-
-// Inner rect offsets from outer rect edges:
-//   left:  BEVEL_MARGIN                          = 6
-//   top:   BEVEL_MARGIN - BEVEL_OFFSET_TOP       = 3
-//   right: BEVEL_MARGIN                          = 6  (inset)
-//   bottom: BEVEL_MARGIN + BEVEL_OFFSET_BOTTOM   = 9  (inset)
-// Width reduction:  6 + 6 = 12
-// Height reduction: 3 + 9 = 12
-const INNER_LEFT = BEVEL_MARGIN
-const INNER_TOP = BEVEL_MARGIN - BEVEL_OFFSET_TOP
-const INNER_SIZE_REDUCTION = BEVEL_MARGIN + (BEVEL_MARGIN - BEVEL_OFFSET_TOP) + BEVEL_OFFSET_BOTTOM // 12
 
 export class SvgLayoutRenderer implements LayoutRenderer {
   private _measureCtx: CanvasRenderingContext2D | null | undefined = undefined
@@ -128,12 +116,7 @@ export class SvgLayoutRenderer implements LayoutRenderer {
     //   hanging:    block flows down from relY → no shift
     //   middle:     center of block at relY → first line up by (n-1)*lineHeight/2
     //   alphabetic: last line's baseline at relY → first line up by (n-1)*lineHeight
-    const startY =
-      baseline === 'hanging'
-        ? keyTop + relY
-        : baseline === 'middle'
-          ? keyTop + relY - ((n - 1) * lineHeight) / 2
-          : keyTop + relY - (n - 1) * lineHeight
+    const startY = computeMultiLineStartY(baseline, keyTop + relY, n, lineHeight)
     const escapedLines = lines.map((l) => escapeHtml(l))
 
     if (lines.length === 1) {
@@ -148,7 +131,7 @@ export class SvgLayoutRenderer implements LayoutRenderer {
   private renderSvgImageLabel(
     text: string,
     align: string,
-    baseline: string,
+    baseline: 'hanging' | 'middle' | 'alphabetic',
     relX: number,
     relY: number,
     maxWidth: number,
@@ -183,7 +166,7 @@ export class SvgLayoutRenderer implements LayoutRenderer {
     maxLines: number,
     absX: number,
     relYAbs: number,
-    baseline: string,
+    baseline: 'hanging' | 'middle' | 'alphabetic',
     lineHeight: number,
     commonAttrs: string,
   ): string {
@@ -207,12 +190,7 @@ export class SvgLayoutRenderer implements LayoutRenderer {
 
     const renderLines = lines.slice(0, maxLines)
     const n = renderLines.length
-    const startY =
-      baseline === 'hanging'
-        ? relYAbs
-        : baseline === 'middle'
-          ? relYAbs - ((n - 1) * lineHeight) / 2
-          : relYAbs - (n - 1) * lineHeight
+    const startY = computeMultiLineStartY(baseline, relYAbs, n, lineHeight)
 
     const tspanLines = renderLines
       .map((segs, li) => {
@@ -346,13 +324,8 @@ export class SvgLayoutRenderer implements LayoutRenderer {
   }
 
   private renderHomingNub(left: number, top: number, width: number, height: number): string {
-    const innerX = left + INNER_LEFT
-    const innerY = top + INNER_TOP
-    const innerW = width - INNER_SIZE_REDUCTION
-    const innerH = height - INNER_SIZE_REDUCTION
-    const nubX = innerX + (innerW - 10) / 2
-    const nubY = innerY + innerH * 0.9 - 1
-    return `\n    <rect x="${nubX}" y="${nubY}" width="10" height="2" fill="rgba(0,0,0,0.3)"/>`
+    const nub = computeNubPosition(left, top, width, height)
+    return `\n    <rect x="${nub.x}" y="${nub.y}" width="10" height="2" fill="rgba(0,0,0,0.3)"/>`
   }
 
   private renderKey(key: KeyRenderData): string {
@@ -395,37 +368,21 @@ export class SvgLayoutRenderer implements LayoutRenderer {
       // contributing their own border (which would produce a 2px double-edge).
       const outerX = left + 0.5
       const outerY = top + 0.5
-      const innerX = left + INNER_LEFT
-      const innerY = top + INNER_TOP
-      const innerW = width - INNER_SIZE_REDUCTION
-      const innerH = height - INNER_SIZE_REDUCTION
+      const inner = computeInnerRect(left, top, width, height)
 
       content = `<rect x="${outerX}" y="${outerY}" width="${width}" height="${height}" fill="${darkColor}" stroke="#000000" stroke-width="1" rx="${ROUND_OUTER}"/>
-    <rect x="${innerX}" y="${innerY}" width="${innerW}" height="${innerH}" fill="${lightColor}" rx="${ROUND_INNER}"/>`
+    <rect x="${inner.x}" y="${inner.y}" width="${inner.w}" height="${inner.h}" fill="${lightColor}" rx="${ROUND_INNER}"/>`
 
       if (left2 !== undefined && width2 !== undefined) {
         // Use polygon union for seamless rendering — eliminates the double-border
         // seam that two separate stroked <rect> elements produce at the junction.
+        const inner2 = computeInnerRect(left2, top2!, width2, height2!)
         const outerD = this.createUnionSvgPath(
           { x: left, y: top, w: width, h: height },
           { x: left2, y: top2!, w: width2, h: height2! },
           ROUND_OUTER,
         )
-        const innerD = this.createUnionSvgPath(
-          {
-            x: left + INNER_LEFT,
-            y: top + INNER_TOP,
-            w: width - INNER_SIZE_REDUCTION,
-            h: height - INNER_SIZE_REDUCTION,
-          },
-          {
-            x: left2 + INNER_LEFT,
-            y: top2! + INNER_TOP,
-            w: width2 - INNER_SIZE_REDUCTION,
-            h: height2! - INNER_SIZE_REDUCTION,
-          },
-          ROUND_INNER,
-        )
+        const innerD = this.createUnionSvgPath(inner, inner2, ROUND_INNER)
 
         if (outerD && innerD) {
           // Replace the content built above with the union paths
@@ -436,14 +393,10 @@ export class SvgLayoutRenderer implements LayoutRenderer {
           // each successive fill covers the border seam of the previous element.
           const outerX2 = left2 + 0.5
           const outerY2 = top2! + 0.5
-          const innerX2 = left2 + INNER_LEFT
-          const innerY2 = top2! + INNER_TOP
-          const innerW2 = width2 - INNER_SIZE_REDUCTION
-          const innerH2 = height2! - INNER_SIZE_REDUCTION
           content = `<rect x="${outerX}" y="${outerY}" width="${width}" height="${height}" fill="${darkColor}" stroke="#000000" stroke-width="1" rx="${ROUND_OUTER}"/>
     <rect x="${outerX2}" y="${outerY2}" width="${width2}" height="${height2}" fill="${darkColor}" stroke="#000000" stroke-width="1" rx="${ROUND_OUTER}"/>
-    <rect x="${innerX}" y="${innerY}" width="${innerW}" height="${innerH}" fill="${lightColor}" rx="${ROUND_INNER}"/>
-    <rect x="${innerX2}" y="${innerY2}" width="${innerW2}" height="${innerH2}" fill="${lightColor}" rx="${ROUND_INNER}"/>`
+    <rect x="${inner.x}" y="${inner.y}" width="${inner.w}" height="${inner.h}" fill="${lightColor}" rx="${ROUND_INNER}"/>
+    <rect x="${inner2.x}" y="${inner2.y}" width="${inner2.w}" height="${inner2.h}" fill="${lightColor}" rx="${ROUND_INNER}"/>`
         }
       }
 
