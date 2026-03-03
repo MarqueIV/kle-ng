@@ -14,6 +14,8 @@ const hasResult = computed(() => generationState.value.result !== null)
 
 const showButtons = computed(() => (isSuccess.value && hasResult.value) || isGenerating.value)
 
+const result = computed(() => generationState.value.result)
+
 function handleDownloadSvg() {
   plateStore.downloadAllSvg()
 }
@@ -25,10 +27,10 @@ function handleDownloadDxf() {
 
 <template>
   <div class="plate-download-buttons">
-    <div v-if="showButtons" class="d-flex gap-2" style="margin-top: 1rem">
+    <div v-if="showButtons" class="buttons-grid" style="margin-top: 1rem">
       <button
         type="button"
-        class="btn btn-sm btn-outline-primary flex-fill d-flex align-items-center justify-content-center gap-2"
+        class="btn btn-sm btn-outline-primary d-flex align-items-center justify-content-center gap-2"
         @click="handleDownloadSvg"
         :disabled="isGenerating"
         aria-label="Download plate as SVG file"
@@ -39,7 +41,7 @@ function handleDownloadDxf() {
       </button>
       <button
         type="button"
-        class="btn btn-sm btn-outline-primary flex-fill d-flex align-items-center justify-content-center gap-2"
+        class="btn btn-sm btn-outline-primary d-flex align-items-center justify-content-center gap-2"
         @click="handleDownloadDxf"
         :disabled="isGenerating"
         aria-label="Download plate as DXF file"
@@ -48,6 +50,30 @@ function handleDownloadDxf() {
         <BiDownload aria-hidden="true" />
         Download DXF
       </button>
+      <button
+        v-if="result?.stlData"
+        type="button"
+        class="btn btn-sm btn-outline-primary d-flex align-items-center justify-content-center gap-2"
+        @click="plateStore.downloadStl()"
+        :disabled="isGenerating"
+        aria-label="Download plate as STL file"
+        title="Download STL for 3D printing (requires Outline enabled)"
+      >
+        <BiDownload aria-hidden="true" />
+        Download STL
+      </button>
+      <button
+        v-if="result?.jscadScript"
+        type="button"
+        class="btn btn-sm btn-outline-primary d-flex align-items-center justify-content-center gap-2"
+        @click="plateStore.downloadJscad()"
+        :disabled="isGenerating"
+        aria-label="Download plate as JSCAD script"
+        title="Download JSCAD script for OpenJSCAD (requires Outline enabled)"
+      >
+        <BiDownload aria-hidden="true" />
+        Download JSCAD
+      </button>
     </div>
   </div>
 </template>
@@ -55,5 +81,11 @@ function handleDownloadDxf() {
 <style scoped>
 .plate-download-buttons {
   padding: 0;
+}
+
+.buttons-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem;
 }
 </style>

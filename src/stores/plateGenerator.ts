@@ -24,6 +24,7 @@ const defaultSettings: PlateSettings = {
   customCutoutWidth: 14,
   customCutoutHeight: 14,
   mergeCutouts: false,
+  thickness: 1.5,
   outline: {
     enabled: false,
     marginTop: 5,
@@ -100,6 +101,7 @@ export const usePlateGeneratorStore = defineStore('plateGenerator', () => {
       customCutoutWidth: settings.value.customCutoutWidth,
       customCutoutHeight: settings.value.customCutoutHeight,
       mergeCutouts: settings.value.mergeCutouts,
+      thickness: settings.value.thickness,
       outline: settings.value.outline,
       mountingHoles: settings.value.mountingHoles,
       customHoles: settings.value.customHoles,
@@ -285,6 +287,24 @@ export const usePlateGeneratorStore = defineStore('plateGenerator', () => {
   }
 
   /**
+   * Download the generated STL file
+   */
+  function downloadStl(): void {
+    const data = generationState.value.result?.stlData
+    if (!data) return
+    downloadFile(data, 'keyboard-plate.stl', 'model/stl')
+  }
+
+  /**
+   * Download the generated JSCAD script
+   */
+  function downloadJscad(): void {
+    const script = generationState.value.result?.jscadScript
+    if (!script) return
+    downloadFile(script, 'keyboard-plate.jscad', 'text/plain')
+  }
+
+  /**
    * Helper function to trigger file download
    */
   function downloadFile(content: string, filename: string, mimeType: string): void {
@@ -415,5 +435,7 @@ export const usePlateGeneratorStore = defineStore('plateGenerator', () => {
     downloadDxf,
     downloadAllSvg,
     downloadAllDxf,
+    downloadStl,
+    downloadJscad,
   }
 })

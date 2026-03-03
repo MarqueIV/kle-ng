@@ -128,6 +128,25 @@ const { settings } = storeToRefs(plateStore)
         </CustomNumberInput>
         <div class="form-text small">Corner rounding radius (0 = sharp corners)</div>
       </div>
+
+      <!-- Plate Thickness -->
+      <div class="mb-2">
+        <label for="plateThickness" class="form-label form-label-sm">Plate Thickness</label>
+        <CustomNumberInput
+          id="plateThickness"
+          v-model="settings.thickness"
+          :step="0.1"
+          :min="0.1"
+          :max="20"
+          :disabled="!settings.outline.enabled"
+          class="form-control form-control-sm"
+          size="default"
+          title="Plate thickness for 3D export in millimeters"
+        >
+          <template #suffix>mm</template>
+        </CustomNumberInput>
+        <div class="form-text small">Used for 3D export (requires Outline enabled)</div>
+      </div>
     </div>
   </div>
 </template>

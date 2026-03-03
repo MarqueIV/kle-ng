@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
 import { preloadMakerJsModule } from '@/utils/makerjs-loader'
+import { preloadThreeModule } from '@/utils/three-loader'
 import PlateGeneratorSettings from './PlateGeneratorSettings.vue'
 import PlateOutlineSettings from './PlateOutlineSettings.vue'
 import PlateHolesSettings from './PlateHolesSettings.vue'
@@ -11,9 +12,10 @@ import PlateDownloadButtons from './PlateDownloadButtons.vue'
 type TabId = 'cutouts' | 'outline' | 'holes'
 const activeTab = ref<TabId>('cutouts')
 
-// Preload maker.js when component mounts
+// Preload maker.js and Three.js when component mounts
 onMounted(() => {
   preloadMakerJsModule()
+  preloadThreeModule()
 })
 </script>
 

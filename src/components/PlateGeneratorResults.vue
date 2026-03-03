@@ -1,11 +1,14 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { usePlateGeneratorStore } from '@/stores/plateGenerator'
 import { storeToRefs } from 'pinia'
 import BiInfoCircle from 'bootstrap-icons/icons/info-circle.svg'
+import Plate3DPreview from './Plate3DPreview.vue'
 
 const plateStore = usePlateGeneratorStore()
 const { generationState } = storeToRefs(plateStore)
+
+const activeTab = ref<'2d' | '3d'>('2d')
 
 const isLoading = computed(
   () => generationState.value.status === 'loading' || generationState.value.status === 'generating',
@@ -20,10 +23,30 @@ const isRegenerating = computed(
 )
 
 const result = computed(() => generationState.value.result)
+
+const showResults = computed(() => (isSuccess.value || isRegenerating.value) && result.value)
 </script>
 
 <template>
   <div class="plate-generator-results">
+    <!-- Tab bar (only when results available) -->
+    <div v-if="showResults" class="tab-bar">
+      <button
+        class="tab-bar-item"
+        :class="{ active: activeTab === '2d' }"
+        @click="activeTab = '2d'"
+      >
+        2D
+      </button>
+      <button
+        class="tab-bar-item"
+        :class="{ active: activeTab === '3d' }"
+        @click="activeTab = '3d'"
+      >
+        3D
+      </button>
+    </div>
+
     <!-- Loading State (first run only, no previous result) -->
     <div v-if="isLoading && !isRegenerating" class="loading-wrapper">
       <p class="text-muted mt-3 text-center">
@@ -31,17 +54,29 @@ const result = computed(() => generationState.value.result)
       </p>
     </div>
 
-    <!-- SVG Preview (shown when successful OR regenerating with previous result) -->
-    <div
-      v-else-if="(isSuccess || isRegenerating) && result"
-      class="svg-preview-container"
-      :class="{ regenerating: isRegenerating }"
-    >
-      <div v-if="isRegenerating" class="regenerating-overlay">
-        <p class="text-muted small mb-0">Generating plate...</p>
+    <!-- Results shown when successful OR regenerating with previous result -->
+    <template v-else-if="showResults">
+      <!-- 2D Tab: SVG preview -->
+      <div
+        v-show="activeTab === '2d'"
+        class="svg-preview-container"
+        :class="{ regenerating: isRegenerating }"
+      >
+        <div v-if="isRegenerating" class="regenerating-overlay">
+          <p class="text-muted small mb-0">Generating plate...</p>
+        </div>
+        <div v-html="result!.svgPreview"></div>
       </div>
-      <div v-html="result.svgPreview"></div>
-    </div>
+
+      <!-- 3D Tab: viewer -->
+      <div v-show="activeTab === '3d'" class="tab-3d-container">
+        <Plate3DPreview
+          :stlData="result?.stlData"
+          :generating="isRegenerating"
+          :visible="activeTab === '3d'"
+        />
+      </div>
+    </template>
 
     <!-- Idle State -->
     <div v-else-if="isIdle" class="idle-wrapper">
@@ -59,6 +94,45 @@ const result = computed(() => generationState.value.result)
   height: 100%;
   display: flex;
   flex-direction: column;
+}
+
+/* Segmented tab bar matching PlateGeneratorPanel style */
+.tab-bar {
+  display: flex;
+  background-color: var(--bs-secondary-bg);
+  border-radius: 5px;
+  padding: 3px;
+  gap: 2px;
+  margin-bottom: 8px;
+  flex-shrink: 0;
+  width: fit-content;
+}
+
+.tab-bar-item {
+  padding: 0.25rem 1rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  color: var(--bs-secondary-color);
+  background: transparent;
+  border: none;
+  border-radius: 3px;
+  cursor: pointer;
+  transition:
+    background-color 0.15s ease,
+    color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.tab-bar-item:hover:not(.active) {
+  color: var(--bs-body-color);
+  background-color: var(--bs-tertiary-bg);
+}
+
+.tab-bar-item.active {
+  color: var(--bs-body-color);
+  background-color: var(--bs-body-bg);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
 }
 
 .loading-wrapper {
@@ -104,6 +178,13 @@ const result = computed(() => generationState.value.result)
   width: 100%;
   height: 100%;
   display: block;
+}
+
+/* 3D tab layout */
+.tab-3d-container {
+  flex-grow: 1;
+  min-height: 250px;
+  overflow: hidden;
 }
 
 .idle-wrapper {

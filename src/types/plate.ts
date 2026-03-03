@@ -102,6 +102,8 @@ export interface PlateSettings {
   customCutoutHeight: number
   /** Merge overlapping cutouts into simplified paths. */
   mergeCutouts: boolean
+  /** Plate thickness in mm for 3D export. */
+  thickness: number
   /** Outline generation settings */
   outline: OutlineSettings
   /** Mounting holes settings */
@@ -146,6 +148,10 @@ export interface PlateGenerationResult {
   mergedSvgDownload?: string
   /** DXF content for merged cutouts + outline (optional, only when outline enabled and merge enabled) */
   mergedDxfContent?: string
+  /** JSCAD script for 3D export (optional, only when outline enabled) */
+  jscadScript?: string
+  /** ASCII STL content for 3D export (optional, only when outline enabled) */
+  stlData?: string
 }
 
 /**

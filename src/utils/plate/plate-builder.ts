@@ -57,6 +57,8 @@ export interface PlateBuilderOptions {
   mountingHoles?: MountingHolesSettings
   /** Custom holes settings */
   customHoles?: CustomHolesSettings
+  /** Plate thickness in mm for 3D export (default: 1.5) */
+  thickness?: number
 }
 
 /**
@@ -365,6 +367,7 @@ export async function buildPlate(
     outline,
     mountingHoles,
     customHoles,
+    thickness = 1.5,
   } = options
 
   // Load maker.js
@@ -513,6 +516,23 @@ export async function buildPlate(
     outlineModel = createOutlineModel(makerjs, bounds, outlineMargins, outline.filletRadius)
   }
 
+  // Build 3D model BEFORE layer-tagging so paths are clean for JSCAD chain containment
+  let model3D: MakerJs.IModel | null = null
+  if (outlineModel) {
+    // Clone and strip layers from outline to avoid chain containment issues
+    const outlineClean = makerjs.model.clone(outlineModel)
+    makerjs.model.walkPaths(outlineClean, (_mp: MakerJs.IModel, _pi: string, p: MakerJs.IPath) => {
+      delete p.layer
+    })
+    model3D = {
+      models: {
+        outline: outlineClean,
+        cutouts: makerjs.model.clone(plateModel),
+      },
+      units: makerjs.unitType.Millimeter,
+    }
+  }
+
   // Add origin cross marker to the preview model (not included in exports)
   const previewModel: MakerJs.IModel = {
     models: {
@@ -627,6 +647,28 @@ export async function buildPlate(
     }
   }
 
+  // Generate JSCAD script and STL when outline is enabled
+  let jscadScript: string | undefined
+  let stlData: string | undefined
+
+  if (model3D) {
+    jscadScript = makerjs.exporter.toJscadScript(model3D, {
+      extrude: thickness,
+      units: makerjs.unitType.Millimeter,
+    })
+
+    try {
+      const { CAG } = await import('@jscad/csg')
+      const stlSerializer = await import('@jscad/stl-serializer')
+      stlData = makerjs.exporter.toJscadSTL(CAG, stlSerializer, model3D, {
+        extrude: thickness,
+        units: makerjs.unitType.Millimeter,
+      }) as string
+    } catch (err) {
+      console.warn('STL generation failed:', err)
+    }
+  }
+
   return {
     svgPreview,
     svgDownload,
@@ -636,5 +678,7 @@ export async function buildPlate(
     outlineDxfContent,
     mergedSvgDownload,
     mergedDxfContent,
+    jscadScript,
+    stlData,
   }
 }
