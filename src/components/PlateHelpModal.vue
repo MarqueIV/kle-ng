@@ -9,7 +9,8 @@
         />
         <p>
           The Plate Generator creates switch and stabilizer cutouts for your keyboard layout,
-          exporting to SVG and DXF formats for manufacturing processes like laser cutting.
+          exporting to SVG, DXF and STL formats for manufacturing processes like laser cutting or 3D
+          printing.
         </p>
         <div class="warning-box">
           <div class="d-flex align-items-center gap-2">
@@ -101,6 +102,7 @@
             stabilizer cutouts are considered, but holes are not.
           </li>
           <li><strong>Fillet Radius</strong> - Rounds corners of the outline.</li>
+          <li><strong>Plate Thickness</strong> - Thickness of a plate in STL export file.</li>
         </ul>
       </div>
     </div>
