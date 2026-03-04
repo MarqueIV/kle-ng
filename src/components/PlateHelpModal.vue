@@ -9,8 +9,8 @@
         />
         <p>
           The Plate Generator creates switch and stabilizer cutouts for your keyboard layout,
-          exporting to SVG, DXF and STL formats for manufacturing processes like laser cutting or 3D
-          printing.
+          exporting to SVG, DXF, STL and JSCAD formats for manufacturing processes like laser
+          cutting or 3D printing.
         </p>
         <div class="warning-box">
           <div class="d-flex align-items-center gap-2">
@@ -104,6 +104,18 @@
           <li><strong>Fillet Radius</strong> - Rounds corners of the outline.</li>
           <li><strong>Plate Thickness</strong> - Thickness of a plate in STL export file.</li>
         </ul>
+        <div class="warning-box">
+          <div class="d-flex align-items-center gap-2">
+            <BiExclamationTriangle class="text-warning" />
+            <div class="small">
+              The exported JSCAD file uses OpenJSCAD <strong>v1</strong> format. It can be opened in
+              the legacy-compatible viewer at
+              <a href="https://openjscad.com/" target="_blank" rel="noopener noreferrer"
+                >openjscad.com</a
+              >.
+            </div>
+          </div>
+        </div>
       </div>
     </div>
 
