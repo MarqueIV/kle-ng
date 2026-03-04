@@ -2,7 +2,7 @@
 
 The Plate Generator converts a KLE keyboard layout into a mechanical keyboard mounting plate design,
 producing switch and stabilizer cutouts positioned to match the layout.
-It exports to SVG and DXF formats for use in manufacturing workflows (laser cutting, CNC machining, etc.).
+It exports to SVG, DXF, STL, and JSCAD formats for use in manufacturing workflows (laser cutting, CNC machining, 3D printing, etc.).
 
 ## Architecture Overview
 
@@ -10,16 +10,18 @@ It exports to SVG and DXF formats for use in manufacturing workflows (laser cutt
 PlateGeneratorPanel.vue            ← Entry point, tabbed 2-column layout
 ├── PlateGeneratorSettings.vue     ← [Cutouts tab] Switch/stab type, fillet, kerf
 ├── PlateHolesSettings.vue         ← [Holes tab] Corner mounting holes
-├── PlateOutlineSettings.vue       ← [Outline tab] Outline margins and fillets
+├── PlateOutlineSettings.vue       ← [Outline tab] Outline margins, fillets, thickness
 ├── PlateGeneratorControls.vue     ← Generate button, auto-refresh toggle
-├── PlateGeneratorResults.vue      ← SVG preview display
-└── PlateDownloadButtons.vue       ← SVG / DXF download
+├── PlateGeneratorResults.vue      ← 2D SVG preview / 3D preview tab switcher
+│   └── Plate3DPreview.vue         ← Interactive Three.js WebGL 3D viewer
+└── PlateDownloadButtons.vue       ← SVG / DXF / STL / JSCAD download
 
 stores/plateGenerator.ts           ← State management (Pinia)
 utils/plate/plate-worker.ts        ← Web Worker running buildPlate() off main thread
 utils/plate/plate-builder.ts       ← Orchestrates geometry → export
 utils/plate/cutout-generator.ts    ← Switch & stabilizer cutout shapes
 utils/makerjs-loader.ts            ← Lazy-loads maker.js library
+utils/three-loader.ts              ← Lazy-loads Three.js + STLLoader + OrbitControls
 utils/keyboard-geometry.ts         ← Key center position math
 utils/decimal-math.ts              ← Precision decimal arithmetic
 types/plate.ts                     ← Type definitions
@@ -71,6 +73,8 @@ types/plate.ts                     ← Type definitions
 │  → SVG download (mm)     │
 │  → DXF content           │
 │  → Merged exports (opt)  │
+│  → JSCAD script (opt)    │
+│  → STL content (opt)     │
 └────────────┬─────────────┘
              │ postMessage (result)
              ▼
@@ -106,20 +110,21 @@ result as stale and sets `pendingRegeneration` so regeneration proceeds after th
 
 | File                         | Purpose                                                                                                                                                             |
 |------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `PlateGeneratorPanel.vue`    | Root container. Tabbed two-column layout (controls left, preview right). Three tabs: Cutouts, Holes, Outline. Preloads maker.js on mount via `requestIdleCallback`. |
+| `PlateGeneratorPanel.vue`    | Root container. Tabbed two-column layout (controls left, preview right). Three tabs: Cutouts, Holes, Outline. Preloads maker.js and Three.js on mount via `requestIdleCallback`. |
 | `PlateGeneratorSettings.vue` | [Cutouts tab] Form controls for cutout type, stabilizer type, fillet radius, size adjustment, custom dimensions, and merge cutouts toggle. Validates inputs.        |
 | `PlateHolesSettings.vue`     | [Holes tab] Corner mounting holes (require outline) and custom holes at arbitrary positions with configurable diameter and X/Y offsets in keyboard units.           |
-| `PlateOutlineSettings.vue`   | [Outline tab] Outline generation settings: enable toggle, independent margins (top/bottom/left/right), fillet radius, and merge-with-cutouts option.                |
+| `PlateOutlineSettings.vue`   | [Outline tab] Outline generation settings: enable toggle, independent margins (top/bottom/left/right), fillet radius, merge-with-cutouts option, and plate thickness for 3D export. |
 | `PlateGeneratorControls.vue` | "Generate Plate" button with loading state, auto-refresh checkbox, error alerts, and empty-layout warnings.                                                         |
-| `PlateGeneratorResults.vue`  | Renders the SVG preview on success, or idle instructions before first generation. During regeneration, shows the previous result dimmed with a spinner overlay. Shows both cutouts and outline layers. |
-| `PlateDownloadButtons.vue`   | SVG and DXF download buttons, visible only after successful generation. Handles separate vs. merged exports based on settings.                                      |
+| `PlateGeneratorResults.vue`  | Segmented 2D/3D tab bar above the preview area. 2D tab renders the SVG preview (with dimmed previous result + spinner during regeneration). 3D tab hosts `Plate3DPreview`. Shows idle instructions before first generation. |
+| `Plate3DPreview.vue`         | Interactive Three.js WebGL viewer for the generated STL. Lazy-loads Three.js on mount. Renders the plate mesh with `MeshPhongMaterial` colored by the active Bootstrap theme. Supports OrbitControls (click-to-activate, click-outside-to-deactivate). Reset view button restores the initial camera. Updates mesh and background colors when the website theme changes. Pauses the render loop when the 3D tab is hidden. |
+| `PlateDownloadButtons.vue`   | SVG, DXF, STL, and JSCAD download buttons, visible only after successful generation. STL and JSCAD buttons appear only when outline is enabled (required for 3D export). Handles separate vs. merged SVG/DXF exports based on settings. |
 
 ### Store
 
 **`stores/plateGenerator.ts`** — Pinia store managing all plate generator state.
 
 **State:**
-- `settings: PlateSettings` — Current configuration including cutouts, outline, and mounting holes settings.
+- `settings: PlateSettings` — Current configuration including cutouts, outline, mounting holes, and plate thickness settings.
 - `autoRefresh: boolean` — Whether to regenerate on layout changes.
 - `generationState: GenerationState` — Status (`idle` | `generating` | `success` | `error`), result, and error message.
 
@@ -136,6 +141,8 @@ Note: the `GenerationStatus` type definition still includes `'loading'` for back
 - `downloadSvg()` / `downloadDxf()` — Download cutouts only (`keyboard-plate.svg` / `keyboard-plate.dxf`).
 - `downloadAllSvg()` — Downloads all SVG files. When `outline.mergeWithCutouts` is enabled, downloads a single merged file; otherwise downloads separate cutouts and outline files.
 - `downloadAllDxf()` — Downloads all DXF files. Same merge logic as `downloadAllSvg()`.
+- `downloadStl()` — Downloads the ASCII STL file (`keyboard-plate.stl`). Only available when outline is enabled.
+- `downloadJscad()` — Downloads the JSCAD script (`keyboard-plate.jscad`). Only available when outline is enabled.
 - `requestRegenerate()` — Clears the cache, marks any in-flight generation as stale (`++generationId`), sets `pendingRegeneration` if generating, then triggers debounced (500ms) regeneration when auto-refresh is on.
 - `resetGeneration()` — Returns `generationState` to idle.
 
@@ -162,9 +169,19 @@ Main orchestration module. `buildPlate(keys, options)` is the entry point. Calle
 4. **Merge cutouts** (optional) — When `mergeCutouts` is enabled, combines overlapping cutouts into simplified paths.
 5. **Create outline** (optional) — When `outline.enabled` is true, generates a rectangular outline with configurable margins and rounded corners.
 6. **Add mounting holes** (optional) — When `mountingHoles.enabled` is true (and outline is enabled), adds circular holes at the four corners.
-7. **Export** — Uses maker.js to produce SVG (preview and download variants) and DXF output.
+7. **Build 3D model** (optional) — When outline is enabled, clones a clean (layer-tag-free) version of the outline and cutout models into a combined `model3D`. This is done before layer-tagging so that path layers do not interfere with JSCAD chain containment checks.
+8. **Export** — Uses maker.js to produce SVG (preview and download variants), DXF, and optionally JSCAD script and ASCII STL.
 
 The preview SVG includes an origin crosshair (red line) and 1mm padding. Outline is rendered in blue (#0066cc). The download SVG uses black strokes and mm units. DXF output uses POLYLINE entities.
+
+**3D Export (JSCAD / STL):**
+
+When outline is enabled, `buildPlate()` produces two additional outputs using the `model3D` assembly (outline + cutouts extruded by the `thickness` setting):
+
+- **JSCAD script** — Generated with `makerjs.exporter.toJscadScript(model3D, { extrude: thickness, units: 'mm' })`. Can be opened directly in [OpenJSCAD](https://openjscad.xyz/).
+- **STL** — Generated with `makerjs.exporter.toJscadSTL(CAG, stlSerializer, model3D, { extrude: thickness, units: 'mm' })` using `@jscad/csg` and `@jscad/stl-serializer`. STL generation is wrapped in a try/catch; if it fails (e.g., in environments where `@jscad/csg` cannot run), a warning is logged and `stlData` is omitted from the result rather than failing the entire generation.
+
+Both outputs are `undefined` when outline is disabled. The `thickness` option defaults to 1.5mm and is set via the Outline tab in the UI.
 
 **Merge Cutouts:**
 
@@ -291,6 +308,16 @@ Lazy-loads the [maker.js](https://maker.js.org/) library to keep the initial bun
 - `getMakerJs()` — Returns a cached promise for the module. First call triggers the import with a 30-second timeout.
 - `isMakerJsLoaded()` — Synchronous check for whether the module is already cached.
 
+#### `three-loader.ts`
+
+Lazy-loads Three.js and its add-ons to keep the initial bundle small. Follows the same pattern as `makerjs-loader.ts`: singleton module cache, shared in-flight promise, and a 30-second timeout. Clearing the in-flight promise on failure allows the import to be retried.
+
+Exports a `ThreeModules` interface containing `THREE`, `STLLoader`, and `OrbitControls`.
+
+- `preloadThreeModule()` — Triggers a background import during browser idle time (`requestIdleCallback`, falls back to `setTimeout(100ms)`). Called on `PlateGeneratorPanel` mount alongside `preloadMakerJsModule()`.
+- `getThree()` — Returns a cached promise for `{ THREE, STLLoader, OrbitControls }`. First call triggers the parallel import of `three`, `three/examples/jsm/loaders/STLLoader.js`, and `three/examples/jsm/controls/OrbitControls.js`.
+- `isThreeLoaded()` — Synchronous check for whether the modules are already cached.
+
 #### `keyboard-geometry.ts`
 
 - `getKeyCenter(key)` — Computes the center point of a key in layout units, accounting for rotation origin (`rotation_x`, `rotation_y`).
@@ -370,6 +397,12 @@ The plate outline feature generates a rectangular border around all cutouts, use
 | `marginRight`       | `5`     | Distance from rightmost cutout to right edge (mm).             |
 | `filletRadius`      | `1`     | Corner radius for rounded outline corners (mm). 0 = sharp.     |
 | `mergeWithCutouts`  | `true`  | When downloading, combine outline and cutouts into one file.   |
+
+The `thickness` setting lives on the top-level `PlateSettings` (not inside `OutlineSettings`) and is exposed in the Outline tab:
+
+| Setting     | Default | Description                                              |
+|-------------|---------|----------------------------------------------------------|
+| `thickness` | `1.5`   | Plate thickness in mm used when extruding the 3D model.  |
 
 ### Merge With Cutouts
 
@@ -459,16 +492,44 @@ The `PlateGeneratorControls` component also checks `keyboardStore.keys.length` t
 
 - **SVG** — Vector format with millimeter units. Suitable for direct use in laser cutting software or vector editors.
 - **DXF** — CAD exchange format using POLYLINE entities. Compatible with most CAD/CAM software.
+- **STL** — ASCII STL format. A solid 3D model of the plate (outline extruded by `thickness`, with cutouts subtracted). For use in 3D printing slicers or CAD tools. Only generated when outline is enabled.
+- **JSCAD** — OpenJSCAD script that produces the same 3D solid as the STL. Can be opened in [OpenJSCAD](https://openjscad.xyz/) for further editing. Only generated when outline is enabled.
 
 ### Export Options
 
-| Export Type        | Filename                    | Contents                           |
-|--------------------|-----------------------------|------------------------------------|
-| Cutouts SVG        | `keyboard-plate.svg`        | Switch and stabilizer cutouts only |
-| Cutouts DXF        | `keyboard-plate.dxf`        | Switch and stabilizer cutouts only |
-| Outline SVG        | `keyboard-outline.svg`      | Outline only (when not merged)     |
-| Outline DXF        | `keyboard-outline.dxf`      | Outline only (when not merged)     |
-| Merged SVG         | `keyboard-plate.svg`        | Combined cutouts + outline         |
-| Merged DXF         | `keyboard-plate.dxf`        | Combined cutouts + outline         |
+| Export Type        | Filename                    | Contents                                   |
+|--------------------|-----------------------------|--------------------------------------------|
+| Cutouts SVG        | `keyboard-plate.svg`        | Switch and stabilizer cutouts only         |
+| Cutouts DXF        | `keyboard-plate.dxf`        | Switch and stabilizer cutouts only         |
+| Outline SVG        | `keyboard-outline.svg`      | Outline only (when not merged)             |
+| Outline DXF        | `keyboard-outline.dxf`      | Outline only (when not merged)             |
+| Merged SVG         | `keyboard-plate.svg`        | Combined cutouts + outline                 |
+| Merged DXF         | `keyboard-plate.dxf`        | Combined cutouts + outline                 |
+| STL                | `keyboard-plate.stl`        | 3D solid plate (requires outline enabled)  |
+| JSCAD              | `keyboard-plate.jscad`      | OpenJSCAD script (requires outline enabled)|
 
 Files are created as in-memory blobs and downloaded via a temporary anchor element.
+
+## 3D Preview
+
+When a plate has been generated with outline enabled, a **3D tab** appears in the preview panel alongside the existing 2D tab. The 3D tab hosts the `Plate3DPreview` component, which renders the plate STL in an interactive WebGL viewport using Three.js.
+
+### Scene Setup
+
+- **Renderer:** `THREE.WebGLRenderer` with antialiasing. Created lazily once the container has non-zero dimensions (tracked via `ResizeObserver`). Disposed and recreated whenever `stlData` changes.
+- **Camera:** `PerspectiveCamera` (45° FOV). Auto-positioned to fit the bounding box of the loaded geometry at `maxDim * 1.5` distance along the Z axis.
+- **Lights:** Ambient (0.6 intensity) + directional key light (1.2, position [1, 2, 3]) + fill light (0.3, position [-2, -1, -1]).
+- **Mesh:** Plate geometry parsed from ASCII STL with `STLLoader`. Material is `MeshPhongMaterial` colored by the active Bootstrap theme's `--bs-primary` CSS variable, with a specular highlight at 35% brightness.
+- **Background:** Set to the container element's resolved `background-color` (read from computed styles, not a CSS variable, to get the actual RGB value).
+
+### Controls
+
+`OrbitControls` are disabled by default to avoid hijacking page scroll. A "Click to navigate" hint overlay is shown until the user clicks the canvas. Clicking outside the preview container deactivates controls, restoring normal page scroll. The reset view button (bottom-right corner) restores the camera to its initial auto-fitted position and target.
+
+### Theme Adaptation
+
+A `MutationObserver` watches the `data-bs-theme` attribute on `<html>`. When the website theme changes (light ↔ dark), `applyThemeColors()` re-reads the resolved CSS colors and updates the renderer clear color and mesh material colors on the next animation frame.
+
+### Lifecycle
+
+Three.js modules are preloaded via `preloadThreeModule()` on `PlateGeneratorPanel` mount. The render loop (`requestAnimationFrame`) is paused when the 3D tab is not active (driven by the `visible` prop from `PlateGeneratorResults`) and resumed when it becomes visible again. All Three.js objects (renderer, geometry, material, controls, observers) are fully disposed on component unmount.
