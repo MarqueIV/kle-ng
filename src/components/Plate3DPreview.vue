@@ -14,6 +14,7 @@ const containerRef = ref<HTMLDivElement>()
 const canvasRef = ref<HTMLCanvasElement>()
 const threeReady = ref(false)
 const webglError = ref(false)
+const controlsActive = ref(false)
 
 // Three.js scene state
 let renderer: THREE.WebGLRenderer | null = null
@@ -26,6 +27,8 @@ let currentMesh: THREE.Mesh | null = null
 let rafId: number | null = null
 let resizeObserver: ResizeObserver | null = null
 let themeObserver: MutationObserver | null = null
+let canvasActivateHandler: (() => void) | null = null
+let documentDeactivateHandler: ((e: PointerEvent) => void) | null = null
 
 // Initial camera state for reset
 let initialCameraPosition: [number, number, number] | null = null
@@ -217,6 +220,20 @@ async function setupScene() {
   controls.dampingFactor = 0.05
   controls.update()
 
+  // Start disabled until user clicks canvas
+  controls.enabled = false
+  canvasRef.value!.style.touchAction = 'auto'
+
+  canvasActivateHandler = () => activateControls()
+  canvasRef.value!.addEventListener('pointerdown', canvasActivateHandler)
+
+  documentDeactivateHandler = (e: PointerEvent) => {
+    if (controlsActive.value && !containerRef.value?.contains(e.target as Node)) {
+      deactivateControls()
+    }
+  }
+  document.addEventListener('pointerdown', documentDeactivateHandler)
+
   // ResizeObserver
   resizeObserver = new ResizeObserver(() => {
     if (!renderer || !camera || !containerRef.value) return
@@ -268,6 +285,20 @@ function disposeMesh() {
   }
 }
 
+function activateControls() {
+  if (!controls || controlsActive.value) return
+  controlsActive.value = true
+  controls.enabled = true
+  if (canvasRef.value) canvasRef.value.style.touchAction = 'none'
+}
+
+function deactivateControls() {
+  if (!controls) return
+  controlsActive.value = false
+  controls.enabled = false
+  if (canvasRef.value) canvasRef.value.style.touchAction = 'auto'
+}
+
 function resetView() {
   if (!camera || !controls || !initialCameraPosition || !initialTarget) return
   camera.position.set(...initialCameraPosition)
@@ -282,8 +313,16 @@ function disposeScene() {
   resizeObserver?.disconnect()
   resizeObserver = null
   disposeMesh()
+  deactivateControls()
+  document.removeEventListener('pointerdown', documentDeactivateHandler!)
+  documentDeactivateHandler = null
+  if (canvasRef.value && canvasActivateHandler) {
+    canvasRef.value.removeEventListener('pointerdown', canvasActivateHandler)
+  }
+  canvasActivateHandler = null
   controls?.dispose()
   controls = null
+  controlsActive.value = false
   renderer?.dispose()
   renderer = null
   scene = null
@@ -313,6 +352,15 @@ function disposeScene() {
 
     <!-- Three.js canvas -->
     <canvas ref="canvasRef" v-show="threeReady && !webglError && !!stlData" class="three-canvas" />
+
+    <!-- Click-to-activate overlay (shown when canvas is ready but controls not yet active) -->
+    <div
+      v-if="threeReady && !webglError && !!stlData && !controlsActive"
+      class="activate-overlay"
+      @pointerdown.stop="activateControls"
+    >
+      <span class="activate-hint">Click to navigate</span>
+    </div>
 
     <!-- Reset view button -->
     <button
@@ -362,6 +410,24 @@ function disposeScene() {
   bottom: 8px;
   right: 8px;
   padding: 4px 4px;
+}
+
+.activate-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding-bottom: 32px;
+  cursor: pointer;
+}
+
+.activate-hint {
+  background: rgba(0, 0, 0, 0.45);
+  color: #fff;
+  font-size: 0.75rem;
+  border-radius: 4px;
+  padding: 4px 10px;
 }
 
 .regenerating-overlay {
