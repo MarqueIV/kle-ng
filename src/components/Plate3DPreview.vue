@@ -2,6 +2,7 @@
 import { ref, watch, onMounted, onUnmounted } from 'vue'
 import { getThree } from '@/utils/three-loader'
 import type * as THREE from 'three'
+import BiArrowCounterclockwise from 'bootstrap-icons/icons/arrow-counterclockwise.svg'
 
 const props = defineProps<{
   stlData: string | undefined
@@ -25,6 +26,10 @@ let currentMesh: THREE.Mesh | null = null
 let rafId: number | null = null
 let resizeObserver: ResizeObserver | null = null
 let themeObserver: MutationObserver | null = null
+
+// Initial camera state for reset
+let initialCameraPosition: [number, number, number] | null = null
+let initialTarget: [number, number, number] | null = null
 
 // Cached runtime THREE module (set once scene is first created)
 let runtimeTHREE: Awaited<ReturnType<typeof getThree>>['THREE'] | null = null
@@ -198,8 +203,12 @@ async function setupScene() {
   const size = new THREE.Vector3()
   box.getSize(size)
   const maxDim = Math.max(size.x, size.y, size.z)
-  camera.position.set(center.x, center.y + maxDim * 0.5, center.z + maxDim * 1.5)
+  camera.position.set(center.x, center.y, center.z + maxDim * 1.5)
   camera.lookAt(center)
+
+  // Store initial state for reset
+  initialCameraPosition = [center.x, center.y, center.z + maxDim * 1.5]
+  initialTarget = [center.x, center.y, center.z]
 
   // Orbit controls
   controls = new OrbitControls(camera, renderer.domElement)
@@ -259,6 +268,13 @@ function disposeMesh() {
   }
 }
 
+function resetView() {
+  if (!camera || !controls || !initialCameraPosition || !initialTarget) return
+  camera.position.set(...initialCameraPosition)
+  controls.target.set(...initialTarget)
+  controls.update()
+}
+
 function disposeScene() {
   stopRaf()
   themeObserver?.disconnect()
@@ -272,6 +288,8 @@ function disposeScene() {
   renderer = null
   scene = null
   camera = null
+  initialCameraPosition = null
+  initialTarget = null
 }
 </script>
 
@@ -295,6 +313,16 @@ function disposeScene() {
 
     <!-- Three.js canvas -->
     <canvas ref="canvasRef" v-show="threeReady && !webglError && !!stlData" class="three-canvas" />
+
+    <!-- Reset view button -->
+    <button
+      v-if="threeReady && !webglError && !!stlData"
+      class="btn btn-secondary btn-sm reset-view-btn d-flex align-items-center"
+      title="Reset view"
+      @click="resetView"
+    >
+      <BiArrowCounterclockwise />
+    </button>
 
     <!-- Regenerating overlay -->
     <div v-if="generating && stlData" class="regenerating-overlay">
@@ -327,6 +355,13 @@ function disposeScene() {
   display: block;
   width: 100%;
   height: 100%;
+}
+
+.reset-view-btn {
+  position: absolute;
+  bottom: 8px;
+  right: 8px;
+  padding: 4px 4px;
 }
 
 .regenerating-overlay {
