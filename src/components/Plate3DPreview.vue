@@ -24,6 +24,42 @@ let controls: InstanceType<
 let currentMesh: THREE.Mesh | null = null
 let rafId: number | null = null
 let resizeObserver: ResizeObserver | null = null
+let themeObserver: MutationObserver | null = null
+
+// Cached runtime THREE module (set once scene is first created)
+let runtimeTHREE: Awaited<ReturnType<typeof getThree>>['THREE'] | null = null
+
+// --- Theme color helpers ---
+
+function getThemeColors() {
+  const T = runtimeTHREE!
+  // Read the container's fully-resolved background color (avoids unresolved var() in CSS custom props)
+  const bgResolved = containerRef.value
+    ? getComputedStyle(containerRef.value).backgroundColor
+    : 'rgb(248, 249, 250)'
+  const bgColor = new T.Color(bgResolved)
+  const primaryStr =
+    getComputedStyle(document.documentElement).getPropertyValue('--bs-primary').trim() || '#00ab91'
+  const primary = new T.Color(primaryStr)
+  const specular = primary.clone().multiplyScalar(0.35)
+  return { bgColor, primary, specular }
+}
+
+function applyThemeColors() {
+  if (!runtimeTHREE || !renderer) return
+  // Defer to next frame so the browser finishes style recalculation before we read colors
+  requestAnimationFrame(() => {
+    if (!runtimeTHREE || !renderer) return
+    const { bgColor, primary, specular } = getThemeColors()
+    renderer.setClearColor(bgColor)
+    if (currentMesh) {
+      const mat = currentMesh.material as THREE.MeshPhongMaterial
+      mat.color.set(primary)
+      mat.specular.set(specular)
+      mat.needsUpdate = true
+    }
+  })
+}
 
 // Load Three.js eagerly
 onMounted(async () => {
@@ -94,7 +130,11 @@ function waitForNonZeroSize() {
 async function setupScene() {
   if (!canvasRef.value || !containerRef.value || !props.stlData) return
 
-  const { THREE, STLLoader, OrbitControls } = await getThree()
+  const modules = await getThree()
+  const { THREE, STLLoader, OrbitControls } = modules
+
+  // Cache runtime module for theme color helpers
+  runtimeTHREE = THREE
 
   // Dispose previous scene
   disposeScene()
@@ -116,7 +156,6 @@ async function setupScene() {
 
   renderer.setSize(width, height)
   renderer.setPixelRatio(window.devicePixelRatio)
-  renderer.setClearColor(0x1a1a1a)
 
   // Create scene
   scene = new THREE.Scene()
@@ -125,21 +164,28 @@ async function setupScene() {
   camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 10000)
 
   // Lights
-  const ambientLight = new THREE.AmbientLight(0x888888)
+  const ambientLight = new THREE.AmbientLight(0xffffff, 0.6)
   scene.add(ambientLight)
-  const dirLight = new THREE.DirectionalLight(0xffffff, 1)
+  const dirLight = new THREE.DirectionalLight(0xffffff, 1.2)
   dirLight.position.set(1, 2, 3)
   scene.add(dirLight)
+  const fillLight = new THREE.DirectionalLight(0xffffff, 0.3)
+  fillLight.position.set(-2, -1, -1)
+  scene.add(fillLight)
 
   // Load STL
   const encoder = new TextEncoder()
   const buffer = encoder.encode(props.stlData).buffer
   const geometry = new STLLoader().parse(buffer)
 
+  const { bgColor, primary, specular } = getThemeColors()
+
+  renderer.setClearColor(bgColor)
+
   const material = new THREE.MeshPhongMaterial({
-    color: 0x999999,
-    specular: 0x444444,
-    shininess: 40,
+    color: primary,
+    specular: specular,
+    shininess: 60,
   })
   currentMesh = new THREE.Mesh(geometry, material)
   scene.add(currentMesh)
@@ -173,6 +219,13 @@ async function setupScene() {
     camera.updateProjectionMatrix()
   })
   resizeObserver.observe(container)
+
+  // Watch for theme changes and update colors
+  themeObserver = new MutationObserver(applyThemeColors)
+  themeObserver.observe(document.documentElement, {
+    attributes: true,
+    attributeFilter: ['data-bs-theme'],
+  })
 
   // Start render loop
   startRaf()
@@ -208,6 +261,8 @@ function disposeMesh() {
 
 function disposeScene() {
   stopRaf()
+  themeObserver?.disconnect()
+  themeObserver = null
   resizeObserver?.disconnect()
   resizeObserver = null
   disposeMesh()
