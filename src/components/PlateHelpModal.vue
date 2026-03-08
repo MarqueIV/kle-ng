@@ -37,8 +37,9 @@
             arbitrary positions.
           </li>
           <li>
-            <strong>Outline</strong> - Generate border around cutouts with configurable margins and
-            corner radius. Required for STL generation.
+            <strong>Outline</strong> - Generate a border around the key cluster. Choose between a
+            rectangular bounding box or a tight hull that follows the cluster shape. Required for
+            STL generation.
           </li>
         </ul>
       </div>
@@ -93,13 +94,30 @@
       <div class="help-content">
         <ul class="tips-list">
           <li>
+            <strong>Outline Type</strong> - Choose the outline shape:
+            <ul class="mt-1">
+              <li><strong>None</strong> - No outline is generated.</li>
+              <li>
+                <strong>Rectangular</strong> - An axis-aligned bounding box around all cutouts with
+                independent top/bottom/left/right margins.
+              </li>
+              <li>
+                <strong>Tight</strong> - A hull that closely follows the key cluster shape, expanded
+                by a single uniform margin. Useful for non-rectangular layouts or split keyboards.
+                Ghost keys (keys with the <em>Ghost</em> property enabled) are included in the hull
+                calculation without producing switch cutouts — place them at the edges of the layout
+                to fine-tune the outline shape.
+              </li>
+            </ul>
+          </li>
+          <li>
             <strong>Merge with Cutouts</strong> - Place cutouts and outline in a single file,
             otherwise use separate files. Outline file, if separate, has the same <em>(0,0)</em>
             origin point for easier CAD/CAM handling.
           </li>
           <li>
-            <strong>Margins</strong> - Distance from cutout bounds to outline edge. Both switch and
-            stabilizer cutouts are considered, but holes are not.
+            <strong>Margin / Margins</strong> - Distance from cutout bounds to outline edge. Both
+            switch and stabilizer cutouts are considered, but holes are not.
           </li>
           <li><strong>Fillet Radius</strong> - Rounds corners of the outline.</li>
           <li><strong>Plate Thickness</strong> - Thickness of a plate in STL export file.</li>
