@@ -10,18 +10,20 @@ const { settings } = storeToRefs(plateStore)
 <template>
   <div class="plate-outline-settings">
     <div class="settings-section">
-      <!-- Enable Outline -->
-      <div class="mb-2">
-        <div class="form-check">
-          <input
-            id="enableOutline"
-            v-model="settings.outline.enabled"
-            class="form-check-input"
-            type="checkbox"
-          />
-          <label class="form-check-label form-label-sm" for="enableOutline">Enable Outline</label>
-        </div>
-        <div class="form-text small">Generate a rectangular outline around all cutouts</div>
+      <!-- Outline Type -->
+      <div class="mb-2 d-flex align-items-center gap-2">
+        <label for="outlineType" class="form-label form-label-sm mb-0 flex-shrink-0"
+          >Outline Type</label
+        >
+        <select
+          id="outlineType"
+          v-model="settings.outline.outlineType"
+          class="form-select form-select-sm"
+        >
+          <option value="none">None</option>
+          <option value="rectangular" title="Axis-aligned bounding box">Rectangular</option>
+          <option value="tight" title="Expanded hull that follows key cluster shape">Tight</option>
+        </select>
       </div>
 
       <!-- Merge with Cutouts -->
@@ -32,7 +34,7 @@ const { settings } = storeToRefs(plateStore)
             v-model="settings.outline.mergeWithCutouts"
             class="form-check-input"
             type="checkbox"
-            :disabled="!settings.outline.enabled"
+            :disabled="settings.outline.outlineType === 'none'"
           />
           <label class="form-check-label form-label-sm" for="mergeWithCutouts"
             >Merge with Cutouts</label
@@ -41,8 +43,8 @@ const { settings } = storeToRefs(plateStore)
         <div class="form-text small">Download outline and cutouts as a single file</div>
       </div>
 
-      <!-- Margins -->
-      <div class="mb-2">
+      <!-- Rectangular: 4-directional margins -->
+      <div v-show="settings.outline.outlineType === 'rectangular'" class="mb-2">
         <label class="form-label form-label-sm">Margins</label>
         <div class="margins-grid">
           <div class="margin-input">
@@ -52,7 +54,6 @@ const { settings } = storeToRefs(plateStore)
               v-model="settings.outline.marginTop"
               :step="0.5"
               :min="0"
-              :disabled="!settings.outline.enabled"
               class="form-control form-control-sm"
               size="default"
               title="Top margin in millimeters"
@@ -69,7 +70,6 @@ const { settings } = storeToRefs(plateStore)
               v-model="settings.outline.marginBottom"
               :step="0.5"
               :min="0"
-              :disabled="!settings.outline.enabled"
               class="form-control form-control-sm"
               size="default"
               title="Bottom margin in millimeters"
@@ -84,7 +84,6 @@ const { settings } = storeToRefs(plateStore)
               v-model="settings.outline.marginLeft"
               :step="0.5"
               :min="0"
-              :disabled="!settings.outline.enabled"
               class="form-control form-control-sm"
               size="default"
               title="Left margin in millimeters"
@@ -99,7 +98,6 @@ const { settings } = storeToRefs(plateStore)
               v-model="settings.outline.marginRight"
               :step="0.5"
               :min="0"
-              :disabled="!settings.outline.enabled"
               class="form-control form-control-sm"
               size="default"
               title="Right margin in millimeters"
@@ -111,15 +109,31 @@ const { settings } = storeToRefs(plateStore)
         <div class="form-text small">Distance from cutout bounds to outline edge</div>
       </div>
 
-      <!-- Fillet Radius -->
-      <div class="mb-2">
+      <!-- Tight: uniform margin -->
+      <div v-show="settings.outline.outlineType === 'tight'" class="mb-2">
+        <label for="tightMargin" class="form-label form-label-sm">Margin</label>
+        <CustomNumberInput
+          id="tightMargin"
+          v-model="settings.outline.tightMargin"
+          :step="0.5"
+          :min="0.5"
+          class="form-control form-control-sm"
+          size="default"
+          title="Uniform margin in millimeters"
+        >
+          <template #suffix>mm</template>
+        </CustomNumberInput>
+        <div class="form-text small">Uniform expansion around key cluster</div>
+      </div>
+
+      <!-- Fillet Radius (shared by rectangular and tight) -->
+      <div v-show="settings.outline.outlineType !== 'none'" class="mb-2">
         <label for="outlineFilletRadius" class="form-label form-label-sm">Fillet Radius</label>
         <CustomNumberInput
           id="outlineFilletRadius"
           v-model="settings.outline.filletRadius"
           :step="0.5"
           :min="0"
-          :disabled="!settings.outline.enabled"
           class="form-control form-control-sm"
           size="default"
           title="Corner rounding radius for outline in millimeters"
@@ -138,14 +152,14 @@ const { settings } = storeToRefs(plateStore)
           :step="0.1"
           :min="0.1"
           :max="20"
-          :disabled="!settings.outline.enabled"
+          :disabled="settings.outline.outlineType === 'none'"
           class="form-control form-control-sm"
           size="default"
           title="Plate thickness for 3D export in millimeters"
         >
           <template #suffix>mm</template>
         </CustomNumberInput>
-        <div class="form-text small">Used for 3D export (requires Outline enabled)</div>
+        <div class="form-text small">Used for 3D export (requires outline)</div>
       </div>
     </div>
   </div>

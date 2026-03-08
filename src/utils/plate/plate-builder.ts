@@ -147,6 +147,8 @@ function keyToCutoutPosition(
     rotationAngle: -(key.rotation_angle || 0),
     width: generator.width,
     height: generator.height,
+    footprintWidth: generator.width + ((key.width || 1) - 1) * spacingX,
+    footprintHeight: generator.height + ((key.height || 1) - 1) * spacingY,
   }
 }
 
@@ -211,6 +213,82 @@ function createOutlineModel(
   outlineModel.origin = [bounds.minX - margins.left, bounds.minY - margins.bottom]
 
   return outlineModel
+}
+
+/**
+ * Create a tight outline model that closely follows the key cluster shape.
+ *
+ * For each cutout position, a RoundRectangle padded by `margin` on all sides is created using
+ * the same rotation convention as positionCutout. All padded shapes are then unioned
+ * iteratively. This avoids the inner/outer ring artefact that expandPaths produces on
+ * closed paths (it only creates outer boundaries).
+ *
+ * Corner radius equals `margin`, so rounded corners appear automatically.
+ *
+ * @param makerjs - The maker.js module
+ * @param cutoutPositions - Array of cutout positions (each has center, size, rotation)
+ * @param margin - Expansion distance in mm (also sets corner radius)
+ * @returns Tight outline model (may be multiple disconnected loops for split keyboards)
+ */
+function createTightOutlineModel(
+  makerjs: typeof MakerJs,
+  cutoutPositions: KeyCutoutPosition[],
+  margin: number,
+): MakerJs.IModel {
+  const paddedModels: Record<string, MakerJs.IModel> = {}
+  const keys: string[] = []
+
+  for (let i = 0; i < cutoutPositions.length; i++) {
+    const pos = cutoutPositions[i]!
+    // Use the key's full footprint (key.width * spacingX, key.height * spacingY) as the base
+    // rectangle so that non-1U keys (2U, ISO enter, etc.) are properly covered without needing
+    // extra outline rectangles.
+    const paddedWidth = pos.footprintWidth + 2 * margin
+    const paddedHeight = pos.footprintHeight + 2 * margin
+
+    // Create Rectangle with bottom-left at local [0, 0]
+    let padded: MakerJs.IModel = new makerjs.models.Rectangle(paddedWidth, paddedHeight)
+
+    // Center at world origin so rotation happens around the footprint center
+    padded = makerjs.model.move(padded, [-paddedWidth / 2, -paddedHeight / 2])
+
+    // Rotate around world [0,0] (= the key center) — same convention as positionCutout
+    if (pos.rotationAngle !== 0) {
+      padded = makerjs.model.rotate(padded, pos.rotationAngle, [0, 0])
+    }
+
+    // Place at key center.
+    // pos.centerX is the bottom-left of the cutout, so pos.centerX + pos.width/2 = key center.
+    // makerjs.model.move SETS the origin (not additive).
+    const keyCenterX = pos.centerX + pos.width / 2
+    const keyCenterY = pos.centerY + pos.height / 2
+    padded = makerjs.model.move(padded, [
+      keyCenterX - paddedWidth / 2,
+      keyCenterY - paddedHeight / 2,
+    ])
+
+    const k = `padded_${i}`
+    paddedModels[k] = padded
+    keys.push(k)
+  }
+
+  // Iteratively union all padded models.
+  // Non-overlapping shapes (e.g. split keyboard halves) are kept as separate loops.
+  let result: MakerJs.IModel = {
+    models: { [keys[0]!]: makerjs.model.clone(paddedModels[keys[0]!]!) },
+  }
+  for (let i = 1; i < keys.length; i++) {
+    const next: MakerJs.IModel = {
+      models: { [keys[i]!]: makerjs.model.clone(paddedModels[keys[i]!]!) },
+    }
+    makerjs.model.combineUnion(result, next)
+    result = {
+      models: { ...result.models, ...next.models },
+      paths: { ...result.paths, ...next.paths },
+    }
+  }
+
+  return result
 }
 
 /**
@@ -498,8 +576,8 @@ export async function buildPlate(
       }
     : { top: 0, bottom: 0, left: 0, right: 0 }
 
-  // Add corner mounting holes to cutouts (requires outline to determine corners)
-  if (mountingHoles?.enabled && outline?.enabled) {
+  // Add corner mounting holes to cutouts (rectangular outline only — tight has no fixed corners)
+  if (mountingHoles?.enabled && outline?.outlineType === 'rectangular') {
     const holeModels = createCornerMountingHoles(makerjs, bounds, outlineMargins, mountingHoles)
     Object.assign(plateModel.models!, holeModels)
   }
@@ -512,7 +590,26 @@ export async function buildPlate(
 
   // Create outline model if enabled
   let outlineModel: MakerJs.IModel | null = null
-  if (outline?.enabled) {
+  if (outline?.outlineType === 'tight') {
+    outlineModel = createTightOutlineModel(makerjs, cutoutPositions, outline.tightMargin)
+    // Apply fillet AFTER the union is fully built — not during per-key rect creation.
+    // chain.fillet clips the existing paths in-place and returns new arc paths to merge in.
+    if (outline.filletRadius > 0) {
+      const chains = makerjs.model.findChains(outlineModel) as MakerJs.IChain[]
+      if (chains) {
+        const allFilletPaths: Record<string, MakerJs.IPath> = {}
+        chains.forEach((chain, chainIndex) => {
+          const filletModel = makerjs.chain.fillet(chain, outline.filletRadius)
+          if (filletModel?.paths) {
+            for (const key in filletModel.paths) {
+              allFilletPaths[`c${chainIndex}_${key}`] = filletModel.paths[key]!
+            }
+          }
+        })
+        outlineModel.paths = { ...outlineModel.paths, ...allFilletPaths }
+      }
+    }
+  } else if (outline?.outlineType === 'rectangular') {
     outlineModel = createOutlineModel(makerjs, bounds, outlineMargins, outline.filletRadius)
   }
 
@@ -550,17 +647,11 @@ export async function buildPlate(
   previewModel.paths.originH!.layer = 'origin'
   previewModel.paths.originV!.layer = 'origin'
 
-  // Tag outline paths with a layer for styling
+  // Tag outline paths with a layer for styling (walk nested models for tight outline)
   if (outlineModel) {
-    // Apply layer to all paths in the outline model
-    if (outlineModel.paths) {
-      for (const pathId of Object.keys(outlineModel.paths)) {
-        const path = outlineModel.paths[pathId]
-        if (path) {
-          path.layer = 'outline'
-        }
-      }
-    }
+    makerjs.model.walkPaths(outlineModel, (_mp: MakerJs.IModel, _pi: string, p: MakerJs.IPath) => {
+      p.layer = 'outline'
+    })
   }
 
   // Generate SVG for preview

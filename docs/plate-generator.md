@@ -113,7 +113,7 @@ result as stale and sets `pendingRegeneration` so regeneration proceeds after th
 | `PlateGeneratorPanel.vue`    | Root container. Tabbed two-column layout (controls left, preview right). Three tabs: Cutouts, Holes, Outline. Preloads maker.js and Three.js on mount via `requestIdleCallback`. |
 | `PlateGeneratorSettings.vue` | [Cutouts tab] Form controls for cutout type, stabilizer type, fillet radius, size adjustment, custom dimensions, and merge cutouts toggle. Validates inputs.        |
 | `PlateHolesSettings.vue`     | [Holes tab] Corner mounting holes (require outline) and custom holes at arbitrary positions with configurable diameter and X/Y offsets in keyboard units.           |
-| `PlateOutlineSettings.vue`   | [Outline tab] Outline generation settings: enable toggle, independent margins (top/bottom/left/right), fillet radius, merge-with-cutouts option, and plate thickness for 3D export. |
+| `PlateOutlineSettings.vue`   | [Outline tab] Outline generation settings: enable toggle, outline type dropdown (None / Rectangular / Tight), per-mode margin controls, shared fillet radius, merge-with-cutouts option, and plate thickness for 3D export. |
 | `PlateGeneratorControls.vue` | "Generate Plate" button with loading state, auto-refresh checkbox, error alerts, and empty-layout warnings.                                                         |
 | `PlateGeneratorResults.vue`  | Segmented 2D/3D tab bar above the preview area. 2D tab renders the SVG preview (with dimmed previous result + spinner during regeneration). 3D tab hosts `Plate3DPreview`. Shows idle instructions before first generation. |
 | `Plate3DPreview.vue`         | Interactive Three.js WebGL viewer for the generated STL. Lazy-loads Three.js on mount. Renders the plate mesh with `MeshPhongMaterial` colored by the active Bootstrap theme. Supports OrbitControls (click-to-activate, click-outside-to-deactivate). Reset view button restores the initial camera. Updates mesh and background colors when the website theme changes. Pauses the render loop when the 3D tab is hidden. |
@@ -196,11 +196,10 @@ This is particularly useful when stabilizer cutouts overlap with switch cutouts,
 
 **Outline Generation:**
 
-The `createOutlineModel()` function generates the plate outline:
+The `createOutlineModel()` function dispatches to one of two generators based on `outlineType`:
 
-- Creates a rectangle encompassing all cutouts plus configured margins.
-- When `filletRadius > 0`, uses maker.js `RoundRectangle` for rounded corners.
-- When `filletRadius = 0`, uses a standard `Rectangle` for sharp corners.
+- **Rectangular** (`'rectangular'`): Creates a rectangle encompassing all cutouts plus the four configured directional margins. When `filletRadius > 0`, uses maker.js `RoundRectangle` for rounded corners; when `filletRadius = 0`, uses a standard `Rectangle` for sharp corners.
+- **Tight** (`'tight'`): Calls `createTightOutlineModel(makerjs, cutoutPositions, outline.tightMargin)`, which computes an expanded hull around the key cluster. The hull is built by unioning expanded per-key shapes, then a fillet is applied to the result using `makerjs.chain.fillet(chain, outline.filletRadius)` on the chains found via `makerjs.model.findChains(outlineModel)`. Unlike the rectangular path, the fillet clips existing paths in-place and inserts new arc paths into the outline. The minimum allowed `tightMargin` is 0.5mm.
 
 **Corner Mounting Holes:**
 
@@ -384,19 +383,29 @@ preview while the new result is being computed.
 
 ## Plate Outline
 
-The plate outline feature generates a rectangular border around all cutouts, useful for defining the plate's outer boundary.
+The plate outline feature generates a border around all cutouts, useful for defining the plate's outer boundary. Three outline types are available, selected via `OutlineSettings.outlineType`.
+
+### Outline Types
+
+**`none`** — No outline is generated. The plate contains only cutouts. 3D export (STL/JSCAD) is unavailable when no outline is selected.
+
+**`rectangular`** — Generates an axis-aligned bounding box around all cutouts, expanded by four independent directional margins. This is the classic rectangular plate outline.
+
+**`tight`** — Generates an expanded hull that follows the shape of the key cluster rather than a simple bounding box. The hull is computed from the switch cutout positions and expanded outward by a single uniform `tightMargin`. This produces a closer-fitting outline for non-rectangular layouts (e.g., split or ergonomic boards). Corner rounding via `filletRadius` is applied after the hull union is fully computed.
 
 ### Settings
 
-| Setting             | Default | Description                                                    |
-|---------------------|---------|----------------------------------------------------------------|
-| `enabled`           | `false` | Enable outline generation.                                     |
-| `marginTop`         | `5`     | Distance from topmost cutout to top edge (mm).                 |
-| `marginBottom`      | `5`     | Distance from bottommost cutout to bottom edge (mm).           |
-| `marginLeft`        | `5`     | Distance from leftmost cutout to left edge (mm).               |
-| `marginRight`       | `5`     | Distance from rightmost cutout to right edge (mm).             |
-| `filletRadius`      | `1`     | Corner radius for rounded outline corners (mm). 0 = sharp.     |
-| `mergeWithCutouts`  | `true`  | When downloading, combine outline and cutouts into one file.   |
+| Setting             | Applies to          | Default | Description                                                               |
+|---------------------|---------------------|---------|---------------------------------------------------------------------------|
+| `enabled`           | all                 | `false` | Enable outline generation.                                                |
+| `outlineType`       | all                 | `'rectangular'` | Outline shape: `'none'`, `'rectangular'`, or `'tight'`.           |
+| `marginTop`         | `rectangular`       | `5`     | Distance from topmost cutout to top edge (mm).                            |
+| `marginBottom`      | `rectangular`       | `5`     | Distance from bottommost cutout to bottom edge (mm).                      |
+| `marginLeft`        | `rectangular`       | `5`     | Distance from leftmost cutout to left edge (mm).                          |
+| `marginRight`       | `rectangular`       | `5`     | Distance from rightmost cutout to right edge (mm).                        |
+| `tightMargin`       | `tight`             | `5`     | Uniform margin around the key cluster hull (mm). Minimum: 0.5mm.          |
+| `filletRadius`      | `rectangular`, `tight` | `1` | Corner radius for rounded outline corners (mm). 0 = sharp. Shared by both non-none modes. |
+| `mergeWithCutouts`  | all                 | `true`  | When downloading, combine outline and cutouts into one file.              |
 
 The `thickness` setting lives on the top-level `PlateSettings` (not inside `OutlineSettings`) and is exposed in the Outline tab:
 

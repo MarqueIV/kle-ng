@@ -45,7 +45,7 @@ function removeAllCustomHoles(): void {
             v-model="settings.mountingHoles.enabled"
             class="form-check-input"
             type="checkbox"
-            :disabled="!settings.outline.enabled"
+            :disabled="settings.outline.outlineType !== 'rectangular'"
           />
           <label class="form-check-label form-label-sm" for="enableMountingHoles"
             >Corner Mounting Holes</label
@@ -66,7 +66,9 @@ function removeAllCustomHoles(): void {
               v-model="settings.mountingHoles.diameter"
               :step="0.5"
               :min="0.5"
-              :disabled="!settings.outline.enabled || !settings.mountingHoles.enabled"
+              :disabled="
+                settings.outline.outlineType !== 'rectangular' || !settings.mountingHoles.enabled
+              "
               class="form-control form-control-sm"
               size="default"
               title="Mounting hole diameter in millimeters"
@@ -83,7 +85,9 @@ function removeAllCustomHoles(): void {
               v-model="settings.mountingHoles.edgeDistance"
               :step="0.5"
               :min="0.5"
-              :disabled="!settings.outline.enabled || !settings.mountingHoles.enabled"
+              :disabled="
+                settings.outline.outlineType !== 'rectangular' || !settings.mountingHoles.enabled
+              "
               class="form-control form-control-sm"
               size="default"
               title="Distance from outline edge to hole center in millimeters"
@@ -92,7 +96,7 @@ function removeAllCustomHoles(): void {
             </CustomNumberInput>
           </div>
         </div>
-        <div class="form-text small">Requires outline to be enabled (for corner positions)</div>
+        <div class="form-text small">Requires rectangular outline (for corner positions)</div>
       </div>
 
       <!-- Custom Holes Section -->

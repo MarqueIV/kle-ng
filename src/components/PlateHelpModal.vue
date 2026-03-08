@@ -37,8 +37,8 @@
             arbitrary positions.
           </li>
           <li>
-            <strong>Outline</strong> - Generate a rectangular border around cutouts with
-            configurable margins and corner radius.
+            <strong>Outline</strong> - Generate border around cutouts with configurable margins and
+            corner radius. Required for STL generation.
           </li>
         </ul>
       </div>

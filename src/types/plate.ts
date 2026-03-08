@@ -31,8 +31,8 @@ export type StabilizerType =
  * Settings for plate outline generation
  */
 export interface OutlineSettings {
-  /** Whether outline generation is enabled */
-  enabled: boolean
+  /** Outline generation mode: 'none' = disabled, 'rectangular' = axis-aligned bounding box, 'tight' = expanded hull */
+  outlineType: 'none' | 'rectangular' | 'tight'
   /** Top margin in mm */
   marginTop: number
   /** Bottom margin in mm */
@@ -41,6 +41,8 @@ export interface OutlineSettings {
   marginLeft: number
   /** Right margin in mm */
   marginRight: number
+  /** Uniform margin in mm for tight outline mode */
+  tightMargin: number
   /** Merge outline with cutouts into a single file on download */
   mergeWithCutouts: boolean
   /** Fillet (corner rounding) radius in mm for outline corners. 0 = sharp corners. */
@@ -126,6 +128,10 @@ export interface KeyCutoutPosition {
   width: number
   /** Cutout height in mm */
   height: number
+  /** Key footprint width in mm (key.width * spacingX) — used for tight outline */
+  footprintWidth: number
+  /** Key footprint height in mm (key.height * spacingY) — used for tight outline */
+  footprintHeight: number
 }
 
 /**

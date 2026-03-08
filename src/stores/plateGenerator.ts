@@ -26,11 +26,12 @@ const defaultSettings: PlateSettings = {
   mergeCutouts: false,
   thickness: 1.5,
   outline: {
-    enabled: false,
+    outlineType: 'none' as const,
     marginTop: 5,
     marginBottom: 5,
     marginLeft: 5,
     marginRight: 5,
+    tightMargin: 5,
     mergeWithCutouts: true,
     filletRadius: 1,
   },
