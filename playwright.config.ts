@@ -39,7 +39,9 @@ export default defineConfig({
   /* Opt out of parallel tests on CI. */
   workers: process.env.CI ? 1 : undefined,
   /* Reporter to use. See https://playwright.dev/docs/test-reporters */
-  reporter: process.env.CI ? 'list' : (process.env.CLAUDECODE ? 'dot' : 'html'),
+  reporter: process.env.CI
+    ? [['list'], ['html', { outputFolder: 'playwright-report', open: 'never' }]]
+    : (process.env.CLAUDECODE ? 'dot' : 'html'),
   /* Shared settings for all the projects below. See https://playwright.dev/docs/api/class-testoptions. */
   use: {
     /* Maximum time each action such as `click()` can take. */
@@ -49,6 +51,12 @@ export default defineConfig({
 
     /* Collect trace when retrying the failed test. See https://playwright.dev/docs/trace-viewer */
     trace: 'on-first-retry',
+
+    /* Capture screenshot on test failure */
+    screenshot: 'only-on-failure',
+
+    /* Retain video on failure for CI debugging */
+    video: process.env.CI ? 'retain-on-failure' : 'off',
 
     /* Run headless by default, use --headed flag to override */
     headless: true,
@@ -105,7 +113,7 @@ export default defineConfig({
   ],
 
   /* Folder for test artifacts such as screenshots, videos, traces, etc. */
-  // outputDir: 'test-results/',
+  outputDir: 'test-results/',
 
   /* Run your local dev server before starting the tests */
   webServer: {
@@ -117,5 +125,6 @@ export default defineConfig({
     command: process.env.CI ? 'npm run preview' : 'npm run dev',
     port: process.env.CI ? 4173 : 5173,
     reuseExistingServer: !process.env.CI,
+    timeout: 60 * 1000,
   },
 })

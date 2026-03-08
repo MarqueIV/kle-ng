@@ -68,9 +68,28 @@ jobs:
           name: dist
           path: ./dist
 
+      - name: Create test output directory
+        run: mkdir -p e2e/test-output
+
       - name: Run e2e tests
         run: npx playwright test --project=${{ matrix.project }}
         timeout-minutes: 25
+
+      - name: Upload Playwright HTML report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report-${{ matrix.project }}
+          path: playwright-report/
+          retention-days: 7
+
+      - name: Upload Playwright test results (screenshots, videos, traces)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-results-${{ matrix.project }}
+          path: test-results/
+          retention-days: 7
 
   deploy:
     runs-on: ubuntu-latest
