@@ -87,8 +87,15 @@ onUnmounted(() => {
 watch(
   () => props.stlData,
   (newData) => {
-    if (newData && threeReady.value && props.visible) {
-      waitForNonZeroSize()
+    if (newData && threeReady.value) {
+      if (props.visible) {
+        waitForNonZeroSize()
+      } else if (renderer) {
+        // stlData changed while hidden — the existing scene is now stale.
+        // Dispose it so the visible watcher triggers a full rebuild instead of
+        // just resuming RAF with the wrong (or empty) scene.
+        disposeScene()
+      }
     } else if (!newData) {
       disposeMesh()
     }
@@ -101,10 +108,12 @@ watch(
   (isVisible) => {
     if (isVisible) {
       if (props.stlData && threeReady.value) {
-        if (renderer) {
-          // Already have a scene, just restart RAF
+        if (renderer && currentMesh) {
+          // Scene is populated and current — just resume the render loop
           startRaf()
         } else {
+          // renderer is null, or mesh was disposed (stlData went undefined then
+          // came back) — need a full scene rebuild
           waitForNonZeroSize()
         }
       }
