@@ -104,19 +104,26 @@ function extendSvgViewBox(svg: string, padding: number): string {
   return svg.replace(/viewBox="[^"]+"/, `viewBox="${newViewBox}"`)
 }
 
+const KEY_SORT = (a: Key, b: Key) => {
+  const dy = D.sub(a.y, b.y)
+  return dy !== 0 ? dy : D.sub(a.x, b.x)
+}
+
 /**
- * Filter keys to only include those that should have cutouts.
- * Excludes:
- * - Decal keys (decoration only)
- * - Ghost keys (visual placeholders)
+ * Filter keys to only those that should have switch/stab cutouts.
+ * Excludes decal keys and ghost keys.
  */
-function filterValidKeys(keys: Key[]): Key[] {
-  return keys
-    .filter((key) => !key.decal && !key.ghost)
-    .sort((a, b) => {
-      const dy = D.sub(a.y, b.y)
-      return dy !== 0 ? dy : D.sub(a.x, b.x)
-    })
+function filterCutoutKeys(keys: Key[]): Key[] {
+  return keys.filter((key) => !key.decal && !key.ghost).sort(KEY_SORT)
+}
+
+/**
+ * Filter keys that should contribute to outline generation.
+ * Excludes decal keys only — ghost keys are included so they can
+ * be used to adjust the tight outline shape without producing cutouts.
+ */
+function filterOutlineKeys(keys: Key[]): Key[] {
+  return keys.filter((key) => !key.decal).sort(KEY_SORT)
 }
 
 /**
@@ -451,21 +458,35 @@ export async function buildPlate(
   // Load maker.js
   const makerjs = await getMakerJs()
 
-  // Filter out decal and ghost keys
-  const validKeys = filterValidKeys(keys)
+  // Keys that get switch/stab cutouts (no decals, no ghosts)
+  const cutoutKeys = filterCutoutKeys(keys)
 
   // Check for empty layout
-  if (validKeys.length === 0) {
+  if (cutoutKeys.length === 0) {
     throw new PlateBuilderError(
       'No valid keys found. All keys are either decal or ghost keys, or the layout is empty.',
     )
   }
 
-  // Use the first key's center as the origin so its cutout center lands at (0, 0)
-  const originCenterMm = getKeyCenterMm(validKeys[0]!, spacingX, spacingY)
+  // Use the first non-ghost key's center as the coordinate origin
+  const originCenterMm = getKeyCenterMm(cutoutKeys[0]!, spacingX, spacingY)
 
-  // Convert keys to cutout positions
-  const cutoutPositions = validKeys.map((key) =>
+  // Convert cutout keys to positions (used for switch/stab geometry)
+  const cutoutPositions = cutoutKeys.map((key) =>
+    keyToCutoutPosition(
+      key,
+      cutoutType,
+      spacingX,
+      spacingY,
+      originCenterMm,
+      customCutoutWidth,
+      customCutoutHeight,
+    ),
+  )
+
+  // Keys that contribute to outline (includes ghost keys)
+  const outlineKeys = filterOutlineKeys(keys)
+  const outlinePositions = outlineKeys.map((key) =>
     keyToCutoutPosition(
       key,
       cutoutType,
@@ -481,7 +502,7 @@ export async function buildPlate(
   const cutoutModels: Record<string, MakerJs.IModel> = {}
   for (let i = 0; i < cutoutPositions.length; i++) {
     const position = cutoutPositions[i]
-    const key = validKeys[i]
+    const key = cutoutKeys[i]
     if (position) {
       const cutoutModel = await positionCutout(
         position,
@@ -591,7 +612,7 @@ export async function buildPlate(
   // Create outline model if enabled
   let outlineModel: MakerJs.IModel | null = null
   if (outline?.outlineType === 'tight') {
-    outlineModel = createTightOutlineModel(makerjs, cutoutPositions, outline.tightMargin)
+    outlineModel = createTightOutlineModel(makerjs, outlinePositions, outline.tightMargin)
     // Apply fillet AFTER the union is fully built — not during per-key rect creation.
     // chain.fillet clips the existing paths in-place and returns new arc paths to merge in.
     if (outline.filletRadius > 0) {

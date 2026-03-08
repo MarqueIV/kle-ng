@@ -163,7 +163,7 @@ back a `PlateWorkerResponse` (either `{ type: 'success', result }` or `{ type: '
 
 Main orchestration module. `buildPlate(keys, options)` is the entry point. Called by the Web Worker, not directly by the store.
 
-1. **Filter keys** — Excludes decal and ghost keys, sorts by position.
+1. **Filter keys** — Two separate filter functions are applied depending on context. `filterCutoutKeys()` excludes both decal and ghost keys and is used when creating switch and stabilizer cutouts. `filterOutlineKeys()` excludes only decal keys, so ghost keys are retained and contribute to tight outline hull computation without producing any cutouts. Ghost keys have no effect on the rectangular outline (which is derived from cutout bounding-box bounds, not outline positions). The coordinate origin is anchored to the first non-ghost key, so ghost keys do not shift the coordinate system.
 2. **Transform coordinates** — Converts KLE layout coordinates to maker.js coordinates (see Coordinate System below).
 3. **Create cutouts** — For each key, creates a switch cutout model and optionally a stabilizer model. Per-key `switchRotation` and `stabRotation` are applied on top of the layout rotation.
 4. **Merge cutouts** (optional) — When `mergeCutouts` is enabled, combines overlapping cutouts into simplified paths.
@@ -391,7 +391,7 @@ The plate outline feature generates a border around all cutouts, useful for defi
 
 **`rectangular`** — Generates an axis-aligned bounding box around all cutouts, expanded by four independent directional margins. This is the classic rectangular plate outline.
 
-**`tight`** — Generates an expanded hull that follows the shape of the key cluster rather than a simple bounding box. The hull is computed from the switch cutout positions and expanded outward by a single uniform `tightMargin`. This produces a closer-fitting outline for non-rectangular layouts (e.g., split or ergonomic boards). Corner rounding via `filletRadius` is applied after the hull union is fully computed.
+**`tight`** — Generates an expanded hull that follows the shape of the key cluster rather than a simple bounding box. The hull is computed from key positions (using `filterOutlineKeys()`) and expanded outward by a single uniform `tightMargin`. This produces a closer-fitting outline for non-rectangular layouts (e.g., split or ergonomic boards). Corner rounding via `filletRadius` is applied after the hull union is fully computed. Ghost keys are included in the hull computation, which makes them useful for intentionally extending or reshaping the tight outline — place a ghost key at an edge of the layout to expand the hull in that direction without adding a switch hole.
 
 ### Settings
 
@@ -478,7 +478,7 @@ The plate builder transforms between two coordinate systems:
 
 **Transformation for each key:**
 1. Compute center in KLE layout units using `getKeyCenter()`.
-2. Use the first valid key's center as the origin reference.
+2. Use the first non-ghost key's center as the origin reference (ghost keys are skipped here so they do not shift the coordinate system).
 3. X position: `(key.centerX - origin.centerX) * spacingX`
 4. Y position: `(origin.centerY - key.centerY) * spacingY` (inverted)
 5. Rotation angle: negated from KLE value. Per-key `switchRotation` and `stabRotation` are also negated and added to the layout rotation.
