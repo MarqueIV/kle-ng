@@ -188,15 +188,6 @@ export const usePcbGeneratorStore = defineStore('pcbGenerator', () => {
       const keyboardStore = useKeyboardStore()
       const layout = keyboardStore.getSerializedData('kle-internal')
 
-      // Strip per-key properties not yet supported by the PCB generator backend
-      // Remove when https://github.com/adamws/kicad-kbplacer/issues/57 implemented
-      if (layout?.keys) {
-        for (const key of layout.keys) {
-          delete key.switchRotation
-          delete key.stabRotation
-        }
-      }
-
       // Validate layout size
       // kle-internal format returns: { meta: {...}, keys: [...] }
       const keyCount = layout?.keys?.length || 0
