@@ -6,6 +6,12 @@ import CustomNumberInput from './CustomNumberInput.vue'
 const pcbStore = usePcbGeneratorStore()
 const { settings } = storeToRefs(pcbStore)
 
+// Stabilizer footprint options
+const stabilizerFootprintOptions = [
+  { value: '', label: 'None' },
+  { value: 'Mounting_Keyboard_Stabilizer:Stabilizer_Cherry_MX_{:.2f}u', label: 'Cherry MX' },
+]
+
 // Switch footprint options
 const switchFootprintOptions = [
   { value: 'Switch_Keyboard_Cherry_MX:SW_Cherry_MX_PCB_{:.2f}u', label: 'Cherry MX' },
@@ -72,23 +78,44 @@ const routingOptions = [
     <div class="settings-section">
       <div class="section-title">Switch Configuration</div>
 
-      <!-- Switch Footprint -->
-      <div class="mb-2">
-        <label for="switchFootprint" class="form-label form-label-sm">Footprint</label>
-        <select
-          id="switchFootprint"
-          v-model="settings.switchFootprint"
-          class="form-select form-select-sm"
-          aria-label="Select switch footprint type"
-        >
-          <option
-            v-for="option in switchFootprintOptions"
-            :key="option.value"
-            :value="option.value"
+      <!-- Switch + Stabilizer Footprints -->
+      <div class="row g-2 mb-2">
+        <div class="col-6">
+          <label for="switchFootprint" class="form-label form-label-sm">Switch Footprint</label>
+          <select
+            id="switchFootprint"
+            v-model="settings.switchFootprint"
+            class="form-select form-select-sm"
+            aria-label="Select switch footprint type"
           >
-            {{ option.label }}
-          </option>
-        </select>
+            <option
+              v-for="option in switchFootprintOptions"
+              :key="option.value"
+              :value="option.value"
+            >
+              {{ option.label }}
+            </option>
+          </select>
+        </div>
+        <div class="col-6">
+          <label for="stabilizerFootprint" class="form-label form-label-sm"
+            >Stabilizer Footprint</label
+          >
+          <select
+            id="stabilizerFootprint"
+            v-model="settings.stabilizerFootprint"
+            class="form-select form-select-sm"
+            aria-label="Select stabilizer footprint type"
+          >
+            <option
+              v-for="option in stabilizerFootprintOptions"
+              :key="option.value"
+              :value="option.value"
+            >
+              {{ option.label }}
+            </option>
+          </select>
+        </div>
       </div>
 
       <!-- Switch Rotation -->

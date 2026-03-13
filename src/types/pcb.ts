@@ -1,6 +1,7 @@
 // Internal settings format (stored in Pinia)
 export interface PcbSettings {
   switchFootprint: string
+  stabilizerFootprint: string
   diodeFootprint: string
   routing: string
   // Switch configuration
@@ -16,6 +17,7 @@ export interface PcbSettings {
 // API request format (for submission)
 export interface PcbApiSettings {
   switchFootprint: string
+  stabilizerFootprint: string
   diodeFootprint: string
   routing: string
   // Switch configuration

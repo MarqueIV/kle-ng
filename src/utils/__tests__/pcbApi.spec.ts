@@ -54,6 +54,7 @@ describe('pcbApi', () => {
         layout: { meta: {}, keys: [] },
         settings: {
           switchFootprint: 'Switch_Keyboard_Cherry_MX:SW_Cherry_MX_PCB_{:.2f}u',
+          stabilizerFootprint: 'Mounting_Keyboard_Stabilizer:Stabilizer_Cherry_MX_{:.2f}u',
           diodeFootprint: 'Diode_SMD:D_SOD-123F',
           routing: 'Full',
           switchRotation: 0,
@@ -93,6 +94,7 @@ describe('pcbApi', () => {
         layout: { meta: {}, keys: [] },
         settings: {
           switchFootprint: 'Switch_Keyboard_Cherry_MX:SW_Cherry_MX_PCB_{:.2f}u',
+          stabilizerFootprint: 'Mounting_Keyboard_Stabilizer:Stabilizer_Cherry_MX_{:.2f}u',
           diodeFootprint: 'Diode_SMD:D_SOD-123F',
           routing: 'Full',
           switchRotation: 0,
@@ -139,6 +141,7 @@ describe('pcbApi', () => {
         layout: { meta: {}, keys: [] },
         settings: {
           switchFootprint: 'Switch_Keyboard_Cherry_MX:SW_Cherry_MX_PCB_{:.2f}u',
+          stabilizerFootprint: 'Mounting_Keyboard_Stabilizer:Stabilizer_Cherry_MX_{:.2f}u',
           diodeFootprint: 'Diode_SMD:D_SOD-123F',
           routing: 'Full',
           switchRotation: 0,
@@ -166,6 +169,7 @@ describe('pcbApi', () => {
         layout: { meta: {}, keys: [] },
         settings: {
           switchFootprint: 'Switch_Keyboard_Cherry_MX:SW_Cherry_MX_PCB_{:.2f}u',
+          stabilizerFootprint: 'Mounting_Keyboard_Stabilizer:Stabilizer_Cherry_MX_{:.2f}u',
           diodeFootprint: 'Diode_SMD:D_SOD-123F',
           routing: 'Full',
           switchRotation: 0,
@@ -389,6 +393,7 @@ describe('pcbApi', () => {
         layout: { meta: {}, keys: [] },
         settings: {
           switchFootprint: 'Switch_Keyboard_Cherry_MX:SW_Cherry_MX_PCB_{:.2f}u',
+          stabilizerFootprint: 'Mounting_Keyboard_Stabilizer:Stabilizer_Cherry_MX_{:.2f}u',
           diodeFootprint: 'Diode_SMD:D_SOD-123F',
           routing: 'Full',
           switchRotation: 0,

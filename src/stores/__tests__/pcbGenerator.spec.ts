@@ -75,6 +75,7 @@ describe('pcbGenerator store', () => {
 
       expect(store.settings).toEqual({
         switchFootprint: 'Switch_Keyboard_Cherry_MX:SW_Cherry_MX_PCB_{:.2f}u',
+        stabilizerFootprint: 'Mounting_Keyboard_Stabilizer:Stabilizer_Cherry_MX_{:.2f}u',
         diodeFootprint: 'Diode_SMD:D_SOD-123F',
         routing: 'Full',
         switchRotation: 0,
@@ -106,6 +107,7 @@ describe('pcbGenerator store', () => {
       // Should merge saved settings with migration defaults for new fields
       expect(store.settings).toEqual({
         switchFootprint: 'Switch_Keyboard_Alps_Matias:SW_Alps_Matias_{:.2f}u',
+        stabilizerFootprint: 'Mounting_Keyboard_Stabilizer:Stabilizer_Cherry_MX_{:.2f}u',
         diodeFootprint: 'Diode_SMD:D_SOD-123',
         routing: 'Disabled',
         switchRotation: 0,
@@ -263,6 +265,7 @@ describe('pcbGenerator store', () => {
           layout: mockLayout,
           settings: {
             switchFootprint: store.settings.switchFootprint,
+            stabilizerFootprint: store.settings.stabilizerFootprint,
             diodeFootprint: store.settings.diodeFootprint,
             routing: store.settings.routing,
             switchRotation: store.settings.switchRotation,

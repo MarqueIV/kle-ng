@@ -16,6 +16,7 @@ export const usePcbGeneratorStore = defineStore('pcbGenerator', () => {
   // Settings state (stored as numeric values)
   const settings = ref<PcbSettings>({
     switchFootprint: 'Switch_Keyboard_Cherry_MX:SW_Cherry_MX_PCB_{:.2f}u',
+    stabilizerFootprint: 'Mounting_Keyboard_Stabilizer:Stabilizer_Cherry_MX_{:.2f}u',
     diodeFootprint: 'Diode_SMD:D_SOD-123F',
     routing: 'Full',
     // Switch configuration
@@ -217,6 +218,7 @@ export const usePcbGeneratorStore = defineStore('pcbGenerator', () => {
       // Convert settings to API format
       const apiSettings: PcbApiSettings = {
         switchFootprint: settings.value.switchFootprint,
+        stabilizerFootprint: settings.value.stabilizerFootprint,
         diodeFootprint: settings.value.diodeFootprint,
         routing: settings.value.routing,
         // Switch configuration
@@ -420,6 +422,7 @@ export const usePcbGeneratorStore = defineStore('pcbGenerator', () => {
         // (backward compatibility for users with old localStorage data)
         const defaults: PcbSettings = {
           switchFootprint: 'Switch_Keyboard_Cherry_MX:SW_Cherry_MX_PCB_{:.2f}u',
+          stabilizerFootprint: 'Mounting_Keyboard_Stabilizer:Stabilizer_Cherry_MX_{:.2f}u',
           diodeFootprint: 'Diode_SMD:D_SOD-123F',
           routing: 'Full',
           switchRotation: 0,
