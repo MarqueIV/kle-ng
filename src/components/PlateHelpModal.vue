@@ -122,14 +122,14 @@
           <li><strong>Fillet Radius</strong> - Rounds corners of the outline.</li>
           <li><strong>Plate Thickness</strong> - Thickness of a plate in STL export file.</li>
         </ul>
-        <div class="warning-box">
+        <div class="info-box">
           <div class="d-flex align-items-center gap-2">
-            <BiExclamationTriangle class="text-warning" />
+            <BiInfoCircle class="text-info" />
             <div class="small">
-              The exported JSCAD file uses OpenJSCAD <strong>v1</strong> format. It can be opened in
-              the legacy-compatible viewer at
-              <a href="https://openjscad.com/" target="_blank" rel="noopener noreferrer"
-                >openjscad.com</a
+              The exported JSCAD file uses OpenJSCAD <strong>v2</strong> format. Open it in the
+              online viewer at
+              <a href="https://openjscad.xyz/" target="_blank" rel="noopener noreferrer"
+                >openjscad.xyz</a
               >.
             </div>
           </div>
@@ -159,6 +159,7 @@
 import BaseHelpModal from './BaseHelpModal.vue'
 
 import BiExclamationTriangle from 'bootstrap-icons/icons/exclamation-triangle.svg'
+import BiInfoCircle from 'bootstrap-icons/icons/info-circle.svg'
 import PlateExampleSvg from '@/assets/plate-example.svg'
 
 interface Props {
@@ -185,6 +186,15 @@ const close = () => {
   border-left: 4px solid var(--bs-warning);
   margin-top: 0.75rem;
   overflow: hidden; /* Prevents overlap with floated images */
+}
+
+.info-box {
+  background: var(--bs-tertiary-bg);
+  padding: 12px;
+  border-radius: 6px;
+  border-left: 4px solid var(--bs-info);
+  margin-top: 0.75rem;
+  overflow: hidden;
 }
 
 .help-image {

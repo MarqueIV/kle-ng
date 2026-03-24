@@ -7,6 +7,8 @@
 
 import type MakerJs from 'makerjs'
 import type { Key } from '@adamws/kle-serial'
+import * as jscadModeling from '@jscad/modeling'
+import { serialize as serializeStl } from '@jscad/stl-serializer'
 import type {
   CutoutType,
   PlateGenerationResult,
@@ -26,6 +28,24 @@ import {
   createStabilizerMxBasicModel,
   createStabilizerMxSpecModel,
 } from './cutout-generator'
+import {
+  type Geom2,
+  placeGeom2,
+  extractGeom2Points,
+  fmt,
+  fmtVec2,
+  formatPoints,
+  createRectangleSwitchGeom,
+  buildRectangleSwitchScript,
+  createCherryMxOpenableGeom,
+  buildCherryMxOpenableScript,
+  isRectangleSwitchType,
+  createStabGeoms,
+  buildStabScript,
+  type StabType,
+  createCircleHoleGeom,
+  buildCircleHoleScript,
+} from './jscad-cutouts'
 
 /**
  * Options for building a plate
@@ -75,6 +95,22 @@ export class PlateBuilderError extends Error {
     super(message)
     this.name = 'PlateBuilderError'
   }
+}
+
+/**
+ * A named JSCAD geometry entry used for both STL boolean operations and script generation.
+ * The same `geom` object is used for both outputs — guaranteeing they are always identical.
+ */
+interface JscadNamedGeom {
+  /** Variable name in the generated JSCAD script (e.g. 'switch_0', 'stab_3') */
+  varName: string
+  /** The actual geometry used for boolean operations (STL and script assembly) */
+  geom: Geom2
+  /**
+   * Script lines to emit for this shape. The last line must assign `varName`.
+   * If absent, falls back to polygon point extraction from `geom`.
+   */
+  scriptLines?: string[]
 }
 
 /**
@@ -427,6 +463,247 @@ function mergeOverlappingCutouts(
 }
 
 /**
+ * Extract a sanitized, human-readable label from a key for use in code comments.
+ */
+function sanitizeLabel(key: Key): string {
+  const raw = (key.labels || []).find((l) => l && l.trim()) || ''
+  return raw
+    .replace(/<[^>]+>/g, '')
+    .replace(/\n[\s\S]*/g, '')
+    .trim()
+    .slice(0, 20)
+}
+
+/**
+ * Convert a maker.js outline model to a JSCAD Geom2 polygon.
+ * This is the ONE remaining use of makerjs.chain.toKeyPoints — acceptable
+ * because the tight outline union is complex enough to warrant maker.js.
+ * Uses a generous segment size (1mm arc facet) for outline fillet arcs.
+ */
+function outlineToGeom2(makerjs: typeof MakerJs, outlineModel: MakerJs.IModel): Geom2 {
+  const { polygon } = jscadModeling.primitives
+  const { union } = jscadModeling.booleans
+  const maxArcFacet = 0.5 // mm — tighter than old PLATE_ARC_FACET_MM=1 for better arc quality
+
+  const chainsResult = makerjs.model.findChains(outlineModel, { pointMatchingDistance: 0.005 })
+  const chains: MakerJs.IChain[] = Array.isArray(chainsResult)
+    ? chainsResult
+    : ([] as MakerJs.IChain[]).concat(...Object.values(chainsResult))
+
+  const polys: Geom2[] = chains
+    .filter((c) => c.endless)
+    .map((c) => {
+      const raw = makerjs.chain.toKeyPoints(c, maxArcFacet) as number[][]
+      const pts = raw.map(
+        (p) =>
+          [Math.round(p[0]! * 1000) / 1000, Math.round(p[1]! * 1000) / 1000] as [number, number],
+      )
+      let area = 0
+      for (let i = 0, n = pts.length; i < n; i++) {
+        const [x0, y0] = pts[i]!
+        const [x1, y1] = pts[(i + 1) % n]!
+        area += x0 * y1 - x1 * y0
+      }
+      const ccwPts = area < 0 ? pts.slice().reverse() : pts
+      return polygon({ points: ccwPts }) as Geom2
+    })
+
+  if (polys.length === 0) throw new PlateBuilderError('Outline model produced no closed chains')
+  return polys.reduce((a, b) => union(a, b) as Geom2)
+}
+
+/**
+ * Build an ASCII STL string using pure @jscad/modeling v2 booleans.
+ * No maker.js chain extraction — all geometry is pre-built as Geom2.
+ */
+function buildStl(outlineGeom: Geom2, cutoutGeoms: Geom2[], thickness: number): string | undefined {
+  const { extrudeLinear } = jscadModeling.extrusions
+  const { subtract, union } = jscadModeling.booleans
+
+  let plate2D: Geom2 = outlineGeom
+  if (cutoutGeoms.length > 0) {
+    const allCutouts = cutoutGeoms.reduce((a, b) => union(a, b) as Geom2)
+    plate2D = subtract(outlineGeom, allCutouts) as Geom2
+  }
+
+  const solid = extrudeLinear({ height: thickness }, plate2D)
+  const output = serializeStl({ binary: false }, solid)
+  return Array.isArray(output) ? output.join('') : String(output)
+}
+
+/**
+ * Generate a human-readable OpenJSCAD v2 script for the plate.
+ *
+ * Uses JscadNamedGeom entries — the same geometry objects used for STL booleans
+ * are serialized to script text, guaranteeing script and STL are always identical.
+ * Compatible with https://openjscad.xyz/
+ */
+function buildJscadScript(
+  outlineNamedGeom: JscadNamedGeom,
+  cutouts: JscadNamedGeom[],
+  options: {
+    thickness: number
+    cutoutType: CutoutType
+    stabilizerType: StabilizerType
+    outlineScriptLines?: string[]
+  },
+): string {
+  const { thickness, cutoutType, stabilizerType, outlineScriptLines } = options
+  const date = new Date().toISOString().split('T')[0]
+
+  // Scan all script lines to determine which imports are needed
+  const allLines: string[] = [
+    ...(outlineNamedGeom.scriptLines ?? outlineScriptLines ?? []),
+    ...cutouts.flatMap((c) => c.scriptLines ?? []),
+  ]
+
+  const usesRectangle = allLines.some((l) => /\brectangle\(/.test(l))
+  const usesRoundedRectangle = allLines.some((l) => /\broundedRectangle\(/.test(l))
+  const usesCircle = allLines.some((l) => /\bcircle\(/.test(l))
+  const usesPolygon = allLines.some((l) => /\bpolygon\(/.test(l))
+  const usesTranslate = allLines.some((l) => /\btranslate\(/.test(l))
+  const usesRotateZ = allLines.some((l) => /\brotateZ\(/.test(l))
+
+  const primitiveNames: string[] = ['polygon'] // always need polygon for outline fallback
+  if (usesRectangle && !primitiveNames.includes('rectangle')) primitiveNames.push('rectangle')
+  if (usesRoundedRectangle) primitiveNames.push('roundedRectangle')
+  if (usesCircle) primitiveNames.push('circle')
+  if (!usesPolygon) {
+    // polygon may not be used if no fallback extraction needed; still include for safety
+  }
+  // deduplicate and sort
+  const primitiveImports = [...new Set(primitiveNames)].sort()
+  const transformNames: string[] = []
+  if (usesTranslate) transformNames.push('translate')
+  if (usesRotateZ) transformNames.push('rotateZ')
+  const transformImports = [...new Set(transformNames)].sort()
+
+  const lines: string[] = []
+
+  // Header
+  lines.push(`/**`)
+  lines.push(` * Keyboard Plate - Generated by KLE-NG`)
+  lines.push(` *`)
+  lines.push(` * Cutout type: ${cutoutType}`)
+  lines.push(` * Stabilizer type: ${stabilizerType}`)
+  lines.push(` * Plate thickness: ${thickness} mm`)
+  lines.push(` * Generated: ${date}`)
+  lines.push(` *`)
+  lines.push(` * This file uses the @jscad/modeling API (OpenJSCAD v2).`)
+  lines.push(` * Open with: https://openjscad.xyz/`)
+  lines.push(` */`)
+  lines.push(`const jscad = require('@jscad/modeling')`)
+  lines.push(`const { ${primitiveImports.join(', ')} } = jscad.primitives`)
+  if (transformImports.length > 0) {
+    lines.push(`const { ${transformImports.join(', ')} } = jscad.transforms`)
+  }
+  lines.push(`const { extrudeLinear } = jscad.extrusions`)
+  lines.push(`const { subtract, union } = jscad.booleans`)
+  lines.push(``)
+  lines.push(`const THICKNESS = ${thickness} // mm`)
+  lines.push(``)
+
+  // Outline
+  lines.push(`// --- Plate outline ---`)
+  if (outlineNamedGeom.scriptLines && outlineNamedGeom.scriptLines.length > 0) {
+    lines.push(...outlineNamedGeom.scriptLines)
+  } else {
+    // Fallback: extract polygon points from geom2 (tight outline, no parametric form).
+    // A split keyboard produces multiple disjoint chains in the Geom2 union — each must
+    // become its own polygon(), then all are union()'d into the final outline variable.
+    const rawOutlines = jscadModeling.geometries.geom2.toOutlines(
+      outlineNamedGeom.geom,
+    ) as number[][][]
+    const varName = outlineNamedGeom.varName
+    if (rawOutlines.length <= 1) {
+      const pts = extractGeom2Points(outlineNamedGeom.geom)
+      lines.push(`const ${varName} = polygon({ points: ${formatPoints(pts)} })`)
+    } else {
+      const subVars: string[] = []
+      for (let oi = 0; oi < rawOutlines.length; oi++) {
+        const subVar = `${varName}_${oi}`
+        const rawPts = rawOutlines[oi]!.map(
+          (p) =>
+            [Math.round(p[0]! * 1000) / 1000, Math.round(p[1]! * 1000) / 1000] as [number, number],
+        )
+        let area = 0
+        for (let i = 0, n = rawPts.length; i < n; i++) {
+          const [x0, y0] = rawPts[i]!
+          const [x1, y1] = rawPts[(i + 1) % n]!
+          area += x0 * y1 - x1 * y0
+        }
+        const pts: [number, number][] = area < 0 ? rawPts.slice().reverse() : rawPts
+        lines.push(`const ${subVar} = polygon({ points: ${formatPoints(pts)} })`)
+        subVars.push(subVar)
+      }
+      lines.push(`const ${varName} = union(${subVars.join(', ')})`)
+    }
+  }
+  lines.push(``)
+
+  // Separate cutouts by type for grouped output
+  const switchLines: string[] = []
+  const stabLines: string[] = []
+  const holeLines: string[] = []
+  const allCutoutVars: string[] = []
+
+  for (const entry of cutouts) {
+    const scriptBlock: string[] =
+      entry.scriptLines && entry.scriptLines.length > 0
+        ? entry.scriptLines
+        : [
+            `const ${entry.varName} = polygon({ points: ${formatPoints(extractGeom2Points(entry.geom))} })`,
+          ]
+
+    if (entry.varName.startsWith('switch_')) {
+      switchLines.push(...scriptBlock)
+    } else if (entry.varName.startsWith('stab_')) {
+      stabLines.push(...scriptBlock)
+    } else {
+      holeLines.push(...scriptBlock)
+    }
+    allCutoutVars.push(entry.varName)
+  }
+
+  if (switchLines.length > 0) {
+    lines.push(`// --- Switch cutouts ---`)
+    lines.push(...switchLines)
+    lines.push(``)
+  }
+  if (stabLines.length > 0) {
+    lines.push(`// --- Stabilizer cutouts ---`)
+    lines.push(...stabLines)
+    lines.push(``)
+  }
+  if (holeLines.length > 0) {
+    lines.push(`// --- Holes ---`)
+    lines.push(...holeLines)
+    lines.push(``)
+  }
+
+  // Assembly
+  const outlineVar = outlineNamedGeom.varName
+  lines.push(`// --- Assembly ---`)
+  if (allCutoutVars.length === 0) {
+    lines.push(`const plate2d = ${outlineVar}`)
+  } else if (allCutoutVars.length === 1) {
+    lines.push(`const plate2d = subtract(${outlineVar}, ${allCutoutVars[0]})`)
+  } else {
+    lines.push(`const allCutouts = union(`)
+    lines.push(`  ${allCutoutVars.join(',\n  ')}`)
+    lines.push(`)`)
+    lines.push(`const plate2d = subtract(${outlineVar}, allCutouts)`)
+  }
+  lines.push(`const plate3d = extrudeLinear({ height: THICKNESS }, plate2d)`)
+  lines.push(``)
+  lines.push(`const main = () => plate3d`)
+  lines.push(``)
+  lines.push(`module.exports = { main }`)
+
+  return lines.join('\n')
+}
+
+/**
  * Build a plate from a keyboard layout.
  *
  * @param keys - Array of keys from the keyboard layout
@@ -498,78 +775,158 @@ export async function buildPlate(
     ),
   )
 
-  // Create cutout models
+  // Create cutout models (maker.js — for SVG/DXF) and JSCAD native geoms (for STL/script)
   const cutoutModels: Record<string, MakerJs.IModel> = {}
+  const namedGeoms: JscadNamedGeom[] = []
+
   for (let i = 0; i < cutoutPositions.length; i++) {
     const position = cutoutPositions[i]
     const key = cutoutKeys[i]
-    if (position) {
-      const cutoutModel = await positionCutout(
-        position,
-        cutoutType,
-        filletRadius,
-        sizeAdjust,
-        customCutoutWidth,
-        customCutoutHeight,
-        key?.switchRotation || 0,
+    if (!position) continue
+
+    // --- Maker.js side (SVG/DXF, unchanged) ---
+    const cutoutModel = await positionCutout(
+      position,
+      cutoutType,
+      filletRadius,
+      sizeAdjust,
+      customCutoutWidth,
+      customCutoutHeight,
+      key?.switchRotation || 0,
+    )
+    cutoutModels[`cutout_${i}`] = cutoutModel
+
+    // --- JSCAD side (STL + script) ---
+    const gen = getCutoutGenerator(cutoutType, customCutoutWidth, customCutoutHeight)
+    const w = gen.width - sizeAdjust
+    const h = gen.height - sizeAdjust
+    const keyCenterX = position.centerX + position.width / 2
+    const keyCenterY = position.centerY + position.height / 2
+    const switchRotDeg = position.rotationAngle - (key?.switchRotation || 0)
+
+    const label = key ? sanitizeLabel(key) : ''
+    const size = key ? `${key.width ?? 1}u` : ''
+    const switchComment = [label ? `"${label}"` : '', size].filter(Boolean).join(' ')
+    const varName = `switch_${i}`
+
+    let switchGeom: Geom2
+    let scriptLines: string[]
+    if (isRectangleSwitchType(cutoutType)) {
+      switchGeom = placeGeom2(
+        createRectangleSwitchGeom({ width: w, height: h, filletRadius }),
+        keyCenterX,
+        keyCenterY,
+        switchRotDeg,
       )
-      cutoutModels[`cutout_${i}`] = cutoutModel
+      scriptLines = buildRectangleSwitchScript(
+        varName,
+        { width: w, height: h, filletRadius },
+        keyCenterX,
+        keyCenterY,
+        switchRotDeg,
+        switchComment,
+      )
+    } else {
+      // cherry-mx-openable
+      switchGeom = placeGeom2(
+        createCherryMxOpenableGeom({ width: w, height: h, filletRadius, sizeAdjust }),
+        keyCenterX,
+        keyCenterY,
+        switchRotDeg,
+      )
+      scriptLines = buildCherryMxOpenableScript(
+        varName,
+        { width: w, height: h, filletRadius, sizeAdjust },
+        keyCenterX,
+        keyCenterY,
+        switchRotDeg,
+        switchComment,
+      )
+    }
+    namedGeoms.push({ varName, geom: switchGeom, scriptLines })
 
-      // Create stabilizer cutout if enabled
-      if (stabilizerType !== 'none' && key) {
-        const keyWidth = key.width || 1
-        const keyHeight = key.height || 1
-        let stabModel: MakerJs.IModel | null
-        if (stabilizerType === 'mx-spec' || stabilizerType === 'mx-spec-narrow') {
-          stabModel = createStabilizerMxSpecModel(
-            makerjs,
-            keyWidth,
-            keyHeight,
-            stabilizerFilletRadius,
-            sizeAdjust,
-            stabilizerType === 'mx-spec-narrow',
-          )
-        } else if (
-          stabilizerType === 'mx-basic' ||
-          stabilizerType === 'mx-bidirectional' ||
-          stabilizerType === 'mx-tight'
-        ) {
-          stabModel = createStabilizerMxBasicModel(
-            makerjs,
-            stabilizerType,
-            keyWidth,
-            keyHeight,
-            stabilizerFilletRadius,
-            sizeAdjust,
-          )
-        } else {
-          stabModel = createStabilizerAlpsModel(
-            makerjs,
-            stabilizerType,
-            keyWidth,
-            keyHeight,
-            stabilizerFilletRadius,
-            sizeAdjust,
-          )
-        }
-        if (stabModel) {
-          // The stabilizer assembly is centered at its local origin (0,0).
-          // position.centerX/Y is where makerjs.model.move places the switch
-          // cutout's bottom-left corner (Rectangle referenced from bottom-left).
-          // The key's true center is offset by +width/2, +height/2 from that.
-          const keyCenterX = D.add(position.centerX, D.div(position.width, 2))
-          const keyCenterY = D.add(position.centerY, D.div(position.height, 2))
+    // Create stabilizer cutout if enabled
+    if (stabilizerType !== 'none' && key) {
+      const keyWidth = key.width || 1
+      const keyHeight = key.height || 1
+      const totalStabRotation = position.rotationAngle - (key.stabRotation || 0)
+      const stabKeyCenterX = D.add(position.centerX, D.div(position.width, 2))
+      const stabKeyCenterY = D.add(position.centerY, D.div(position.height, 2))
 
-          let positionedStab = stabModel
-          // Combine layout rotation with per-key stabilizer rotation.
-          // stabRotation uses KLE convention (clockwise positive), negate for maker.js (CCW positive).
-          const totalStabRotation = position.rotationAngle - (key.stabRotation || 0)
-          if (totalStabRotation !== 0) {
-            positionedStab = makerjs.model.rotate(positionedStab, totalStabRotation, [0, 0])
-          }
-          positionedStab = makerjs.model.move(positionedStab, [keyCenterX, keyCenterY])
-          cutoutModels[`stabilizer_${i}`] = positionedStab
+      // Maker.js stab model (SVG/DXF)
+      let stabModel: MakerJs.IModel | null
+      if (stabilizerType === 'mx-spec' || stabilizerType === 'mx-spec-narrow') {
+        stabModel = createStabilizerMxSpecModel(
+          makerjs,
+          keyWidth,
+          keyHeight,
+          stabilizerFilletRadius,
+          sizeAdjust,
+          stabilizerType === 'mx-spec-narrow',
+        )
+      } else if (
+        stabilizerType === 'mx-basic' ||
+        stabilizerType === 'mx-bidirectional' ||
+        stabilizerType === 'mx-tight'
+      ) {
+        stabModel = createStabilizerMxBasicModel(
+          makerjs,
+          stabilizerType,
+          keyWidth,
+          keyHeight,
+          stabilizerFilletRadius,
+          sizeAdjust,
+        )
+      } else {
+        stabModel = createStabilizerAlpsModel(
+          makerjs,
+          stabilizerType,
+          keyWidth,
+          keyHeight,
+          stabilizerFilletRadius,
+          sizeAdjust,
+        )
+      }
+      if (stabModel) {
+        let positionedStab = stabModel
+        if (totalStabRotation !== 0) {
+          positionedStab = makerjs.model.rotate(positionedStab, totalStabRotation, [0, 0])
         }
+        positionedStab = makerjs.model.move(positionedStab, [stabKeyCenterX, stabKeyCenterY])
+        cutoutModels[`stabilizer_${i}`] = positionedStab
+      }
+
+      // JSCAD stab geoms
+      const stabVarName = `stab_${i}`
+      const stabComment = label
+        ? `stabilizer for "${label}" (switch ${i})`
+        : `stabilizer for switch ${i}`
+      const stabOpts = {
+        keyWidth,
+        keyHeight,
+        filletRadius: stabilizerFilletRadius,
+        sizeAdjust,
+      }
+      const stabGeomPair = createStabGeoms(stabilizerType as StabType, stabOpts)
+      if (stabGeomPair) {
+        const [leftGeom, rightGeom] = stabGeomPair
+        const placedLeft = placeGeom2(leftGeom, stabKeyCenterX, stabKeyCenterY, totalStabRotation)
+        const placedRight = placeGeom2(rightGeom, stabKeyCenterX, stabKeyCenterY, totalStabRotation)
+        const stabGeom = jscadModeling.booleans.union(placedLeft, placedRight) as Geom2
+        const stabScriptLines = buildStabScript(
+          stabilizerType as StabType,
+          stabVarName,
+          stabOpts,
+          stabKeyCenterX,
+          stabKeyCenterY,
+          totalStabRotation,
+          stabComment,
+        )
+        namedGeoms.push({
+          varName: stabVarName,
+          geom: stabGeom,
+          scriptLines: stabScriptLines ?? undefined,
+        })
       }
     }
   }
@@ -599,14 +956,47 @@ export async function buildPlate(
 
   // Add corner mounting holes to cutouts (rectangular outline only — tight has no fixed corners)
   if (mountingHoles?.enabled && outline?.outlineType === 'rectangular') {
+    const holeRadius = mountingHoles.diameter / 2
+    const edgeDist = mountingHoles.edgeDistance
+    const { left: mLeft, right: mRight, top: mTop, bottom: mBottom } = outlineMargins
+    const hLeft = bounds.minX - mLeft + edgeDist
+    const hRight = bounds.maxX + mRight - edgeDist
+    const hBottom = bounds.minY - mBottom + edgeDist
+    const hTop = bounds.maxY + mTop - edgeDist
+    const cornerPositions: [string, [number, number]][] = [
+      ['holeBottomLeft', [hLeft, hBottom]],
+      ['holeBottomRight', [hRight, hBottom]],
+      ['holeTopLeft', [hLeft, hTop]],
+      ['holeTopRight', [hRight, hTop]],
+    ]
     const holeModels = createCornerMountingHoles(makerjs, bounds, outlineMargins, mountingHoles)
     Object.assign(plateModel.models!, holeModels)
+    for (const [name, [cx, cy]] of cornerPositions) {
+      const varName = name.replace(/[^a-zA-Z0-9_]/g, '_')
+      namedGeoms.push({
+        varName,
+        geom: placeGeom2(createCircleHoleGeom(holeRadius), cx, cy, 0),
+        scriptLines: buildCircleHoleScript(varName, holeRadius, cx, cy),
+      })
+    }
   }
 
   // Add custom holes
   if (customHoles?.enabled && customHoles.holes.length > 0) {
     const customHoleModels = createCustomHoles(makerjs, customHoles, spacingX, spacingY)
     Object.assign(plateModel.models!, customHoleModels)
+    for (let idx = 0; idx < customHoles.holes.length; idx++) {
+      const hole = customHoles.holes[idx]!
+      const radius = hole.diameter / 2
+      const cx = hole.offsetX * spacingX
+      const cy = -hole.offsetY * spacingY
+      const varName = `customHole_${idx}`
+      namedGeoms.push({
+        varName,
+        geom: placeGeom2(createCircleHoleGeom(radius), cx, cy, 0),
+        scriptLines: buildCircleHoleScript(varName, radius, cx, cy),
+      })
+    }
   }
 
   // Create outline model if enabled
@@ -634,20 +1024,38 @@ export async function buildPlate(
     outlineModel = createOutlineModel(makerjs, bounds, outlineMargins, outline.filletRadius)
   }
 
-  // Build 3D model BEFORE layer-tagging so paths are clean for JSCAD chain containment
-  let model3D: MakerJs.IModel | null = null
+  // Build JSCAD outline geom — rectangular outline uses parametric script; tight uses polygon fallback
+  let outlineNamedGeom: JscadNamedGeom | null = null
   if (outlineModel) {
-    // Clone and strip layers from outline to avoid chain containment issues
+    // Clone and strip layers so path walker doesn't see styling tags during conversion
     const outlineClean = makerjs.model.clone(outlineModel)
     makerjs.model.walkPaths(outlineClean, (_mp: MakerJs.IModel, _pi: string, p: MakerJs.IPath) => {
       delete p.layer
     })
-    model3D = {
-      models: {
-        outline: outlineClean,
-        cutouts: makerjs.model.clone(plateModel),
-      },
-      units: makerjs.unitType.Millimeter,
+    const outlineGeom = outlineToGeom2(makerjs, outlineClean)
+
+    let outlineScriptLines: string[] | undefined
+    if (outline?.outlineType === 'rectangular') {
+      const { left: mLeft, right: mRight, top: mTop, bottom: mBottom } = outlineMargins
+      const ow = bounds.maxX - bounds.minX + mLeft + mRight
+      const oh = bounds.maxY - bounds.minY + mTop + mBottom
+      const ocx = bounds.minX - mLeft + ow / 2
+      const ocy = bounds.minY - mBottom + oh / 2
+      const fr = outline.filletRadius
+      const roundStr = fr > 0 ? `, roundRadius: ${fmt(fr)}` : ''
+      const prim =
+        fr > 0
+          ? `roundedRectangle({ size: [${fmt(ow)}, ${fmt(oh)}]${roundStr} })`
+          : `rectangle({ size: [${fmt(ow)}, ${fmt(oh)}] })`
+      const expr = ocx !== 0 || ocy !== 0 ? `translate(${fmtVec2(ocx, ocy)}, ${prim})` : prim
+      outlineScriptLines = [`const outline = ${expr}`]
+    }
+    // Tight outline: no parametric form — polygon fallback used by buildJscadScript
+
+    outlineNamedGeom = {
+      varName: 'outline',
+      geom: outlineGeom,
+      scriptLines: outlineScriptLines,
     }
   }
 
@@ -763,19 +1171,19 @@ export async function buildPlate(
   let jscadScript: string | undefined
   let stlData: string | undefined
 
-  if (model3D) {
-    jscadScript = makerjs.exporter.toJscadScript(model3D, {
-      extrude: thickness,
-      units: makerjs.unitType.Millimeter,
+  if (outlineNamedGeom) {
+    jscadScript = buildJscadScript(outlineNamedGeom, namedGeoms, {
+      thickness,
+      cutoutType,
+      stabilizerType,
     })
 
     try {
-      const { CAG } = await import('@jscad/csg')
-      const stlSerializer = await import('@jscad/stl-serializer')
-      stlData = makerjs.exporter.toJscadSTL(CAG, stlSerializer, model3D, {
-        extrude: thickness,
-        units: makerjs.unitType.Millimeter,
-      }) as string
+      stlData = buildStl(
+        outlineNamedGeom.geom,
+        namedGeoms.map((g) => g.geom),
+        thickness,
+      )
     } catch (err) {
       console.warn('STL generation failed:', err)
     }

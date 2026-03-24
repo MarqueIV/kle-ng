@@ -19,7 +19,15 @@ PlateGeneratorPanel.vue            ← Entry point, tabbed 2-column layout
 stores/plateGenerator.ts           ← State management (Pinia)
 utils/plate/plate-worker.ts        ← Web Worker running buildPlate() off main thread
 utils/plate/plate-builder.ts       ← Orchestrates geometry → export
-utils/plate/cutout-generator.ts    ← Switch & stabilizer cutout shapes
+utils/plate/cutout-generator.ts    ← Switch & stabilizer cutout shapes (maker.js)
+utils/plate/plate-dimensions.ts    ← Shared stabilizer spacing & dimension constants
+utils/plate/plate-settings-validator.ts ← JSON settings validation logic
+utils/plate/jscad-cutouts/         ← JSCAD Geom2 geometry modules
+│   ├── geom-utils.ts              ←   Geom2 type alias, placeGeom2, extractGeom2Points, formatting helpers
+│   ├── switch-cutouts.ts          ←   Switch cutout geometry (rectangle, openable)
+│   ├── stabilizer-cutouts.ts      ←   Stabilizer cutout geometry (MX basic/spec, Alps)
+│   ├── hole-cutouts.ts            ←   Circular hole geometry
+│   └── index.ts                   ←   Barrel export
 utils/makerjs-loader.ts            ← Lazy-loads maker.js library
 utils/three-loader.ts              ← Lazy-loads Three.js + STLLoader + OrbitControls
 utils/keyboard-geometry.ts         ← Key center position math
@@ -174,12 +182,16 @@ Main orchestration module. `buildPlate(keys, options)` is the entry point. Calle
 
 The preview SVG includes an origin crosshair (red line) and 1mm padding. Outline is rendered in blue (#0066cc). The download SVG uses black strokes and mm units. DXF output uses POLYLINE entities.
 
+**`JscadNamedGeom` interface:**
+
+An internal interface in `plate-builder.ts` that binds three things together: the JSCAD variable name used in the generated script (e.g. `'switch_0'`), the actual `Geom2` object used for boolean operations, and optional script lines to emit for that shape. When `scriptLines` is absent, the script falls back to extracting polygon points from the `Geom2` directly. Using the same `Geom2` for both script and STL output is what guarantees they are always identical.
+
 **3D Export (JSCAD / STL):**
 
-When outline is enabled, `buildPlate()` produces two additional outputs using the `model3D` assembly (outline + cutouts extruded by the `thickness` setting):
+When outline is enabled, `buildPlate()` produces two additional outputs using `@jscad/modeling` v2 booleans. All cutout geometry is pre-built as `Geom2` objects from the `jscad-cutouts/` modules and wrapped in `JscadNamedGeom` entries, so both outputs are derived from the **same geometry objects**, guaranteeing they are always identical. The plate outline itself is converted from the maker.js tight-outline chain using `outlineToGeom2()`, which calls `makerjs.chain.toKeyPoints` with 0.5mm arc facet precision — this is the one remaining maker.js usage in the JSCAD geometry path.
 
-- **JSCAD script** — Generated with `makerjs.exporter.toJscadScript(model3D, { extrude: thickness, units: 'mm' })`. Can be opened directly in [OpenJSCAD](https://openjscad.xyz/).
-- **STL** — Generated with `makerjs.exporter.toJscadSTL(CAG, stlSerializer, model3D, { extrude: thickness, units: 'mm' })` using `@jscad/csg` and `@jscad/stl-serializer`. STL generation is wrapped in a try/catch; if it fails (e.g., in environments where `@jscad/csg` cannot run), a warning is logged and `stlData` is omitted from the result rather than failing the entire generation.
+- **JSCAD script** (`buildJscadScript()`) — Emits an OpenJSCAD v2 script using parametric primitives (`rectangle`, `roundedRectangle`, `circle`, `polygon`) and boolean operations (`union`, `subtract`, `extrudeLinear`). Can be opened directly in [OpenJSCAD](https://openjscad.xyz/).
+- **STL** (`buildStl()`) — Performs `subtract(outline, union(cutouts))`, extrudes with `extrudeLinear({ height: thickness })`, and serializes to ASCII STL via `@jscad/stl-serializer`. STL generation is wrapped in a try/catch; if it fails, a warning is logged and `stlData` is omitted from the result rather than failing the entire generation.
 
 Both outputs are `undefined` when outline is disabled. The `thickness` option defaults to 1.5mm and is set via the Outline tab in the UI.
 
@@ -298,6 +310,32 @@ When `mergeCutouts` is enabled in `PlateSettings`, overlapping cutout shapes are
 - Merging adds processing time, especially for large layouts
 - The merged output loses the distinction between individual cutout types
 - Some minor path simplification may occur at intersection points
+
+#### `plate/plate-dimensions.ts`
+
+Single source of truth for stabilizer spacing and pad dimension constants. Previously these values were inlined in `cutout-generator.ts`; they are now exported here and imported by both `cutout-generator.ts` and the `jscad-cutouts/` modules.
+
+- `getCherryMxStabilizerSpacing(keySize)` — Returns the Cherry MX center-to-center stabilizer spacing in mm for the given key size, or `null` if no stabilizer is needed (key size < 2U).
+- `getAlpsStabilizerSpacing(keySize, isAt101)` — Returns the Alps stabilizer spacing in mm. The AT101 variant has an additional threshold at 2.75U (20.5mm).
+- `getMxBasicStabDimensions(type)` — Returns width, height, and Y-offset for the simple MX pad types (`mx-basic`, `mx-tight`, `mx-bidirectional`).
+- `getMxSpecLeftPadVertices(k, spacing, keySize, narrowChannel)` — Returns the 16-point clockwise polygon defining the left MX Spec stabilizer pad, with kerf compensation applied. The right pad is derived by negating X and reversing winding order.
+- Exported dimension constants: `MX_BASIC_STAB`, `MX_BIDIRECTIONAL_STAB`, `MX_TIGHT_STAB`, `ALPS_STAB`.
+
+#### `plate/plate-settings-validator.ts`
+
+Consolidates JSON settings validation logic used when importing plate settings from an external JSON file.
+
+- `validatePlateSettingsJson(text)` — Parses the JSON string and validates the structure against the known `PlateSettings` shape. Returns a `ValidationResult` that is either `{ valid: true, settings, warnings }` (with non-fatal unknown-field warnings) or `{ valid: false, error }` for structural errors. Validates known `CutoutType` and `StabilizerType` enum values, required fields (e.g. `outline.outlineType`), numeric field types, and warns on unrecognized keys at all nesting levels.
+
+#### `plate/jscad-cutouts/`
+
+Modules providing `Geom2` geometry objects and corresponding JSCAD script builders for all cutout types. Both the STL and JSCAD script outputs in `plate-builder.ts` consume the same `Geom2` objects from these modules.
+
+- **`geom-utils.ts`** — `Geom2` type alias (re-exported from `@jscad/modeling`), `placeGeom2(geom, x, y, angle)` for positioning geometry, `extractGeom2Points(geom)` for polygon point extraction, and formatting helpers (`fmt`, `fmtVec2`, `formatPoints`) used when emitting JSCAD script literals.
+- **`switch-cutouts.ts`** — `createRectangleSwitchGeom` / `buildRectangleSwitchScript` (handles all rectangle-based switch types including Cherry MX basic, Alps, Choc, and custom), `createCherryMxOpenableGeom` / `buildCherryMxOpenableScript`, and `isRectangleSwitchType` predicate.
+- **`stabilizer-cutouts.ts`** — `createStabGeoms` / `buildStabScript` (dispatcher), `createMxBasicStabGeoms` / `buildMxBasicStabScript`, `createMxSpecStabGeoms` / `buildMxSpecStabScript`, `createAlpsStabGeoms` / `buildAlpsStabScript`.
+- **`hole-cutouts.ts`** — `createCircleHoleGeom` / `buildCircleHoleScript` for circular mounting and custom holes.
+- **`index.ts`** — Barrel export for all of the above.
 
 #### `makerjs-loader.ts`
 
@@ -502,7 +540,7 @@ The `PlateGeneratorControls` component also checks `keyboardStore.keys.length` t
 - **SVG** — Vector format with millimeter units. Suitable for direct use in laser cutting software or vector editors.
 - **DXF** — CAD exchange format using POLYLINE entities. Compatible with most CAD/CAM software.
 - **STL** — ASCII STL format. A solid 3D model of the plate (outline extruded by `thickness`, with cutouts subtracted). For use in 3D printing slicers or CAD tools. Only generated when outline is enabled.
-- **JSCAD** — OpenJSCAD script that produces the same 3D solid as the STL. Can be opened in [OpenJSCAD](https://openjscad.xyz/) for further editing. Only generated when outline is enabled.
+- **JSCAD** — OpenJSCAD v2 script that produces the same 3D solid as the STL. Can be opened in [OpenJSCAD](https://openjscad.xyz/) for further editing or customization. Only generated when outline is enabled.
 
 ### Export Options
 

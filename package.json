@@ -25,8 +25,8 @@
   },
   "dependencies": {
     "@adamws/kle-serial": "github:adamws/kle-serial2#v0.19.0",
-    "@jscad/csg": "^0.7.0",
-    "@jscad/stl-serializer": "^0.2.0",
+    "@jscad/modeling": "^2.13.0",
+    "@jscad/stl-serializer": "^2.1.23",
     "bootstrap": "^5.3.8",
     "bootstrap-icons": "^1.13.1",
     "decimal.js": "^10.6.0",

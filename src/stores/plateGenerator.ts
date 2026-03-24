@@ -5,6 +5,7 @@ import {
   validateFilletRadius,
   validateStabilizerFilletRadius,
   validateCustomCutoutDimension,
+  getCutoutOptions,
 } from '@/utils/plate/cutout-generator'
 import { useKeyboardStore } from '@/stores/keyboard'
 import type { PlateWorkerResponse } from '@/utils/plate/plate-worker'
@@ -326,9 +327,17 @@ export const usePlateGeneratorStore = defineStore('plateGenerator', () => {
     if (saved) {
       try {
         const parsed = JSON.parse(saved)
+        const validCutoutTypes = new Set([
+          'custom-rectangle',
+          ...getCutoutOptions().map((o) => o.value),
+        ])
+        const cutoutType = validCutoutTypes.has(parsed.cutoutType)
+          ? parsed.cutoutType
+          : defaultSettings.cutoutType
         settings.value = {
           ...defaultSettings,
           ...parsed,
+          cutoutType,
           outline: {
             ...defaultSettings.outline,
             ...parsed.outline,

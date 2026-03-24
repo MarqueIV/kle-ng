@@ -15,6 +15,7 @@ import type {
 } from '@/types/plate'
 import { getMakerJs } from '@/utils/makerjs-loader'
 import { D } from '@/utils/decimal-math'
+import { getCherryMxStabilizerSpacing, getAlpsStabilizerSpacing } from './plate-dimensions'
 
 /**
  * Interface for cutout generators
@@ -401,43 +402,8 @@ export function validateCustomCutoutDimension(value: number, label: string): str
   return null
 }
 
-/**
- * Get the Cherry MX stabilizer spacing (in mm) for a given key size in units.
- * Returns null if key size < 2 (no stabilizer needed).
- */
-function getCherryMxStabilizerSpacing(keySize: number): number | null {
-  if (keySize >= 8) return 66.675
-  if (keySize >= 7) return 57.15
-  if (keySize >= 6.25) return 50
-  if (keySize >= 6) return 47.625
-  if (keySize >= 3) return 19.05
-  if (keySize >= 2) return 11.938
-  return null
-}
-
-/**
- * Alps stabilizer spacing table.
- * AT101 has an additional threshold at 2.75U.
- */
-const alpsSpacingTable: { minKeySize: number; spacing: number; at101Only?: boolean }[] = [
-  { minKeySize: 6.5, spacing: 45.3 },
-  { minKeySize: 6.25, spacing: 41.86 },
-  { minKeySize: 2.75, spacing: 20.5, at101Only: true },
-  { minKeySize: 2, spacing: 14 },
-  { minKeySize: 1.75, spacing: 12 },
-]
-
-/**
- * Get the Alps stabilizer spacing (in mm) for a given key size in units.
- * Returns null if key size < 1.75 (no stabilizer needed).
- */
-function getAlpsStabilizerSpacing(keySize: number, isAt101: boolean): number | null {
-  for (const { minKeySize, spacing, at101Only } of alpsSpacingTable) {
-    if (at101Only && !isAt101) continue
-    if (keySize >= minKeySize) return spacing
-  }
-  return null
-}
+// getCherryMxStabilizerSpacing, getAlpsStabilizerSpacing, alpsSpacingTable
+// are imported from plate-dimensions.ts above.
 
 /**
  * Get stabilizer type options for dropdown menus
