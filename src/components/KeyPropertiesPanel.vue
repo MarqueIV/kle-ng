@@ -1151,9 +1151,9 @@ const updateCurrentValues = () => {
   // For single selection, use the key's values directly
   if (selectedKeys.value.length === 1) {
     labels.value = [...firstKey.labels]
-    // Map per-label colors, falling back to default color
-    labelColors.value = firstKey.textColor.map(
-      (color: string) => color || firstKey.default.textColor,
+    // Map per-label colors, falling back to default color; hide color for empty label positions
+    labelColors.value = firstKey.textColor.map((color: string, i: number) =>
+      firstKey.labels[i] ? color || firstKey.default.textColor : firstKey.default.textColor,
     )
 
     currentWidth.value = formatNumber(firstKey.width)
@@ -1184,7 +1184,9 @@ const updateCurrentValues = () => {
   } else {
     // For multi-selection, clear labels and use first key for other values
     labels.value = Array(12).fill(undefined)
-    labelColors.value = Array(12).fill(firstKey.default.textColor)
+    labelColors.value = firstKey.textColor.map((color: string, i: number) =>
+      firstKey.labels[i] ? color || firstKey.default.textColor : firstKey.default.textColor,
+    )
 
     currentWidth.value = formatNumber(firstKey.width)
     currentHeight.value = formatNumber(firstKey.height)
@@ -1578,10 +1580,13 @@ const updateLabelColorPreview = (index: number) => {
   if (selectedKeys.value.length === 0) return
 
   selectedKeys.value.forEach((key) => {
-    // Set the color for this specific label
+    if (!key.labels[index]) {
+      // No label text at this position — clear any stored color to keep layout in sync
+      key.textColor[index] = ''
+      return
+    }
     const newColor = labelColors.value[index]
     if (newColor === key.default.textColor) {
-      // If it's the same as default, store empty string to use default
       key.textColor[index] = ''
     } else {
       key.textColor[index] = newColor || ''
@@ -1593,10 +1598,13 @@ const updateLabelColor = (index: number) => {
   if (selectedKeys.value.length === 0) return
 
   selectedKeys.value.forEach((key) => {
-    // Set the color for this specific label
+    if (!key.labels[index]) {
+      // No label text at this position — clear any stored color to keep layout in sync
+      key.textColor[index] = ''
+      return
+    }
     const newColor = labelColors.value[index]
     if (newColor === key.default.textColor) {
-      // If it's the same as default, store empty string to use default
       key.textColor[index] = ''
     } else {
       key.textColor[index] = newColor || ''

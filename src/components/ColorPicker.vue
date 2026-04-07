@@ -76,6 +76,7 @@ const acceptChanges = () => {
   // Refresh the recently used colors in the custom color picker
   customColorPickerRef.value?.refreshRecentlyUsedColors()
 
+  emit('update:modelValue', colorValue.value)
   emit('change', colorValue.value)
   emit('input', colorValue.value)
   showPicker.value = false

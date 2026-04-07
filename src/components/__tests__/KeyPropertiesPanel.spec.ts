@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import KeyPropertiesPanel from '../KeyPropertiesPanel.vue'
+import ColorPicker from '../ColorPicker.vue'
 import { useKeyboardStore } from '@/stores/keyboard'
 import { Key } from '@adamws/kle-serial'
 
@@ -396,6 +397,138 @@ describe('KeyPropertiesPanel', () => {
 
       expect(clearTopButton.attributes('disabled')).toBeDefined()
       expect(clearFrontButton.attributes('disabled')).toBeDefined()
+    })
+  })
+
+  describe('Label Color Behavior', () => {
+    // The first 12 ColorPicker instances in KeyPropertiesPanel correspond to label
+    // positions 0–11 (top-left … front top-right). Indices 12 and 13 are the key
+    // background color and default text color pickers respectively.
+    const getLabelColorPickers = (wrapper: ReturnType<typeof mount>) =>
+      wrapper.findAllComponents(ColorPicker).slice(0, 12)
+
+    describe('labelColors initialization', () => {
+      it('shows stored color for a label position that has text (single selection)', async () => {
+        const key = new Key()
+        key.labels[0] = 'Q'
+        key.textColor[0] = '#0000ff'
+        store.keys = [key]
+        store.selectedKeys = [key]
+
+        const wrapper = mount(KeyPropertiesPanel, { global: { plugins: [pinia] } })
+        await wrapper.vm.$nextTick()
+
+        expect(getLabelColorPickers(wrapper)[0]?.props('modelValue')).toBe('#0000ff')
+      })
+
+      it('shows default color for a position with no label text even if textColor is stored (single selection)', async () => {
+        // Regression: a stale textColor entry from a prior operation must not
+        // appear in the panel when the label at that position is empty.
+        const key = new Key()
+        key.labels[0] = ''
+        key.textColor[0] = '#ff0000' // stale leftover
+        store.keys = [key]
+        store.selectedKeys = [key]
+
+        const wrapper = mount(KeyPropertiesPanel, { global: { plugins: [pinia] } })
+        await wrapper.vm.$nextTick()
+
+        expect(getLabelColorPickers(wrapper)[0]?.props('modelValue')).toBe(key.default.textColor)
+      })
+
+      it('shows first-key colors for used positions and default for empty positions (multi selection)', async () => {
+        const key1 = new Key()
+        key1.labels[0] = 'A'
+        key1.textColor[0] = '#0000ff'
+        key1.labels[1] = '' // position 1 unused on key1
+
+        const key2 = new Key()
+        key2.labels[0] = 'B'
+        key2.textColor[0] = '#00ff00'
+        key2.labels[1] = 'C'
+        key2.textColor[1] = '#ff0000'
+
+        store.keys = [key1, key2]
+        store.selectedKeys = [key1, key2]
+
+        const wrapper = mount(KeyPropertiesPanel, { global: { plugins: [pinia] } })
+        await wrapper.vm.$nextTick()
+
+        const pickers = getLabelColorPickers(wrapper)
+        // Position 0 has text on key1 → shows key1's stored color
+        expect(pickers[0]?.props('modelValue')).toBe('#0000ff')
+        // Position 1 has no text on key1 → shows default, even though key2 has one
+        expect(pickers[1]?.props('modelValue')).toBe(key1.default.textColor)
+      })
+    })
+
+    describe('applying color changes', () => {
+      it('writes textColor only to keys that have label text at the target position', async () => {
+        const keyWithLabel = new Key()
+        keyWithLabel.labels[0] = 'Q'
+        const keyWithoutLabel = new Key()
+        // keyWithoutLabel has no text at position 0
+
+        store.keys = [keyWithLabel, keyWithoutLabel]
+        store.selectedKeys = [keyWithLabel, keyWithoutLabel]
+
+        const wrapper = mount(KeyPropertiesPanel, { global: { plugins: [pinia] } })
+        await wrapper.vm.$nextTick()
+
+        // Simulate: update:modelValue syncs labelColors[0], then change commits
+        const pickers = getLabelColorPickers(wrapper)
+        await pickers[0]?.vm.$emit('update:modelValue', '#ff0000')
+        await pickers[0]?.vm.$emit('change', '#ff0000')
+        await wrapper.vm.$nextTick()
+
+        expect(keyWithLabel.textColor[0]).toBe('#ff0000')
+        // Key with no label must not receive the color
+        expect(keyWithoutLabel.textColor[0]).toBe('')
+      })
+
+      it('clears any stale textColor on keys that have no label at the changed position', async () => {
+        const key = new Key()
+        key.labels[0] = ''
+        key.textColor[0] = '#ff0000' // stale leftover
+
+        store.keys = [key]
+        store.selectedKeys = [key]
+
+        const wrapper = mount(KeyPropertiesPanel, { global: { plugins: [pinia] } })
+        await wrapper.vm.$nextTick()
+
+        const pickers = getLabelColorPickers(wrapper)
+        await pickers[0]?.vm.$emit('update:modelValue', '#00ff00')
+        await pickers[0]?.vm.$emit('change', '#00ff00')
+        await wrapper.vm.$nextTick()
+
+        // Stale entry is cleared — no color stored for an unused label position
+        expect(key.textColor[0]).toBe('')
+      })
+
+      it('does not write any color to the layout when no selected key uses that label position', async () => {
+        // Regression: "select all, set bottom-left color, but no key uses bottom-left"
+        // must leave textColor empty for all keys at that position.
+        const key1 = new Key()
+        key1.labels[0] = 'A' // only position 0 is used
+        const key2 = new Key()
+        key2.labels[0] = 'B'
+
+        store.keys = [key1, key2]
+        store.selectedKeys = [key1, key2]
+
+        const wrapper = mount(KeyPropertiesPanel, { global: { plugins: [pinia] } })
+        await wrapper.vm.$nextTick()
+
+        const pickers = getLabelColorPickers(wrapper)
+        // Position 6 (bottom-left) — unused by all selected keys
+        await pickers[6]?.vm.$emit('update:modelValue', '#ff0000')
+        await pickers[6]?.vm.$emit('change', '#ff0000')
+        await wrapper.vm.$nextTick()
+
+        expect(key1.textColor[6]).toBe('')
+        expect(key2.textColor[6]).toBe('')
+      })
     })
   })
 

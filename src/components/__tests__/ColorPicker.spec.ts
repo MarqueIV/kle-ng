@@ -208,6 +208,36 @@ describe('ColorPicker', () => {
       expect(wrapper.emitted('input')![0]).toEqual(['#ff0000'])
     })
 
+    it('emits update:modelValue from acceptChanges so v-model syncs before @change fires', async () => {
+      // Open the picker and change the color (handleColorChange emits update:modelValue once)
+      await wrapper.find('.color-picker-button').trigger('click')
+      await wrapper.find('[data-testid="mock-color-change"]').trigger('click')
+
+      const countBeforeOk = wrapper.emitted('update:modelValue')?.length ?? 0
+
+      // Click OK — acceptChanges must emit update:modelValue again so that any
+      // parent reactive state reset (e.g. a deep watcher) that happened between
+      // the live-preview and the OK click does not cause the wrong color to be read
+      await wrapper.find('.btn-primary').trigger('click')
+
+      const allUpdateEmissions = wrapper.emitted('update:modelValue')!
+      expect(allUpdateEmissions.length).toBe(countBeforeOk + 1)
+      expect(allUpdateEmissions[allUpdateEmissions.length - 1]).toEqual(['#ff0000'])
+    })
+
+    it('emits update:modelValue from acceptChanges even without prior color interaction', async () => {
+      // Open picker but do NOT interact — colorValue stays at the initial modelValue
+      await wrapper.find('.color-picker-button').trigger('click')
+
+      // Click OK immediately
+      await wrapper.find('.btn-primary').trigger('click')
+
+      // acceptChanges should still emit update:modelValue with the current (unchanged) color
+      const updateEmissions = wrapper.emitted('update:modelValue')!
+      expect(updateEmissions).toBeTruthy()
+      expect(updateEmissions[updateEmissions.length - 1]).toEqual(['#000000'])
+    })
+
     it('restores original value when canceling', async () => {
       const originalColor = '#000000'
 
