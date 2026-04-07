@@ -242,4 +242,90 @@ describe('MatrixCoordinatesModal', () => {
       expect(key1!.labels[0]).toBe('1,')
     })
   })
+
+  describe('Undo support', () => {
+    it('should record undo snapshot before clearing all labels', async () => {
+      store.addKey({ x: 0, y: 0 })
+      store.addKey({ x: 1, y: 0 })
+
+      store.keys[0]!.labels[0] = 'A'
+      store.keys[1]!.labels[0] = 'B'
+
+      const wrapper = mount(MatrixCoordinatesModal, {
+        props: { visible: true },
+      })
+      await wrapper.vm.$nextTick()
+
+      const beforeIndex = store.historyIndex
+
+      // Click OK to clear all labels (triggers acceptWarning)
+      const okButton = wrapper.find('button[aria-label="Ok"]')
+      expect(okButton.exists()).toBe(true)
+      await okButton.trigger('click')
+      await wrapper.vm.$nextTick()
+
+      // Labels should be cleared
+      expect(store.keys[0]!.labels[0]).toBe('')
+      expect(store.keys[1]!.labels[0]).toBe('')
+
+      // A new history snapshot should have been added
+      expect(store.historyIndex).toBe(beforeIndex + 1)
+      expect(store.canUndo).toBe(true)
+    })
+
+    it('should restore original labels after undo following clear', async () => {
+      store.addKey({ x: 0, y: 0 })
+      store.addKey({ x: 1, y: 0 })
+
+      // Set labels and save to history so they're part of the undo chain
+      store.keys[0]!.labels[0] = 'X'
+      store.keys[1]!.labels[0] = 'Y'
+      store.saveState()
+
+      const wrapper = mount(MatrixCoordinatesModal, {
+        props: { visible: true },
+      })
+      await wrapper.vm.$nextTick()
+
+      // Click OK to clear all labels
+      const okButton = wrapper.find('button[aria-label="Ok"]')
+      await okButton.trigger('click')
+      await wrapper.vm.$nextTick()
+
+      // Labels cleared
+      expect(store.keys[0]!.labels[0]).toBe('')
+      expect(store.keys[1]!.labels[0]).toBe('')
+
+      // Undo should restore original labels
+      store.undo()
+
+      expect(store.keys[0]!.labels[0]).toBe('X')
+      expect(store.keys[1]!.labels[0]).toBe('Y')
+    })
+
+    it('should record only one undo snapshot even when acceptWarning and drawing both run', async () => {
+      store.addKey({ x: 0, y: 0 })
+      store.addKey({ x: 1, y: 0 })
+
+      // Set non-matrix labels so modal shows warning step with OK button
+      store.keys[0]!.labels[0] = 'A'
+      store.keys[1]!.labels[0] = 'B'
+
+      const wrapper = mount(MatrixCoordinatesModal, {
+        props: { visible: true },
+      })
+      await wrapper.vm.$nextTick()
+
+      const beforeIndex = store.historyIndex
+
+      // Click OK (calls acceptWarning → recordPreModalStateIfNeeded)
+      const okButton = wrapper.find('button[aria-label="Ok"]')
+      expect(okButton.exists()).toBe(true)
+      await okButton.trigger('click')
+      await wrapper.vm.$nextTick()
+
+      // historyIndex should have increased by exactly 1 (one snapshot for the whole session)
+      expect(store.historyIndex).toBe(beforeIndex + 1)
+    })
+  })
 })

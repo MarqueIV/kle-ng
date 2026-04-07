@@ -531,6 +531,7 @@ interface MatrixItem {
 const step = ref<'warning' | 'draw'>('warning')
 const rows = ref<MatrixItem[]>([])
 const cols = ref<MatrixItem[]>([])
+const hasRecordedPreModalState = ref(false)
 const isShowingExistingAnnotation = ref(false)
 const annotationIssues = ref<{ duplicates: { position: string; keys: Key[] }[] } | null>(null)
 
@@ -617,6 +618,7 @@ const isAnnotationComplete = computed(() => {
 
 // Methods
 const acceptWarning = () => {
+  recordPreModalStateIfNeeded()
   // Hide the existing matrix overlay since we're about to remove all legends
   exitPreviewMode()
 
@@ -666,8 +668,17 @@ const proceedWithoutClearing = () => {
   matrixDrawingStore.enableDrawing('row')
 }
 
+// Record the pre-modal keyboard state exactly once per session so undo works
+const recordPreModalStateIfNeeded = () => {
+  if (!hasRecordedPreModalState.value) {
+    keyboardStore.saveState()
+    hasRecordedPreModalState.value = true
+  }
+}
+
 // Apply current coordinates to all keys
 const applyCoordinatesToKeys = () => {
+  recordPreModalStateIfNeeded()
   // Build maps for quick lookup
   const keyToRow = new Map<Key, number>()
   const keyToCol = new Map<Key, number>()
@@ -1029,6 +1040,7 @@ const resetState = () => {
   cols.value = []
   isShowingExistingAnnotation.value = false
   annotationIssues.value = null
+  hasRecordedPreModalState.value = false
   // Also stop any active drawing and clear drawings
   if (matrixDrawingStore.isDrawing) {
     matrixDrawingStore.disableDrawing()
