@@ -138,6 +138,26 @@
           </div>
         </div>
 
+        <!-- Normalize Step -->
+        <div v-if="step === 'normalize'">
+          <div class="alert alert-warning mb-3">
+            <div class="d-flex align-items-center gap-3">
+              <BiExclamationTriangleFill class="text-warning" style="min-width: 16px" />
+              <div>
+                <h6 class="mb-2 text-warning fw-bold">Non-Standard Matrix Indices Detected</h6>
+                <p class="mb-2 small">
+                  This layout uses matrix indices that are not zero-based or have gaps.
+                </p>
+                <p class="mb-0 small">
+                  <strong>Keep original</strong>: preserves your hand-configured indices exactly
+                  as-is.<br />
+                  <strong>Normalize</strong>: re-numbers rows and columns starting from 0.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <!-- Drawing Panel -->
         <div v-if="step === 'draw'" class="draw-section">
           <!-- Fixed Header: Instructions and Toggle -->
@@ -458,6 +478,45 @@
           <BiXCircle />
           Cancel
         </button>
+
+        <!-- normalize step: keep original indices -->
+        <button
+          v-if="step === 'normalize'"
+          type="button"
+          class="btn btn-primary btn-sm d-flex align-items-center gap-1"
+          @click="keepOriginalIndices"
+          @mousedown.stop
+          aria-label="Keep original indices"
+        >
+          <BiCheckCircle />
+          Keep original
+        </button>
+
+        <!-- normalize step: re-index from 0 -->
+        <button
+          v-if="step === 'normalize'"
+          type="button"
+          class="btn btn-warning btn-sm d-flex align-items-center gap-1"
+          @click="normalizeAndProceed"
+          @mousedown.stop
+          aria-label="Normalize indices"
+        >
+          <BiArrowRightCircle />
+          Normalize
+        </button>
+
+        <!-- normalize step: cancel -->
+        <button
+          v-if="step === 'normalize'"
+          type="button"
+          class="btn btn-secondary btn-sm d-flex align-items-center gap-1"
+          @click="handleCancel"
+          @mousedown.stop
+          aria-label="Cancel normalization"
+        >
+          <BiXCircle />
+          Cancel
+        </button>
       </div>
     </div>
   </div>
@@ -528,7 +587,7 @@ interface MatrixItem {
 }
 
 // State
-const step = ref<'warning' | 'draw'>('warning')
+const step = ref<'warning' | 'normalize' | 'draw'>('warning')
 const rows = ref<MatrixItem[]>([])
 const cols = ref<MatrixItem[]>([])
 const hasRecordedPreModalState = ref(false)
@@ -676,9 +735,20 @@ const recordPreModalStateIfNeeded = () => {
   }
 }
 
-// Apply current coordinates to all keys
+// Compute the label that applyCoordinatesToKeys would assign to a key
+const computeLabel = (key: Key, keyToRow: Map<Key, number>, keyToCol: Map<Key, number>): string => {
+  const rowIndex = keyToRow.get(key)
+  const colIndex = keyToCol.get(key)
+  if (rowIndex !== undefined && colIndex !== undefined) return `${rowIndex},${colIndex}`
+  if (rowIndex !== undefined) return `${rowIndex},`
+  if (colIndex !== undefined) return `,${colIndex}`
+  return ''
+}
+
+// Apply current coordinates to all keys.
+// Only records a pre-modal undo snapshot when at least one label will actually change,
+// so reopening an already-correct layout never pollutes the undo history.
 const applyCoordinatesToKeys = () => {
-  recordPreModalStateIfNeeded()
   // Build maps for quick lookup
   const keyToRow = new Map<Key, number>()
   const keyToCol = new Map<Key, number>()
@@ -697,27 +767,18 @@ const applyCoordinatesToKeys = () => {
     })
   })
 
+  // Only snapshot state when something will actually change
+  const willChange = keyboardStore.keys.some(
+    (key) => !key.ghost && !key.decal && key.labels[0] !== computeLabel(key, keyToRow, keyToCol),
+  )
+  if (willChange) {
+    recordPreModalStateIfNeeded()
+  }
+
   // Apply labels to ALL keys (including partial assignments)
   keyboardStore.keys.forEach((key) => {
     if (key.ghost || key.decal) return
-
-    const rowIndex = keyToRow.get(key)
-    const colIndex = keyToCol.get(key)
-
-    // Build label based on what's assigned
-    if (rowIndex !== undefined && colIndex !== undefined) {
-      // Both row and column assigned: "row,col"
-      key.labels[0] = `${rowIndex},${colIndex}`
-    } else if (rowIndex !== undefined) {
-      // Only row assigned: "row,"
-      key.labels[0] = `${rowIndex},`
-    } else if (colIndex !== undefined) {
-      // Only column assigned: ",col"
-      key.labels[0] = `,${colIndex}`
-    } else {
-      // No assignment: clear label
-      key.labels[0] = ''
-    }
+    key.labels[0] = computeLabel(key, keyToRow, keyToCol)
   })
 }
 
@@ -964,14 +1025,27 @@ const handleAutomaticAnnotation = () => {
   applyCoordinatesToKeys()
 }
 
-const showExistingMatrixOverlay = () => {
+// Check whether the extracted row/column indices need normalization (non-zero-based or have gaps)
+const indicesNeedNormalization = (
+  existingRows: Map<number, Key[]>,
+  existingCols: Map<number, Key[]>,
+): boolean => {
+  const hasGapOrOffset = (indices: number[]) => {
+    if (indices.length === 0) return false
+    const sorted = [...indices].sort((a, b) => a - b)
+    return sorted[0] !== 0 || sorted.some((v, i) => i > 0 && v !== sorted[i - 1]! + 1)
+  }
+  return hasGapOrOffset([...existingRows.keys()]) || hasGapOrOffset([...existingCols.keys()])
+}
+
+const showExistingMatrixOverlay = (
+  existingRows: Map<number, Key[]>,
+  existingCols: Map<number, Key[]>,
+) => {
   // Mark that we're showing pre-existing annotations
   isShowingExistingAnnotation.value = true
 
-  // Extract existing matrix assignments from the already annotated layout
-  const { rows: existingRows, cols: existingCols } = extractMatrixAssignments(keyboardStore.keys)
-
-  // Convert the extracted Map<number, Key[]> to MatrixItem[] format
+  // Convert the extracted Map<number, Key[]> to MatrixItem[] format, preserving original indices
   rows.value = Array.from(existingRows.entries())
     .sort(([a], [b]) => a - b) // Sort by row index
     .map(([index, keySequence]) => ({
@@ -988,10 +1062,26 @@ const showExistingMatrixOverlay = () => {
       keySequence,
     }))
 
-  // Sync to matrixDrawingStore so the canvas overlay renders automatically
+  // Use loadExistingAssignments to preserve original indices in the drawing store.
+  // This avoids re-indexing from 0 that completeSequence() would cause.
   matrixDrawingStore.clearDrawings()
+  matrixDrawingStore.loadExistingAssignments(existingRows, existingCols)
+}
 
-  // Add rows
+// Proceed with original indices (user chose not to normalize)
+const keepOriginalIndices = () => {
+  // Drawing store and rows/cols already populated with original indices by showExistingMatrixOverlay.
+  // Manually sync so rows.value/cols.value reflect the drawing store before entering draw step.
+  step.value = 'draw'
+  syncDrawingsToModal()
+  matrixDrawingStore.enableDrawing('row')
+}
+
+// Re-index rows and columns starting from 0, then enter draw step
+const normalizeAndProceed = () => {
+  // Rebuild drawing store using completeSequence which auto-assigns 0-based indices.
+  // rows.value/cols.value still hold the original indexed sequences at this point.
+  matrixDrawingStore.clearDrawings()
   matrixDrawingStore.enableDrawing('row')
   rows.value.forEach((row) => {
     row.keySequence.forEach((key) => {
@@ -999,8 +1089,6 @@ const showExistingMatrixOverlay = () => {
     })
     matrixDrawingStore.completeSequence()
   })
-
-  // Add columns
   matrixDrawingStore.enableDrawing('column')
   cols.value.forEach((col) => {
     col.keySequence.forEach((key) => {
@@ -1009,6 +1097,10 @@ const showExistingMatrixOverlay = () => {
     matrixDrawingStore.completeSequence()
   })
   matrixDrawingStore.disableDrawing()
+  // The watch on completedRows/completedColumns will fire after step becomes 'draw',
+  // calling syncDrawingsToModal() + applyCoordinatesToKeys() with the new 0-based indices.
+  step.value = 'draw'
+  matrixDrawingStore.enableDrawing('row')
 }
 
 const exitPreviewMode = () => {
@@ -1036,6 +1128,7 @@ const handleCancel = () => {
 
 const resetState = () => {
   step.value = 'warning'
+  // Note: 'normalize' step is a transient state; it resets to 'warning' on close
   rows.value = []
   cols.value = []
   isShowingExistingAnnotation.value = false
@@ -1141,15 +1234,26 @@ watch(
       // Handle the five scenarios:
       // 1. Completely annotated layout WITH invalid duplicates → show warning step
       if (keyboardStore.isViaAnnotated && keyboardStore.hasInvalidMatrixDuplicates) {
-        showExistingMatrixOverlay()
+        const { rows: existingRows, cols: existingCols } = extractMatrixAssignments(
+          keyboardStore.keys,
+        )
+        showExistingMatrixOverlay(existingRows, existingCols)
         step.value = 'warning'
       }
-      // 2. Completely annotated layout WITHOUT invalid duplicates → go directly to drawing
+      // 2. Completely annotated layout WITHOUT invalid duplicates
       else if (keyboardStore.isViaAnnotated) {
-        showExistingMatrixOverlay()
-        step.value = 'draw'
-        // Auto-enable drawing in row mode
-        matrixDrawingStore.enableDrawing('row')
+        const { rows: existingRows, cols: existingCols } = extractMatrixAssignments(
+          keyboardStore.keys,
+        )
+        showExistingMatrixOverlay(existingRows, existingCols)
+        if (indicesNeedNormalization(existingRows, existingCols)) {
+          // Prompt the user before re-indexing their carefully chosen values
+          step.value = 'normalize'
+        } else {
+          step.value = 'draw'
+          // Auto-enable drawing in row mode
+          matrixDrawingStore.enableDrawing('row')
+        }
       }
       // 3. Not annotated (empty labels) → go directly to drawing
       else if (!hasLabels.value) {

@@ -773,16 +773,17 @@ const handleKeyDown = (event: KeyboardEvent) => {
       if (renumberingTarget.value.type === 'row') {
         const oldIndex = renumberingTarget.value.index
         matrixDrawingStore.renumberRow(oldIndex, newNumber)
-        renumberingTarget.value.index = newNumber
+        // Clear renumberingTarget so the next hover over any row creates a fresh target.
+        // Update hoveredRow so the renamed element stays highlighted.
+        renumberingTarget.value = null
         hoveredRow.value = newNumber
-        skipNextHoverClear.value = true
       } else if (renumberingTarget.value.type === 'column') {
         const oldIndex = renumberingTarget.value.index
         matrixDrawingStore.renumberColumn(oldIndex, newNumber)
-        renumberingTarget.value.index = newNumber
+        renumberingTarget.value = null
         hoveredColumn.value = newNumber
-        skipNextHoverClear.value = true
       }
+      skipNextHoverClear.value = false
 
       // Clear buffer after applying
       typedNumberBuffer.value = ''
