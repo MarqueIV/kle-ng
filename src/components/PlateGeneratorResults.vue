@@ -4,11 +4,12 @@ import { usePlateGeneratorStore } from '@/stores/plateGenerator'
 import { storeToRefs } from 'pinia'
 import BiInfoCircle from 'bootstrap-icons/icons/info-circle.svg'
 import Plate3DPreview from './Plate3DPreview.vue'
+import PlateJscadPreview from './PlateJscadPreview.vue'
 
 const plateStore = usePlateGeneratorStore()
 const { generationState } = storeToRefs(plateStore)
 
-const activeTab = ref<'2d' | '3d'>('2d')
+const activeTab = ref<'2d' | '3d' | 'jscad'>('2d')
 
 const isLoading = computed(
   () => generationState.value.status === 'loading' || generationState.value.status === 'generating',
@@ -25,6 +26,8 @@ const isRegenerating = computed(
 const result = computed(() => generationState.value.result)
 
 const showResults = computed(() => (isSuccess.value || isRegenerating.value) && result.value)
+
+const hasJscad = computed(() => !!result.value?.jscadScript)
 </script>
 
 <template>
@@ -44,6 +47,14 @@ const showResults = computed(() => (isSuccess.value || isRegenerating.value) && 
         @click="activeTab = '3d'"
       >
         3D
+      </button>
+      <button
+        v-if="hasJscad"
+        class="tab-bar-item"
+        :class="{ active: activeTab === 'jscad' }"
+        @click="activeTab = 'jscad'"
+      >
+        JSCAD
       </button>
     </div>
 
@@ -75,6 +86,11 @@ const showResults = computed(() => (isSuccess.value || isRegenerating.value) && 
           :generating="isRegenerating"
           :visible="activeTab === '3d'"
         />
+      </div>
+
+      <!-- JSCAD Tab: read-only code preview -->
+      <div v-if="hasJscad" v-show="activeTab === 'jscad'" class="tab-jscad-container">
+        <PlateJscadPreview :jscadScript="result?.jscadScript" :visible="activeTab === 'jscad'" />
       </div>
     </template>
 
@@ -182,6 +198,13 @@ const showResults = computed(() => (isSuccess.value || isRegenerating.value) && 
 
 /* 3D tab layout */
 .tab-3d-container {
+  flex-grow: 1;
+  min-height: 250px;
+  overflow: hidden;
+}
+
+/* JSCAD tab layout */
+.tab-jscad-container {
   flex-grow: 1;
   min-height: 250px;
   overflow: hidden;
