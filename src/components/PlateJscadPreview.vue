@@ -7,7 +7,6 @@ import BiClipboardCheck from 'bootstrap-icons/icons/clipboard-check.svg'
 
 const props = defineProps<{
   jscadScript: string | undefined
-  visible: boolean
 }>()
 
 const containerRef = ref<HTMLDivElement>()
@@ -42,19 +41,23 @@ onMounted(() => {
 
   // Watch for theme changes (Bootstrap data-bs-theme attribute)
   themeObserver = new MutationObserver(() => {
-    if (editorView && editorReady.value) {
-      // Recreate the editor to apply the new theme
-      const content = editorView.state.doc.toString()
-      editorView.destroy()
-      editorView = null
-      if (containerRef.value) {
-        getCodeMirror().then((cm) => {
-          if (containerRef.value) {
-            editorView = cm.createReadOnlyEditor(containerRef.value, content, getTheme())
-          }
-        })
-      }
-    }
+    if (!editorView || !editorReady.value) return
+    const content = editorView.state.doc.toString()
+    editorView.destroy()
+    editorView = null
+    editorReady.value = false
+    if (containerRef.value) containerRef.value.innerHTML = ''
+    if (!containerRef.value) return
+    getCodeMirror()
+      .then((cm) => {
+        if (!containerRef.value) return
+        editorView = cm.createReadOnlyEditor(containerRef.value, content, getTheme())
+        editorReady.value = true
+      })
+      .catch((err) => {
+        console.error('Failed to rebuild editor on theme change:', err)
+        loadError.value = true
+      })
   })
   themeObserver.observe(document.documentElement, {
     attributes: true,
@@ -76,9 +79,15 @@ watch(
   (newScript) => {
     if (!newScript) return
     if (editorView && editorReady.value) {
-      getCodeMirror().then((cm) => {
-        if (editorView && newScript) cm.updateContent(editorView, newScript)
-      })
+      getCodeMirror()
+        .then((cm) => {
+          if (editorView && newScript) cm.updateContent(editorView, newScript)
+        })
+        .catch((err) => console.error('Failed to update editor content:', err))
+    } else if (!editorView && !loadError.value) {
+      // Editor not yet created (e.g. prop arrived after mount but before async init completed,
+      // or initEditor bailed because jscadScript was undefined at mount time)
+      initEditor()
     }
   },
 )

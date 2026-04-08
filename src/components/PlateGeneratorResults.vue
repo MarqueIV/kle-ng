@@ -90,7 +90,7 @@ const hasJscad = computed(() => !!result.value?.jscadScript)
 
       <!-- JSCAD Tab: read-only code preview -->
       <div v-if="hasJscad" v-show="activeTab === 'jscad'" class="tab-jscad-container">
-        <PlateJscadPreview :jscadScript="result?.jscadScript" :visible="activeTab === 'jscad'" />
+        <PlateJscadPreview :jscadScript="result?.jscadScript" />
       </div>
     </template>
 

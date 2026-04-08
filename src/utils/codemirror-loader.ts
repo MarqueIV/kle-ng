@@ -80,6 +80,7 @@ export async function getCodeMirror(): Promise<CodeMirrorAPI> {
       ]) => {
         // Per-view compartment registry for dynamic reconfiguration
         const readOnlyCompartments = new WeakMap<EditorView, InstanceType<typeof Compartment>>()
+        const destroyedViews = new WeakSet<EditorView>()
 
         function makeThemeExtensions(theme: 'dark' | 'light') {
           const baseTheme = EditorView.theme(
@@ -160,6 +161,7 @@ export async function getCodeMirror(): Promise<CodeMirrorAPI> {
           },
 
           updateContent(view: EditorView, content: string) {
+            if (destroyedViews.has(view)) return
             const current = view.state.doc.toString()
             if (current === content) return
             view.dispatch({
@@ -176,6 +178,8 @@ export async function getCodeMirror(): Promise<CodeMirrorAPI> {
           },
 
           destroyEditor(view: EditorView) {
+            if (destroyedViews.has(view)) return
+            destroyedViews.add(view)
             readOnlyCompartments.delete(view)
             view.destroy()
           },

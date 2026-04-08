@@ -154,9 +154,11 @@ const validateJson = () => {
 const setEditorContent = (content: string) => {
   jsonContent.value = content
   if (editorView) {
-    getCodeMirror().then((cm) => {
-      if (editorView) cm.updateContent(editorView, content)
-    })
+    getCodeMirror()
+      .then((cm) => {
+        if (editorView) cm.updateContent(editorView, content)
+      })
+      .catch((err) => console.error('Failed to update editor content:', err))
   }
 }
 
@@ -286,8 +288,11 @@ onMounted(async () => {
     loadError.value = true
   }
 
-  themeObserver = new MutationObserver(async () => {
-    await rebuildEditor()
+  themeObserver = new MutationObserver(() => {
+    rebuildEditor().catch((err) => {
+      console.error('Failed to rebuild editor on theme change:', err)
+      loadError.value = true
+    })
   })
   themeObserver.observe(document.documentElement, {
     attributes: true,
@@ -297,8 +302,11 @@ onMounted(async () => {
 
 onUnmounted(() => {
   if (editorView) {
-    getCodeMirror().then((cm) => cm.destroyEditor(editorView!))
+    const view = editorView
     editorView = null
+    getCodeMirror()
+      .then((cm) => cm.destroyEditor(view))
+      .catch(() => {})
   }
   themeObserver?.disconnect()
   themeObserver = null
