@@ -1,7 +1,31 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
-import { mount } from '@vue/test-utils'
+import { mount, flushPromises } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import JsonEditorPanel from '../JsonEditorPanel.vue'
+
+vi.mock('@/utils/codemirror-loader', () => ({
+  getCodeMirror: vi.fn().mockResolvedValue({
+    createJsonEditor: vi.fn(
+      (
+        container: HTMLElement,
+        content: string,
+        _theme: string,
+        callbacks: { onChange: (v: string) => void },
+      ) => {
+        const textarea = document.createElement('textarea')
+        textarea.value = content
+        textarea.addEventListener('input', () => callbacks.onChange(textarea.value))
+        container.appendChild(textarea)
+        return { _textarea: textarea, callbacks }
+      },
+    ),
+    updateContent: vi.fn((view: { _textarea: HTMLTextAreaElement }, content: string) => {
+      if (view._textarea) view._textarea.value = content
+    }),
+    destroyEditor: vi.fn(),
+    setReadOnly: vi.fn(),
+  }),
+}))
 
 describe('JsonEditorPanel', () => {
   beforeEach(() => {
@@ -17,7 +41,7 @@ describe('JsonEditorPanel', () => {
         },
       })
 
-      await wrapper.vm.$nextTick()
+      await flushPromises()
 
       // Should have the main elements
       const textarea = wrapper.find('textarea')
@@ -60,7 +84,7 @@ describe('JsonEditorPanel', () => {
         },
       })
 
-      await wrapper.vm.$nextTick()
+      await flushPromises()
 
       const textarea = wrapper.find('textarea')
 
@@ -91,7 +115,7 @@ describe('JsonEditorPanel', () => {
         },
       })
 
-      await wrapper.vm.$nextTick()
+      await flushPromises()
 
       const textarea = wrapper.find('textarea')
 
@@ -119,7 +143,7 @@ describe('JsonEditorPanel', () => {
         },
       })
 
-      await wrapper.vm.$nextTick()
+      await flushPromises()
 
       const textarea = wrapper.find('textarea')
 
@@ -134,7 +158,7 @@ describe('JsonEditorPanel', () => {
 
       // Click the clear button
       await clearButton.trigger('click')
-      await wrapper.vm.$nextTick()
+      await flushPromises()
 
       // Textarea should now contain empty array
       expect((textarea.element as HTMLTextAreaElement).value).toBe('[]')

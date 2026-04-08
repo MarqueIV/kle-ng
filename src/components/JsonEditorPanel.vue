@@ -43,20 +43,22 @@
       </div>
     </div>
 
-    <div class="position-relative">
-      <textarea
-        v-model="jsonContent"
-        @input="onJsonChange"
-        class="form-control font-monospace"
-        :class="{ 'is-invalid': hasJsonError }"
-        rows="20"
-        spellcheck="false"
-        placeholder="Loading JSON..."
-      ></textarea>
-
-      <div v-if="hasJsonError" class="invalid-feedback d-block">
-        {{ jsonError }}
+    <div class="editor-wrapper" :class="{ 'is-invalid': hasJsonError }">
+      <div v-if="!editorReady && !loadError" class="editor-placeholder">
+        <span class="text-muted small">Loading editor...</span>
       </div>
+      <div v-else-if="loadError" class="editor-placeholder">
+        <span class="text-danger small">Failed to load editor.</span>
+      </div>
+      <div
+        v-show="editorReady && !loadError"
+        ref="editorContainer"
+        class="cm-editor-container"
+      ></div>
+    </div>
+
+    <div v-if="hasJsonError" class="invalid-feedback d-block mt-1">
+      {{ jsonError }}
     </div>
 
     <div class="mt-2">
@@ -76,50 +78,49 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, nextTick, onMounted } from 'vue'
+import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { useKeyboardStore } from '@/stores/keyboard'
 import { parseJsonString } from '@/utils/serialization'
 import { D } from '@/utils/decimal-math'
+import { getCodeMirror } from '@/utils/codemirror-loader'
+import type { EditorView } from '@codemirror/view'
 import BiExclamationTriangle from 'bootstrap-icons/icons/exclamation-triangle.svg'
 import BiPencil from 'bootstrap-icons/icons/pencil.svg'
 import BiCheck from 'bootstrap-icons/icons/check.svg'
 import BiTrash from 'bootstrap-icons/icons/trash.svg'
 
-// Store
 const keyboardStore = useKeyboardStore()
 
-// Component state
+const editorContainer = ref<HTMLDivElement>()
+const editorReady = ref(false)
+const loadError = ref(false)
+
 const jsonContent = ref('')
 const originalJson = ref('')
 const hasJsonError = ref(false)
 const jsonError = ref('')
 
-// Compact JSON formatting similar to original KLE
+let editorView: EditorView | null = null
+let themeObserver: MutationObserver | null = null
+
+// ── Formatting ────────────────────────────────────────────────────────────────
+
 const formatJsonCompact = (data: unknown[]): string => {
   const result: string[] = []
-
-  data.forEach((elem) => {
-    // Include all elements - metadata and key rows
-    result.push(toJsonCompactLine(elem))
-  })
-
+  data.forEach((elem) => result.push(toJsonCompactLine(elem)))
   return '[' + result.join(',\n') + ']'
 }
 
-// Convert object/array to compact single-line JSON
 const toJsonCompactLine = (obj: unknown): string => {
   if (Array.isArray(obj)) {
-    const items = obj.map((elem) => toJsonCompactLine(elem))
-    return '[' + items.join(',') + ']'
+    return '[' + obj.map((elem) => toJsonCompactLine(elem)).join(',') + ']'
   }
-
   if (typeof obj === 'object' && obj !== null) {
     const pairs: string[] = []
     const objAsRecord = obj as Record<string, unknown>
     for (const key in objAsRecord) {
       if (Object.prototype.hasOwnProperty.call(objAsRecord, key)) {
         const value = objAsRecord[key]
-        // Skip undefined values to match original keyboard-layout-editor behavior
         if (value !== undefined) {
           pairs.push(`${JSON.stringify(key)}:${toJsonCompactLine(value)}`)
         }
@@ -127,16 +128,14 @@ const toJsonCompactLine = (obj: unknown): string => {
     }
     return '{' + pairs.join(',') + '}'
   }
-
   if (typeof obj === 'number') {
-    // Round to 6 decimal places maximum for better precision display
     return D.format(obj, 6).toString()
   }
-
   return JSON.stringify(obj)
 }
 
-// Actions
+// ── Validation ────────────────────────────────────────────────────────────────
+
 const validateJson = () => {
   try {
     parseJsonString(jsonContent.value)
@@ -150,19 +149,25 @@ const validateJson = () => {
   }
 }
 
-const onJsonChange = () => {
-  validateJson()
+// ── Actions ───────────────────────────────────────────────────────────────────
+
+const setEditorContent = (content: string) => {
+  jsonContent.value = content
+  if (editorView) {
+    getCodeMirror().then((cm) => {
+      if (editorView) cm.updateContent(editorView, content)
+    })
+  }
 }
 
 const formatJson = () => {
   if (validateJson()) {
     try {
       const parsed = parseJsonString(jsonContent.value)
-      if (Array.isArray(parsed)) {
-        jsonContent.value = formatJsonCompact(parsed)
-      } else {
-        jsonContent.value = JSON.stringify(parsed, null, 2)
-      }
+      const formatted = Array.isArray(parsed)
+        ? formatJsonCompact(parsed)
+        : JSON.stringify(parsed, null, 2)
+      setEditorContent(formatted)
     } catch (error) {
       console.error('Error formatting JSON:', error)
     }
@@ -170,30 +175,47 @@ const formatJson = () => {
 }
 
 const clearJson = () => {
-  jsonContent.value = '[]'
+  setEditorContent('[]')
   validateJson()
 }
 
-// Computed
-const hasChanges = computed(() => {
-  return jsonContent.value !== originalJson.value && !hasJsonError.value
-})
+const applyChanges = () => {
+  if (!validateJson()) return
+  try {
+    const data = parseJsonString(jsonContent.value)
+    keyboardStore.updateLayoutFromJson(data)
+    if (Array.isArray(data)) {
+      originalJson.value = formatJsonCompact(data)
+      setEditorContent(originalJson.value)
+    } else {
+      originalJson.value = jsonContent.value
+    }
+  } catch (error) {
+    console.error('Error applying JSON changes:', error)
+    jsonError.value = error instanceof Error ? error.message : 'Error applying changes'
+    hasJsonError.value = true
+  }
+}
 
-const isDisabled = computed(() => {
-  return (
+// ── Computed ──────────────────────────────────────────────────────────────────
+
+const hasChanges = computed(() => jsonContent.value !== originalJson.value && !hasJsonError.value)
+
+const isDisabled = computed(
+  () =>
     keyboardStore.canvasMode === 'rotate' ||
     keyboardStore.canvasMode === 'mirror-h' ||
-    keyboardStore.canvasMode === 'mirror-v'
-  )
-})
+    keyboardStore.canvasMode === 'mirror-v',
+)
 
-// Load JSON from store
+// ── Store sync ────────────────────────────────────────────────────────────────
+
 const loadJsonFromStore = () => {
   try {
     const data = keyboardStore.getSerializedData('kle')
     const formatted = Array.isArray(data) ? formatJsonCompact(data) : JSON.stringify(data, null, 2)
-    jsonContent.value = formatted
     originalJson.value = formatted
+    setEditorContent(formatted)
     hasJsonError.value = false
     jsonError.value = ''
   } catch (error) {
@@ -203,85 +225,116 @@ const loadJsonFromStore = () => {
   }
 }
 
-// Watch for store changes and update JSON
 watch(
   [() => keyboardStore.keys, () => keyboardStore.metadata],
   () => {
-    // Always update JSON editor to synchronize with internal state,
-    // even when there are unsaved changes
     loadJsonFromStore()
   },
   { deep: true },
 )
 
-// Initialize
-loadJsonFromStore()
+// ── isDisabled → CodeMirror readOnly ─────────────────────────────────────────
 
-const applyChanges = () => {
-  if (!validateJson()) {
-    return
+watch(isDisabled, (disabled) => {
+  if (editorView) {
+    getCodeMirror().then((cm) => {
+      if (editorView) cm.setReadOnly(editorView, disabled)
+    })
   }
-
-  try {
-    const data = parseJsonString(jsonContent.value)
-    keyboardStore.updateLayoutFromJson(data) // Use new method that preserves undo history
-    // Update the original JSON with compact formatting
-    if (Array.isArray(data)) {
-      originalJson.value = formatJsonCompact(data)
-      jsonContent.value = originalJson.value
-    } else {
-      originalJson.value = jsonContent.value
-    }
-    console.log('Applied JSON changes to keyboard layout (with undo support)')
-  } catch (error) {
-    console.error('Error applying JSON changes:', error)
-    jsonError.value = error instanceof Error ? error.message : 'Error applying changes'
-    hasJsonError.value = true
-  }
-}
-
-// Keyboard shortcut for apply changes
-const handleKeydown = (event: KeyboardEvent) => {
-  if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') {
-    event.preventDefault()
-    applyChanges()
-  }
-}
-
-// Add keyboard event listener
-nextTick(() => {
-  document.addEventListener('keydown', handleKeydown)
 })
 
-// Cleanup
-const cleanup = () => {
-  document.removeEventListener('keydown', handleKeydown)
+// ── Theme ─────────────────────────────────────────────────────────────────────
+
+function getTheme(): 'dark' | 'light' {
+  return document.documentElement.getAttribute('data-bs-theme') === 'dark' ? 'dark' : 'light'
 }
 
-// Handle component unmount
-onMounted(() => {
-  return cleanup
+async function rebuildEditor() {
+  if (!editorContainer.value) return
+  const cm = await getCodeMirror()
+  if (!editorContainer.value) return
+
+  if (editorView) {
+    cm.destroyEditor(editorView)
+    editorView = null
+    editorContainer.value.innerHTML = ''
+  }
+
+  // Read jsonContent.value after the await — it may have been updated by loadJsonFromStore()
+  // while CodeMirror was loading (e.g. triggered by the store watcher).
+  editorView = cm.createJsonEditor(editorContainer.value, jsonContent.value, getTheme(), {
+    onChange: (newContent) => {
+      jsonContent.value = newContent
+      validateJson()
+    },
+    onSubmit: applyChanges,
+    readOnly: isDisabled.value,
+  })
+}
+
+// Initialize at setup time so jsonContent is populated before onMounted runs
+loadJsonFromStore()
+
+// ── Lifecycle ─────────────────────────────────────────────────────────────────
+
+onMounted(async () => {
+  try {
+    await rebuildEditor()
+    editorReady.value = true
+  } catch (err) {
+    console.error('Failed to load CodeMirror:', err)
+    loadError.value = true
+  }
+
+  themeObserver = new MutationObserver(async () => {
+    await rebuildEditor()
+  })
+  themeObserver.observe(document.documentElement, {
+    attributes: true,
+    attributeFilter: ['data-bs-theme'],
+  })
+})
+
+onUnmounted(() => {
+  if (editorView) {
+    getCodeMirror().then((cm) => cm.destroyEditor(editorView!))
+    editorView = null
+  }
+  themeObserver?.disconnect()
+  themeObserver = null
 })
 </script>
 
 <style scoped>
-.font-monospace {
-  font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, Courier, monospace;
-  font-size: 0.875rem;
-  line-height: 1.4;
+.editor-wrapper {
+  border: 1px solid var(--bs-border-color);
+  border-radius: 0.375rem;
+  overflow: hidden;
+  transition: border-color 0.15s ease;
 }
 
-textarea.font-monospace {
-  resize: vertical;
-  min-height: 180px;
-  height: 220px;
-}
-
-.is-invalid {
+.editor-wrapper.is-invalid {
   border-color: var(--bs-danger);
 }
 
-.is-invalid:focus {
-  box-shadow: 0 0 0 0.25rem var(--bs-danger-border-subtle);
+.editor-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 220px;
+}
+
+.cm-editor-container {
+  height: 220px;
+  overflow: auto;
+}
+
+.cm-editor-container :deep(.cm-editor) {
+  height: 100%;
+}
+
+.cm-editor-container :deep(.cm-scroller) {
+  height: 100%;
+  overflow: auto;
 }
 </style>

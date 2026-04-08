@@ -199,7 +199,7 @@ test.describe('Matrix Coordinates Tool', () => {
       await waitHelpers.waitForDoubleAnimationFrame()
 
       // Check that the JSON contains matrix coordinates
-      const jsonContent = page.locator('.json-editor, textarea, .monaco-editor')
+      const jsonContent = page.locator('.json-editor, textarea, .monaco-editor, .cm-editor')
       if (await jsonContent.isVisible()) {
         const jsonText = await jsonContent.textContent()
         // The JSON should contain coordinate patterns like "0,0", "0,1", etc.

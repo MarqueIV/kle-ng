@@ -448,9 +448,46 @@ export class CanvasTestHelper {
    * Load a custom JSON layout by directly manipulating the JSON editor
    */
   async loadJsonLayout(jsonString: string) {
-    const jsonTextarea = this.page.locator('textarea.form-control.font-monospace')
-    await jsonTextarea.clear()
-    await jsonTextarea.fill(jsonString)
+    // Ensure the JSON section is expanded (it may be collapsed from localStorage)
+    const jsonSection = this.page.locator('[data-section-id="json"]')
+    const collapseBtn = jsonSection.locator('.collapse-btn')
+    // The collapse button's aria-expanded is "true" when the section is expanded
+    const isExpanded = await collapseBtn.getAttribute('aria-expanded')
+    if (isExpanded === 'false') {
+      await collapseBtn.click()
+    }
+
+    // Wait for CodeMirror editor to be ready (replaces old textarea.form-control.font-monospace)
+    const cmContent = this.page.locator('.cm-editor-container .cm-content')
+    await cmContent.waitFor({ state: 'visible' })
+
+    // Use page.evaluate to directly dispatch a CodeMirror transaction to replace
+    // the editor content. CodeMirror attaches its internal tile tree to DOM nodes
+    // via the `cmTile` property, allowing access to the EditorView instance.
+    const success = await this.page.evaluate((content) => {
+      const cmContentEl = document.querySelector('.cm-editor-container .cm-content') as Element & {
+        cmTile?: {
+          root?: { view?: { state: { doc: { length: number } }; dispatch: (tr: unknown) => void } }
+        }
+      }
+      if (!cmContentEl) return false
+      const tile = cmContentEl.cmTile
+      if (!tile) return false
+      const view = tile.root?.view
+      if (!view) return false
+      view.dispatch({
+        changes: { from: 0, to: view.state.doc.length, insert: content },
+      })
+      return true
+    }, jsonString)
+
+    if (!success) {
+      // Fallback: click and type if CodeMirror internal API is unavailable
+      await cmContent.click()
+      await this.page.keyboard.press('Control+A')
+      await this.page.keyboard.type(jsonString)
+    }
+
     await this.page.click('button:has-text("Apply Changes")')
     await this.waitHelpers.waitForQuadAnimationFrame()
   }
