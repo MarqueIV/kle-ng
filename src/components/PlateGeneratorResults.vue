@@ -45,6 +45,7 @@ const hasJscad = computed(() => !!result.value?.jscadScript)
         class="tab-bar-item"
         :class="{ active: activeTab === '3d' }"
         @click="activeTab = '3d'"
+        data-testid="plate-results-tab-3d"
       >
         3D
       </button>
@@ -76,7 +77,7 @@ const hasJscad = computed(() => !!result.value?.jscadScript)
         <div v-if="isRegenerating" class="regenerating-overlay">
           <p class="text-muted small mb-0">Generating plate...</p>
         </div>
-        <div v-html="result!.svgPreview"></div>
+        <div data-testid="plate-svg-preview" v-html="result!.svgPreview"></div>
       </div>
 
       <!-- 3D Tab: viewer -->
@@ -95,7 +96,7 @@ const hasJscad = computed(() => !!result.value?.jscadScript)
     </template>
 
     <!-- Idle State -->
-    <div v-else-if="isIdle" class="idle-wrapper">
+    <div v-else-if="isIdle" class="idle-wrapper" data-testid="plate-idle-message">
       <BiInfoCircle class="mb-2" />
       <p class="small text-center mb-0">
         Click "Generate" to create switch cutouts and outlines from your keyboard layout.

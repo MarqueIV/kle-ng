@@ -35,6 +35,7 @@ function handleDownloadDxf() {
         :disabled="isGenerating"
         aria-label="Download plate as SVG file"
         title="Download SVG for use in vector editors like Inkscape or Adobe Illustrator"
+        data-testid="plate-download-svg"
       >
         <BiDownload aria-hidden="true" />
         Download SVG
@@ -46,6 +47,7 @@ function handleDownloadDxf() {
         :disabled="isGenerating"
         aria-label="Download plate as DXF file"
         title="Download DXF for use in CAD software or laser cutting services (units: millimeters)"
+        data-testid="plate-download-dxf"
       >
         <BiDownload aria-hidden="true" />
         Download DXF

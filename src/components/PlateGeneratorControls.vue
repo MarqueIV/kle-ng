@@ -66,6 +66,7 @@ function handleDismissError() {
         :disabled="isGenerateDisabled"
         @click="handleGeneratePlate"
         :title="buttonTooltip"
+        data-testid="plate-generate-btn"
       >
         Generate
       </button>

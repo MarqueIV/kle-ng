@@ -47,6 +47,7 @@ onMounted(() => {
               class="tab-bar-item"
               :class="{ active: activeTab === 'outline' }"
               @click="activeTab = 'outline'"
+              data-testid="plate-tab-outline"
             >
               Outline
             </button>

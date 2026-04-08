@@ -197,4 +197,20 @@ export const SELECTORS = {
     /** "Close search" X button. */
     CLOSE_BUTTON: '[aria-label="Close search"]',
   },
+  /**
+   * Plate Generator panel
+   */
+  PLATE_GENERATOR: {
+    SECTION: '[data-section-id="plate"]',
+    COLLAPSE_BTN: '[data-section-id="plate"] .collapse-btn',
+    GENERATE_BTN: '[data-testid="plate-generate-btn"]',
+    SVG_PREVIEW: '[data-testid="plate-svg-preview"]',
+    IDLE_MESSAGE: '[data-testid="plate-idle-message"]',
+    DOWNLOAD_SVG: '[data-testid="plate-download-svg"]',
+    DOWNLOAD_DXF: '[data-testid="plate-download-dxf"]',
+    TAB_OUTLINE: '[data-testid="plate-tab-outline"]',
+    OUTLINE_TYPE_SELECT: '#outlineType',
+    RESULTS_TAB_3D: '[data-testid="plate-results-tab-3d"]',
+    THREE_CANVAS: '[data-testid="plate-3d-canvas"]',
+  },
 } as const

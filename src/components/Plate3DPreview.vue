@@ -360,7 +360,12 @@ function disposeScene() {
     </div>
 
     <!-- Three.js canvas -->
-    <canvas ref="canvasRef" v-show="threeReady && !webglError && !!stlData" class="three-canvas" />
+    <canvas
+      ref="canvasRef"
+      v-show="threeReady && !webglError && !!stlData"
+      class="three-canvas"
+      data-testid="plate-3d-canvas"
+    />
 
     <!-- Click-to-activate overlay (shown when canvas is ready but controls not yet active) -->
     <div
