@@ -186,10 +186,10 @@ export function createMxSpecStabGeoms(
   const k = sizeAdjust / 2
   const leftPts = getMxSpecLeftPadVertices(k, spacing, keySize, narrowChannel)
 
-  // Mirror right pad: negate X, reverse winding for CCW
-  const rightPts = leftPts.map(([x, y]) => [-x, y] as [number, number]).reverse()
+  // Mirror right pad: negate X gives CCW (mirroring reverses CW→CCW winding)
+  const rightPts = leftPts.map(([x, y]) => [-x, y] as [number, number])
 
-  const leftPad = translate([-spacing, 0, 0], polygon({ points: leftPts })) as Geom2
+  const leftPad = translate([-spacing, 0, 0], polygon({ points: [...leftPts].reverse() })) as Geom2
   const rightPad = translate([spacing, 0, 0], polygon({ points: rightPts })) as Geom2
 
   if (isVertical) {
@@ -220,7 +220,7 @@ export function buildMxSpecStabScript(
 
   const k = sizeAdjust / 2
   const leftPts = getMxSpecLeftPadVertices(k, spacing, keySize, narrowChannel)
-  const rightPts = leftPts.map(([x, y]) => [-x, y] as [number, number]).reverse()
+  const rightPts = leftPts.map(([x, y]) => [-x, y] as [number, number])
 
   const rotDeg = (isVertical ? -90 : 0) + totalRotDeg
   const rotRad = rotDeg * (Math.PI / 180)
@@ -240,7 +240,7 @@ export function buildMxSpecStabScript(
   const lines: string[] = []
   const subA = `${varName}_a`
   const subB = `${varName}_b`
-  lines.push(`const ${subA} = ${buildPadExpr(leftPts, -spacing)}`)
+  lines.push(`const ${subA} = ${buildPadExpr([...leftPts].reverse(), -spacing)}`)
   lines.push(`const ${subB} = ${buildPadExpr(rightPts, spacing)}`)
   const suffix = comment ? `  // ${comment}` : ''
   lines.push(`const ${varName} = union(${subA}, ${subB})${suffix}`)
