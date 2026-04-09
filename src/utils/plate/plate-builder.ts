@@ -35,6 +35,7 @@ import {
   fmt,
   fmtVec2,
   formatPoints,
+  ScriptShapeRegistry,
   createRectangleSwitchGeom,
   buildRectangleSwitchScript,
   createCherryMxOpenableGeom,
@@ -546,14 +547,18 @@ function buildJscadScript(
     cutoutType: CutoutType
     stabilizerType: StabilizerType
     outlineScriptLines?: string[]
+    registry?: ScriptShapeRegistry
   },
 ): string {
-  const { thickness, cutoutType, stabilizerType, outlineScriptLines } = options
+  const { thickness, cutoutType, stabilizerType, outlineScriptLines, registry } = options
   const date = new Date().toISOString().split('T')[0]
+
+  const registryLines = registry?.getDefinitionLines() ?? []
 
   // Scan all script lines to determine which imports are needed
   const allLines: string[] = [
     ...(outlineNamedGeom.scriptLines ?? outlineScriptLines ?? []),
+    ...registryLines,
     ...cutouts.flatMap((c) => c.scriptLines ?? []),
   ]
 
@@ -640,6 +645,13 @@ function buildJscadScript(
     }
   }
   lines.push(``)
+
+  // Shared shape definitions (deduplicated primitives referenced by multiple cutouts)
+  if (registryLines.length > 0) {
+    lines.push(`// --- Shared shapes ---`)
+    lines.push(...registryLines)
+    lines.push(``)
+  }
 
   // Separate cutouts by type for grouped output
   const switchLines: string[] = []
@@ -775,6 +787,9 @@ export async function buildPlate(
     ),
   )
 
+  // Shared shape registry — deduplicates primitive expressions across JSCAD script output
+  const scriptShapeRegistry = new ScriptShapeRegistry()
+
   // Create cutout models (maker.js — for SVG/DXF) and JSCAD native geoms (for STL/script)
   const cutoutModels: Record<string, MakerJs.IModel> = {}
   const namedGeoms: JscadNamedGeom[] = []
@@ -825,6 +840,7 @@ export async function buildPlate(
         keyCenterY,
         switchRotDeg,
         switchComment,
+        scriptShapeRegistry,
       )
     } else {
       // cherry-mx-openable
@@ -921,6 +937,7 @@ export async function buildPlate(
           stabKeyCenterY,
           totalStabRotation,
           stabComment,
+          scriptShapeRegistry,
         )
         namedGeoms.push({
           varName: stabVarName,
@@ -1176,6 +1193,7 @@ export async function buildPlate(
       thickness,
       cutoutType,
       stabilizerType,
+      registry: scriptShapeRegistry,
     })
 
     try {

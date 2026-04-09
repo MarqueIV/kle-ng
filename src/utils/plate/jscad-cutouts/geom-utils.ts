@@ -56,6 +56,49 @@ export function extractGeom2Points(geom: Geom2): [number, number][] {
   return area < 0 ? pts.slice().reverse() : pts
 }
 
+/**
+ * Registry for shared shape constants in the generated JSCAD script.
+ * Callers register a shape by key; the registry emits each unique shape once
+ * and returns the variable name so instances can reference it instead of
+ * inlining the full expression.
+ */
+export class ScriptShapeRegistry {
+  private readonly shapeToVar = new Map<string, string>()
+  private readonly usedVarNames = new Set<string>()
+  private readonly _lines: string[] = []
+
+  /**
+   * Get or create a shared variable for a shape.
+   *
+   * @param key - Canonical key that uniquely identifies the shape parameters.
+   * @param hint - Preferred variable name (a numeric suffix is added on collision).
+   * @param expression - JSCAD expression to assign (only evaluated on first call for this key).
+   * @returns The variable name that holds the shape.
+   */
+  getOrCreate(key: string, hint: string, expression: string): string {
+    const existing = this.shapeToVar.get(key)
+    if (existing !== undefined) return existing
+
+    let varName = hint
+    let suffix = 2
+    while (this.usedVarNames.has(varName)) {
+      varName = `${hint}_${suffix++}`
+    }
+    this.shapeToVar.set(key, varName)
+    this.usedVarNames.add(varName)
+    this._lines.push(`const ${varName} = ${expression}`)
+    return varName
+  }
+
+  isEmpty(): boolean {
+    return this._lines.length === 0
+  }
+
+  getDefinitionLines(): string[] {
+    return [...this._lines]
+  }
+}
+
 /** Format a number for script output — no trailing zeros, 3 decimal max. */
 export function fmt(n: number): string {
   return String(Math.round(n * 1000) / 1000)

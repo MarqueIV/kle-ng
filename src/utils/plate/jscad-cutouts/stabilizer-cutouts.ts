@@ -7,7 +7,7 @@
  * Callers use placeGeom2() to apply total rotation and key-center translation.
  */
 import * as jscadModeling from '@jscad/modeling'
-import { fmt, fmtVec2, formatPoints, type Geom2 } from './geom-utils'
+import { fmt, fmtVec2, formatPoints, type Geom2, ScriptShapeRegistry } from './geom-utils'
 import {
   getCherryMxStabilizerSpacing,
   getAlpsStabilizerSpacing,
@@ -100,6 +100,7 @@ export function buildMxBasicStabScript(
   keyCenterY: number,
   totalRotDeg: number,
   comment?: string,
+  registry?: ScriptShapeRegistry,
 ): string[] | null {
   const { keyWidth, keyHeight, filletRadius = 0, sizeAdjust = 0 } = opts
   const isVertical = keyHeight > keyWidth
@@ -132,14 +133,22 @@ export function buildMxBasicStabScript(
   const [rx, ry] = rotatePoint(spacing, localCenterY)
 
   const roundStr = clampedFillet > 0 ? `, roundRadius: ${fmt(clampedFillet)}` : ''
-  const primitive =
+  const primitiveExpr =
     clampedFillet > 0
       ? `roundedRectangle({ size: [${fmt(w)}, ${fmt(h)}]${roundStr} })`
       : `rectangle({ size: [${fmt(w)}, ${fmt(h)}] })`
 
+  let shapeExpr: string
+  if (registry) {
+    const shapeKey = `mxbasic_${type}:${fmt(w)}:${fmt(h)}:${fmt(clampedFillet)}`
+    shapeExpr = registry.getOrCreate(shapeKey, 'stab_pad', primitiveExpr)
+  } else {
+    shapeExpr = primitiveExpr
+  }
+
   const rectRotDeg = (isVertical ? -90 : 0) + totalRotDeg
-  let aPrimitive = primitive
-  let bPrimitive = primitive
+  let aPrimitive = shapeExpr
+  let bPrimitive = shapeExpr
   if (rectRotDeg !== 0) {
     const rectRad = fmt(rectRotDeg * (Math.PI / 180))
     aPrimitive = `rotateZ(${rectRad}, ${aPrimitive})`
@@ -210,6 +219,7 @@ export function buildMxSpecStabScript(
   keyCenterY: number,
   totalRotDeg: number,
   comment?: string,
+  registry?: ScriptShapeRegistry,
 ): string[] | null {
   const { keyWidth, keyHeight, sizeAdjust = 0, narrowChannel = false } = opts
   const isVertical = keyHeight > keyWidth
@@ -225,8 +235,24 @@ export function buildMxSpecStabScript(
   const rotDeg = (isVertical ? -90 : 0) + totalRotDeg
   const rotRad = rotDeg * (Math.PI / 180)
 
-  function buildPadExpr(pts: [number, number][], localOffsetX: number): string {
-    let expr = `polygon({ points: ${formatPoints(pts)} })`
+  let leftShapeVar: string | undefined
+  let rightShapeVar: string | undefined
+  if (registry) {
+    const shapeKey = `mxspec:${fmt(k)}:${fmt(spacing)}:${narrowChannel}`
+    leftShapeVar = registry.getOrCreate(
+      `${shapeKey}:left`,
+      'stab_left_pad',
+      `polygon({ points: ${formatPoints([...leftPts].reverse())} })`,
+    )
+    rightShapeVar = registry.getOrCreate(
+      `${shapeKey}:right`,
+      'stab_right_pad',
+      `polygon({ points: ${formatPoints(rightPts)} })`,
+    )
+  }
+
+  function buildPadExpr(pts: [number, number][], localOffsetX: number, shapeVar?: string): string {
+    let expr = shapeVar ?? `polygon({ points: ${formatPoints(pts)} })`
     expr = `translate([${fmt(localOffsetX)}, 0, 0], ${expr})`
     if (rotDeg !== 0) {
       expr = `rotateZ(${fmt(rotRad)}, ${expr})`
@@ -240,8 +266,8 @@ export function buildMxSpecStabScript(
   const lines: string[] = []
   const subA = `${varName}_a`
   const subB = `${varName}_b`
-  lines.push(`const ${subA} = ${buildPadExpr([...leftPts].reverse(), -spacing)}`)
-  lines.push(`const ${subB} = ${buildPadExpr(rightPts, spacing)}`)
+  lines.push(`const ${subA} = ${buildPadExpr([...leftPts].reverse(), -spacing, leftShapeVar)}`)
+  lines.push(`const ${subB} = ${buildPadExpr(rightPts, spacing, rightShapeVar)}`)
   const suffix = comment ? `  // ${comment}` : ''
   lines.push(`const ${varName} = union(${subA}, ${subB})${suffix}`)
   return lines
@@ -303,6 +329,7 @@ export function buildAlpsStabScript(
   keyCenterY: number,
   totalRotDeg: number,
   comment?: string,
+  registry?: ScriptShapeRegistry,
 ): string[] | null {
   const { keyWidth, keyHeight, filletRadius = 0, sizeAdjust = 0 } = opts
   const isVertical = keyHeight > keyWidth
@@ -334,14 +361,22 @@ export function buildAlpsStabScript(
   const [rx, ry] = rotatePoint(spacing, localCenterY)
 
   const roundStr = clampedFillet > 0 ? `, roundRadius: ${fmt(clampedFillet)}` : ''
-  const primitive =
+  const primitiveExpr =
     clampedFillet > 0
       ? `roundedRectangle({ size: [${fmt(w)}, ${fmt(h)}]${roundStr} })`
       : `rectangle({ size: [${fmt(w)}, ${fmt(h)}] })`
 
+  let shapeExpr: string
+  if (registry) {
+    const shapeKey = `alps_${type}:${fmt(w)}:${fmt(h)}:${fmt(clampedFillet)}`
+    shapeExpr = registry.getOrCreate(shapeKey, 'stab_pad', primitiveExpr)
+  } else {
+    shapeExpr = primitiveExpr
+  }
+
   const rectRotDeg = (isVertical ? -90 : 0) + totalRotDeg
-  let aPrimitive = primitive
-  let bPrimitive = primitive
+  let aPrimitive = shapeExpr
+  let bPrimitive = shapeExpr
   if (rectRotDeg !== 0) {
     const rectRad = fmt(rectRotDeg * (Math.PI / 180))
     aPrimitive = `rotateZ(${rectRad}, ${aPrimitive})`
@@ -404,9 +439,19 @@ export function buildStabScript(
   keyCenterY: number,
   totalRotDeg: number,
   comment?: string,
+  registry?: ScriptShapeRegistry,
 ): string[] | null {
   if (type === 'mx-basic' || type === 'mx-tight' || type === 'mx-bidirectional') {
-    return buildMxBasicStabScript(varName, type, opts, keyCenterX, keyCenterY, totalRotDeg, comment)
+    return buildMxBasicStabScript(
+      varName,
+      type,
+      opts,
+      keyCenterX,
+      keyCenterY,
+      totalRotDeg,
+      comment,
+      registry,
+    )
   }
   if (type === 'mx-spec' || type === 'mx-spec-narrow') {
     return buildMxSpecStabScript(
@@ -416,10 +461,20 @@ export function buildStabScript(
       keyCenterY,
       totalRotDeg,
       comment,
+      registry,
     )
   }
   if (type === 'alps-aek' || type === 'alps-at101') {
-    return buildAlpsStabScript(varName, type, opts, keyCenterX, keyCenterY, totalRotDeg, comment)
+    return buildAlpsStabScript(
+      varName,
+      type,
+      opts,
+      keyCenterX,
+      keyCenterY,
+      totalRotDeg,
+      comment,
+      registry,
+    )
   }
   return null
 }

@@ -1,5 +1,12 @@
 export type { Geom2 } from './geom-utils'
-export { placeGeom2, extractGeom2Points, fmt, fmtVec2, formatPoints } from './geom-utils'
+export {
+  placeGeom2,
+  extractGeom2Points,
+  fmt,
+  fmtVec2,
+  formatPoints,
+  ScriptShapeRegistry,
+} from './geom-utils'
 export {
   createRectangleSwitchGeom,
   buildRectangleSwitchScript,

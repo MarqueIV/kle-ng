@@ -5,7 +5,7 @@
  * All shapes are centered at the origin. Callers use placeGeom2() to position them.
  */
 import * as jscadModeling from '@jscad/modeling'
-import { fmt, fmtVec2, type Geom2 } from './geom-utils'
+import { fmt, fmtVec2, type Geom2, ScriptShapeRegistry } from './geom-utils'
 
 const { rectangle, roundedRectangle } = jscadModeling.primitives
 const { union } = jscadModeling.booleans
@@ -56,14 +56,22 @@ export function buildRectangleSwitchScript(
   centerY: number,
   rotationDeg: number,
   comment?: string,
+  registry?: ScriptShapeRegistry,
 ): string[] {
   const { width, height, filletRadius = 0 } = opts
   const roundStr = filletRadius > 0 ? `, roundRadius: ${fmt(filletRadius)}` : ''
   const sizeStr = `size: [${fmt(width)}, ${fmt(height)}]`
-  const primitive =
+  const primitiveExpr =
     filletRadius > 0 ? `roundedRectangle({ ${sizeStr}${roundStr} })` : `rectangle({ ${sizeStr} })`
 
-  let expr = primitive
+  let expr: string
+  if (registry) {
+    const shapeKey = `rect:${fmt(width)}:${fmt(height)}:${fmt(filletRadius)}`
+    expr = registry.getOrCreate(shapeKey, 'switch_shape', primitiveExpr)
+  } else {
+    expr = primitiveExpr
+  }
+
   if (rotationDeg !== 0) {
     expr = `rotateZ(${fmt(rotationDeg * (Math.PI / 180))}, ${expr})`
   }
