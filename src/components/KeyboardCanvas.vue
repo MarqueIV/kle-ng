@@ -223,6 +223,9 @@ const rectSelectionOccurred = ref(false)
 const keyDragOccurred = ref(false)
 const mouseDownOnKey = ref<{ key: Key; pos: { x: number; y: number } } | null>(null)
 
+// Shift-click rect selection: anchor set on first click, second shift-click completes rect
+const shiftClickAnchor = ref<{ x: number; y: number } | null>(null)
+
 const mousePosition = ref({ x: 0, y: 0, visible: false })
 const canvasFocused = ref(false)
 
@@ -249,6 +252,7 @@ const canvasCursor = computed(() => {
     if (keyboardStore.mouseDragMode === 'rect-select') {
       return 'crosshair'
     }
+
     // Show pointer cursor when hovering over links
     if (hoveredLinkHref.value) {
       return 'pointer'
@@ -1020,6 +1024,21 @@ const handleCanvasClick = (event: MouseEvent) => {
     return
   }
 
+  // Shift-click rect selection: second shift-click completes rectangle from anchor to current pos
+  if (event.shiftKey && shiftClickAnchor.value && keyboardStore.canvasMode === 'select') {
+    const anchor = shiftClickAnchor.value
+    shiftClickAnchor.value = null
+    dragCoordinateOffset.value = getCoordinateSystemOffset()
+    keyboardStore.startRectSelect(anchor)
+    const selectedKeys = calculateSelectedKeys(pos)
+    keyboardStore.updateRectSelect(pos, selectedKeys)
+    keyboardStore.endRectSelect()
+    rectSelectionOccurred.value = true
+    renderScheduler.schedule(renderKeyboard)
+    canvasRef.value?.focus()
+    return
+  }
+
   // Get all keys at click position (for overlapping key detection)
   const keysAtPosition = renderer.value.getAllKeysAtPosition(pos.x, pos.y, keyboardStore.keys)
 
@@ -1042,6 +1061,11 @@ const handleCanvasClick = (event: MouseEvent) => {
       keysAtPosition,
       event.ctrlKey || event.metaKey,
     )
+  }
+
+  // Set shift-click anchor for potential shift-click rect selection (only in select mode)
+  if (keyboardStore.canvasMode === 'select' && !event.ctrlKey && !event.metaKey) {
+    shiftClickAnchor.value = pos
   }
 
   // Keep focus on canvas
@@ -1072,7 +1096,8 @@ const handleMouseDown = (event: MouseEvent) => {
   if (event.button === 0) {
     // Only start rectangle selection if Ctrl/Cmd is NOT held
     // When Ctrl/Cmd is held, user intends individual key selection
-    if (!event.ctrlKey && !event.metaKey) {
+    // Also skip drag rect-select if shift is held and we have an anchor (shift-click mode)
+    if (!event.ctrlKey && !event.metaKey && !(event.shiftKey && shiftClickAnchor.value)) {
       // Cache coordinate offset at start of rectangle selection to prevent feedback loops
       dragCoordinateOffset.value = getCoordinateSystemOffset()
       keyboardStore.startRectSelect(pos)
@@ -1430,6 +1455,12 @@ const handleCanvasBlur = () => {
 }
 
 const handleKeyDown = async (event: KeyboardEvent) => {
+  // Escape clears shift-click anchor
+  if (event.key === 'Escape' && shiftClickAnchor.value) {
+    shiftClickAnchor.value = null
+    renderScheduler.schedule(renderKeyboard)
+  }
+
   // Handle Ctrl+[ and Ctrl+] for key navigation (like bracket matching in editors)
   if ((event.ctrlKey || event.metaKey) && (event.key === '[' || event.key === ']')) {
     event.preventDefault()
