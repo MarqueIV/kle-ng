@@ -8,6 +8,7 @@ import SummaryPanel from './components/SummaryPanel.vue'
 import JsonEditorPanel from './components/JsonEditorPanel.vue'
 import PcbGeneratorPanel from './components/PcbGeneratorPanel.vue'
 import PlateGeneratorPanel from './components/PlateGeneratorPanel.vue'
+import LayoutEditorSettingsPanel from './components/LayoutEditorSettingsPanel.vue'
 import AppFooter from './components/AppFooter.vue'
 import CanvasToolbar from './components/CanvasToolbar.vue'
 import CanvasFooter from './components/CanvasFooter.vue'
@@ -358,6 +359,9 @@ const stopResize = () => {
 }
 
 // Layout Editor height will be loaded in the existing onMounted function
+
+// Layout Editor settings panel state
+const isLayoutEditorSettingsOpen = ref(false)
 </script>
 
 <template>
@@ -525,10 +529,20 @@ const stopResize = () => {
             <!-- Left: Canvas Toolbar -->
             <CanvasToolbar />
 
-            <!-- Right: Canvas Area -->
+            <!-- Center: Canvas Area -->
             <div class="canvas-area flex-grow-1">
-              <KeyboardCanvas ref="canvasRef" />
+              <KeyboardCanvas
+                ref="canvasRef"
+                :settings-open="isLayoutEditorSettingsOpen"
+                @toggle-settings="isLayoutEditorSettingsOpen = !isLayoutEditorSettingsOpen"
+              />
             </div>
+
+            <!-- Right: Layout Editor Settings Panel -->
+            <LayoutEditorSettingsPanel
+              v-if="isLayoutEditorSettingsOpen"
+              @close="isLayoutEditorSettingsOpen = false"
+            />
           </div>
 
           <!-- Canvas Footer (only for canvas section) -->

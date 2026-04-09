@@ -17,6 +17,7 @@ export interface RenderOptions {
   unit: number
   background: string
   showGrid?: boolean
+  highlightColor?: string
   scale?: number
   fontFamily?: string
 }
@@ -217,6 +218,7 @@ export class CanvasRenderer {
       isSelected,
       isHovered,
       isSearchMatch,
+      selectionColor: this.options.highlightColor,
     })
 
     // Get params for label rendering
@@ -343,6 +345,10 @@ export class CanvasRenderer {
 
     this.ctx.save()
 
+    if (this.options.showGrid) {
+      this.drawGrid()
+    }
+
     // Create sets for efficient lookup
     const selectedKeySet = new Set(selectedKeys)
     const searchMatchSet = new Set(searchMatchKeys)
@@ -410,6 +416,40 @@ export class CanvasRenderer {
     }
 
     this.ctx.restore()
+  }
+
+  private drawGrid(): void {
+    const ctx = this.ctx
+    const unit = this.options.unit
+    const transform = ctx.getTransform()
+    const scale = transform.a // zoom * dpr
+
+    // Compute visible range in keyboard units
+    const startKX = Math.floor((0 - transform.e) / (scale * unit)) - 1
+    const endKX = Math.ceil((ctx.canvas.width - transform.e) / (scale * unit)) + 1
+    const startKY = Math.floor((0 - transform.f) / (scale * unit)) - 1
+    const endKY = Math.ceil((ctx.canvas.height - transform.f) / (scale * unit)) + 1
+
+    // 1 device pixel expressed in ctx coordinates
+    const px = 1 / scale
+
+    ctx.save()
+    ctx.beginPath()
+    ctx.setLineDash([4 * px, 4 * px])
+    ctx.lineWidth = px
+    ctx.strokeStyle = 'rgba(128, 128, 128, 0.35)'
+
+    for (let kx = startKX; kx <= endKX; kx++) {
+      ctx.moveTo(kx * unit, startKY * unit)
+      ctx.lineTo(kx * unit, endKY * unit)
+    }
+    for (let ky = startKY; ky <= endKY; ky++) {
+      ctx.moveTo(startKX * unit, ky * unit)
+      ctx.lineTo(endKX * unit, ky * unit)
+    }
+
+    ctx.stroke()
+    ctx.restore()
   }
 
   public calculateBounds(keys: Key[]) {

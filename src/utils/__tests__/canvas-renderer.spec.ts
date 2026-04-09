@@ -45,6 +45,7 @@ const mockContext = {
   translate: vi.fn(),
   rotate: vi.fn(),
   setLineDash: vi.fn(),
+  getTransform: vi.fn().mockReturnValue({ a: 1, d: 1, e: 0, f: 0 }),
   createLinearGradient: vi.fn().mockReturnValue(mockGradient),
   createRadialGradient: vi.fn().mockReturnValue(mockGradient),
   measureText: vi.fn().mockReturnValue({ width: 50 }),
@@ -799,6 +800,49 @@ describe('CanvasRenderer', () => {
 
       // Should have rendered something (even if truncated)
       expect(mockContext.fillText).toHaveBeenCalled()
+    })
+  })
+
+  describe('grid rendering', () => {
+    const metadata = new KeyboardMetadata()
+
+    it('does not draw grid when showGrid is false', () => {
+      renderer.updateOptions({ unit: 54, background: '#ffffff', showGrid: false })
+      renderer.render([], [], metadata)
+      // setLineDash is only called by the grid; nothing else in the renderer uses it
+      expect(mockContext.setLineDash).not.toHaveBeenCalled()
+    })
+
+    it('draws grid when showGrid is true', () => {
+      renderer.updateOptions({ unit: 54, background: '#ffffff', showGrid: true })
+      renderer.render([], [], metadata)
+      expect(mockContext.setLineDash).toHaveBeenCalled()
+      expect(mockContext.stroke).toHaveBeenCalled()
+    })
+
+    it('draws grid lines at 1U intervals covering the visible area', () => {
+      // Canvas is 800×600, unit=54, transform identity (scale=1, offset=0)
+      renderer.updateOptions({ unit: 54, background: '#ffffff', showGrid: true })
+      renderer.render([], [], metadata)
+
+      const moveToXValues = (mockContext.moveTo.mock.calls as number[][]).map((c) => c[0])
+      const moveToYValues = (mockContext.moveTo.mock.calls as number[][]).map((c) => c[1])
+
+      // Grid vertical lines land at multiples of 54 on the x axis
+      const verticalXAtUnit = moveToXValues.filter((x) => x !== undefined && x % 54 === 0)
+      expect(verticalXAtUnit.length).toBeGreaterThan(0)
+
+      // Grid horizontal lines land at multiples of 54 on the y axis
+      const horizontalYAtUnit = moveToYValues.filter((y) => y !== undefined && y % 54 === 0)
+      expect(horizontalYAtUnit.length).toBeGreaterThan(0)
+    })
+
+    it('uses normalized line width relative to transform scale', () => {
+      // With scale=2 (e.g. zoom=2), lineWidth should be 0.5 (1/scale)
+      mockContext.getTransform.mockReturnValueOnce({ a: 2, d: 2, e: 0, f: 0 })
+      renderer.updateOptions({ unit: 54, background: '#ffffff', showGrid: true })
+      renderer.render([], [], metadata)
+      expect(mockContext.lineWidth).toBe(0.5)
     })
   })
 })

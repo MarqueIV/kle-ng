@@ -31,6 +31,8 @@ export interface KeyRenderOptions {
   isHovered?: boolean
   /** Whether this key matches a text search */
   isSearchMatch?: boolean
+  /** Override color for selected/hovered state */
+  selectionColor?: string
 }
 
 /**
@@ -698,10 +700,11 @@ export class KeyRenderer {
     // Render using unified vector union approach for all keys
     if (!key.decal) {
       // Determine border color based on hover/selection state
+      const selectionColor = options.selectionColor ?? KeyRenderer.SELECTION_COLOR
       const borderColor = options.isHovered
-        ? KeyRenderer.HOVER_COLOR
+        ? selectionColor
         : options.isSelected
-          ? KeyRenderer.SELECTION_COLOR
+          ? selectionColor
           : options.isSearchMatch
             ? KeyRenderer.SEARCH_MATCH_COLOR
             : '#000000'
@@ -733,10 +736,11 @@ export class KeyRenderer {
 
     // For decal keys, only draw outline if selected, hovered, or search match
     if (key.decal && (options.isSelected || options.isHovered || options.isSearchMatch)) {
+      const selectionColor = options.selectionColor ?? KeyRenderer.SELECTION_COLOR
       const decalBorderColor = options.isHovered
-        ? KeyRenderer.HOVER_COLOR
+        ? selectionColor
         : options.isSelected
-          ? KeyRenderer.SELECTION_COLOR
+          ? selectionColor
           : KeyRenderer.SEARCH_MATCH_COLOR
 
       if (isRotaryEncoder) {

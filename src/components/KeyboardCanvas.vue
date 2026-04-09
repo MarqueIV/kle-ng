@@ -51,6 +51,19 @@
         <BiSearch />
       </button>
 
+      <!-- Layout Editor settings trigger button -->
+      <button
+        type="button"
+        class="canvas-settings-trigger"
+        :class="{ active: settingsOpen }"
+        :title="settingsOpen ? 'Close Layout Editor settings' : 'Open Layout Editor settings'"
+        :aria-label="settingsOpen ? 'Close Layout Editor settings' : 'Open Layout Editor settings'"
+        :aria-pressed="settingsOpen"
+        @click.stop="$emit('toggle-settings')"
+      >
+        <BiGear />
+      </button>
+
       <!-- Canvas search bar (mounted only when search is open) -->
       <CanvasSearchBar
         v-if="keySearch.isSearchOpen.value"
@@ -139,6 +152,7 @@ import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import { useKeyboardStore, type Key, type KeyboardMetadata } from '@/stores/keyboard'
 import { useMatrixDrawingStore } from '@/stores/matrix-drawing'
 import { useFontStore } from '@/stores/font'
+import { useLayoutEditorSettingsStore } from '@/stores/layoutEditorSettings'
 import { CanvasRenderer, type RenderOptions } from '@/utils/canvas-renderer'
 import { renderScheduler } from '@/utils/utils/RenderScheduler'
 import { D } from '@/utils/decimal-math'
@@ -155,6 +169,7 @@ import DebugControlButton from '@/components/DebugControlButton.vue'
 import KeySelectionPopup from '@/components/KeySelectionPopup.vue'
 import CanvasSearchBar from '@/components/CanvasSearchBar.vue'
 import BiSearch from 'bootstrap-icons/icons/search.svg'
+import BiGear from 'bootstrap-icons/icons/gear.svg'
 import { useKeySearch } from '@/composables/useKeySearch'
 
 // Visual border around rendered keycaps (in pixels)
@@ -166,6 +181,7 @@ const isDevMode = import.meta.env.DEV
 const keyboardStore = useKeyboardStore()
 const matrixDrawingStore = useMatrixDrawingStore()
 const fontStore = useFontStore()
+const layoutEditorSettingsStore = useLayoutEditorSettingsStore()
 const keySearch = useKeySearch()
 
 // Define a type for the internal KLE format
@@ -288,6 +304,8 @@ const renderOptions = computed<RenderOptions>(() => ({
   unit: 54,
   background: keyboardStore.metadata?.backcolor || '#ffffff',
   fontFamily: fontStore.canvasFontFamily,
+  showGrid: layoutEditorSettingsStore.showGrid,
+  highlightColor: layoutEditorSettingsStore.highlightColor,
 }))
 
 // Watch for layout changes and clear matrix overlay
@@ -512,6 +530,18 @@ watch(
   () => fontStore.canvasFontFamily,
   (newFont, oldFont) => {
     if (renderer.value && newFont !== oldFont) {
+      renderer.value.updateOptions(renderOptions.value)
+      renderScheduler.schedule(renderKeyboard)
+    }
+  },
+  { immediate: false },
+)
+
+// Watch for layout editor settings changes and re-render
+watch(
+  () => [layoutEditorSettingsStore.showGrid, layoutEditorSettingsStore.highlightColor],
+  () => {
+    if (renderer.value) {
       renderer.value.updateOptions(renderOptions.value)
       renderScheduler.schedule(renderKeyboard)
     }
@@ -2114,6 +2144,14 @@ onUnmounted(() => {
   }
 })
 
+defineProps<{
+  settingsOpen?: boolean
+}>()
+
+defineEmits<{
+  'toggle-settings': []
+}>()
+
 defineExpose({})
 </script>
 
@@ -2240,6 +2278,27 @@ defineExpose({})
   justify-content: center;
 }
 .canvas-search-trigger:hover {
+  background: var(--bs-secondary-bg, #f8f9fa);
+  color: var(--bs-body-color, #000);
+}
+
+.canvas-settings-trigger {
+  position: absolute;
+  top: 42px;
+  right: 8px;
+  z-index: 1100;
+  background: var(--bs-body-bg, #fff);
+  border: 1px solid var(--bs-border-color, #dee2e6);
+  border-radius: 4px;
+  padding: 5px;
+  cursor: pointer;
+  color: var(--bs-secondary-color, #6c757d);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.canvas-settings-trigger:hover,
+.canvas-settings-trigger.active {
   background: var(--bs-secondary-bg, #f8f9fa);
   color: var(--bs-body-color, #000);
 }
