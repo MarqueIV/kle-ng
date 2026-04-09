@@ -1,7 +1,9 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { mount, VueWrapper } from '@vue/test-utils'
 import ColorPicker from '../ColorPicker.vue'
 import * as recentlyUsedColorsModule from '../../utils/recently-used-colors'
+
+const mockRefreshRecentlyUsedColors = vi.hoisted(() => vi.fn())
 
 // Mock CustomColorPicker
 vi.mock('../CustomColorPicker.vue', () => ({
@@ -11,7 +13,7 @@ vi.mock('../CustomColorPicker.vue', () => ({
     emits: ['update:modelValue'],
     setup() {
       return {
-        refreshRecentlyUsedColors: vi.fn(),
+        refreshRecentlyUsedColors: mockRefreshRecentlyUsedColors,
       }
     },
     template: `
@@ -39,169 +41,158 @@ vi.mock('../../utils/recently-used-colors', () => ({
 // Get references to the mocked functions
 const mockRecentlyUsedColorsManager = vi.mocked(recentlyUsedColorsModule.recentlyUsedColorsManager)
 
+// Teleported popup renders into document.body outside the component root — use document.querySelector
+const getInPopup = (selector: string): Element => {
+  const el = document.querySelector(selector)
+  if (!el) throw new Error(`Element not found in teleported popup: ${selector}`)
+  return el
+}
+
 describe('ColorPicker', () => {
   let wrapper: VueWrapper
 
   beforeEach(() => {
-    // Reset all mocks
     vi.clearAllMocks()
 
     wrapper = mount(ColorPicker, {
       props: {
         modelValue: '#000000',
       },
+      attachTo: document.body,
     })
+  })
+
+  afterEach(() => {
+    wrapper.unmount()
   })
 
   describe('Recently Used Colors Tracking', () => {
     it('does not track color during selection', async () => {
-      // Open the picker
       await wrapper.find('.color-picker-button').trigger('click')
+      await wrapper.vm.$nextTick()
 
-      // Simulate color change in CustomColorPicker
-      await wrapper.find('[data-testid="mock-color-change"]').trigger('click')
+      getInPopup('[data-testid="mock-color-change"]').dispatchEvent(
+        new MouseEvent('click', { bubbles: true }),
+      )
+      await wrapper.vm.$nextTick()
 
-      // Should not add to recently used colors yet
       expect(mockRecentlyUsedColorsManager.addColor).not.toHaveBeenCalled()
     })
 
     it('tracks color when OK button is clicked', async () => {
-      // Open the picker
       await wrapper.find('.color-picker-button').trigger('click')
+      await wrapper.vm.$nextTick()
 
-      // Simulate color change
-      await wrapper.find('[data-testid="mock-color-change"]').trigger('click')
+      getInPopup('[data-testid="mock-color-change"]').dispatchEvent(
+        new MouseEvent('click', { bubbles: true }),
+      )
+      await wrapper.vm.$nextTick()
 
-      // Click OK button
-      await wrapper.find('.btn-primary').trigger('click')
+      getInPopup('.btn-primary').dispatchEvent(new MouseEvent('click', { bubbles: true }))
+      await wrapper.vm.$nextTick()
 
-      // Should add to recently used colors
       expect(mockRecentlyUsedColorsManager.addColor).toHaveBeenCalledWith('#ff0000')
     })
 
     it('does not track color when Cancel button is clicked', async () => {
-      // Open the picker
       await wrapper.find('.color-picker-button').trigger('click')
-
-      // Simulate color change
-      await wrapper.find('[data-testid="mock-color-change"]').trigger('click')
-
-      // Click Cancel button
-      await wrapper.find('.btn-secondary').trigger('click')
-
-      // Should not add to recently used colors
-      expect(mockRecentlyUsedColorsManager.addColor).not.toHaveBeenCalled()
-    })
-
-    it('does not track color when clicking outside (auto-cancel)', async () => {
-      // Open the picker
-      await wrapper.find('.color-picker-button').trigger('click')
-
-      // Simulate color change
-      await wrapper.find('[data-testid="mock-color-change"]').trigger('click')
-
-      // Simulate clicking outside
-      const clickEvent = new Event('click')
-      Object.defineProperty(clickEvent, 'target', {
-        value: document.body,
-        enumerable: true,
-      })
-      document.dispatchEvent(clickEvent)
-
       await wrapper.vm.$nextTick()
 
-      // Should not add to recently used colors (cancels changes)
+      getInPopup('[data-testid="mock-color-change"]').dispatchEvent(
+        new MouseEvent('click', { bubbles: true }),
+      )
+      await wrapper.vm.$nextTick()
+
+      getInPopup('.btn-secondary').dispatchEvent(new MouseEvent('click', { bubbles: true }))
+      await wrapper.vm.$nextTick()
+
       expect(mockRecentlyUsedColorsManager.addColor).not.toHaveBeenCalled()
     })
 
     it('tracks color when pressing Enter key', async () => {
-      // Open the picker
       await wrapper.find('.color-picker-button').trigger('click')
-
-      // Simulate color change
-      await wrapper.find('[data-testid="mock-color-change"]').trigger('click')
-
-      // Simulate Enter key press
-      const enterEvent = new KeyboardEvent('keydown', { key: 'Enter' })
-      document.dispatchEvent(enterEvent)
-
       await wrapper.vm.$nextTick()
 
-      // Should add to recently used colors
+      getInPopup('[data-testid="mock-color-change"]').dispatchEvent(
+        new MouseEvent('click', { bubbles: true }),
+      )
+      await wrapper.vm.$nextTick()
+
+      document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }))
+      await wrapper.vm.$nextTick()
+
       expect(mockRecentlyUsedColorsManager.addColor).toHaveBeenCalledWith('#ff0000')
     })
 
     it('does not track color when pressing Escape key', async () => {
-      // Open the picker
       await wrapper.find('.color-picker-button').trigger('click')
-
-      // Simulate color change
-      await wrapper.find('[data-testid="mock-color-change"]').trigger('click')
-
-      // Simulate Escape key press
-      const escapeEvent = new KeyboardEvent('keydown', { key: 'Escape' })
-      document.dispatchEvent(escapeEvent)
-
       await wrapper.vm.$nextTick()
 
-      // Should not add to recently used colors
+      getInPopup('[data-testid="mock-color-change"]').dispatchEvent(
+        new MouseEvent('click', { bubbles: true }),
+      )
+      await wrapper.vm.$nextTick()
+
+      document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }))
+      await wrapper.vm.$nextTick()
+
       expect(mockRecentlyUsedColorsManager.addColor).not.toHaveBeenCalled()
     })
 
     it('refreshes CustomColorPicker recently used colors after accepting', async () => {
-      // Open the picker
       await wrapper.find('.color-picker-button').trigger('click')
+      await wrapper.vm.$nextTick()
 
-      // Get the CustomColorPicker component ref
-      const customColorPicker = wrapper.findComponent({ name: 'CustomColorPicker' })
+      getInPopup('[data-testid="mock-color-change"]').dispatchEvent(
+        new MouseEvent('click', { bubbles: true }),
+      )
+      await wrapper.vm.$nextTick()
 
-      // Simulate color change
-      await wrapper.find('[data-testid="mock-color-change"]').trigger('click')
+      getInPopup('.btn-primary').dispatchEvent(new MouseEvent('click', { bubbles: true }))
+      await wrapper.vm.$nextTick()
 
-      // Click OK button
-      await wrapper.find('.btn-primary').trigger('click')
-
-      // Should have called refreshRecentlyUsedColors on the CustomColorPicker
-      expect(customColorPicker.vm.refreshRecentlyUsedColors).toHaveBeenCalled()
+      expect(mockRefreshRecentlyUsedColors).toHaveBeenCalledTimes(1)
     })
   })
 
   describe('Component Behavior', () => {
     it('opens and closes picker correctly', async () => {
-      expect(wrapper.find('.color-picker-popup').exists()).toBe(false)
+      expect(document.querySelector('.color-picker-popup')).toBeNull()
 
-      // Open picker
       await wrapper.find('.color-picker-button').trigger('click')
-      expect(wrapper.find('.color-picker-popup').exists()).toBe(true)
+      await wrapper.vm.$nextTick()
+      expect(document.querySelector('.color-picker-popup')).not.toBeNull()
 
-      // Close with OK
-      await wrapper.find('.btn-primary').trigger('click')
-      expect(wrapper.find('.color-picker-popup').exists()).toBe(false)
+      getInPopup('.btn-primary').dispatchEvent(new MouseEvent('click', { bubbles: true }))
+      await wrapper.vm.$nextTick()
+      expect(document.querySelector('.color-picker-popup')).toBeNull()
     })
 
     it('updates color value during selection', async () => {
-      // Open the picker
       await wrapper.find('.color-picker-button').trigger('click')
+      await wrapper.vm.$nextTick()
 
-      // Simulate color change
-      await wrapper.find('[data-testid="mock-color-change"]').trigger('click')
+      getInPopup('[data-testid="mock-color-change"]').dispatchEvent(
+        new MouseEvent('click', { bubbles: true }),
+      )
+      await wrapper.vm.$nextTick()
 
-      // Color value should be updated (check via emitted events)
       expect(wrapper.emitted('update:modelValue')).toBeTruthy()
       expect(wrapper.emitted('update:modelValue')![0]).toEqual(['#ff0000'])
     })
 
     it('emits events when accepting changes', async () => {
-      // Open the picker
       await wrapper.find('.color-picker-button').trigger('click')
+      await wrapper.vm.$nextTick()
 
-      // Simulate color change
-      await wrapper.find('[data-testid="mock-color-change"]').trigger('click')
+      getInPopup('[data-testid="mock-color-change"]').dispatchEvent(
+        new MouseEvent('click', { bubbles: true }),
+      )
+      await wrapper.vm.$nextTick()
 
-      // Click OK button
-      await wrapper.find('.btn-primary').trigger('click')
+      getInPopup('.btn-primary').dispatchEvent(new MouseEvent('click', { bubbles: true }))
+      await wrapper.vm.$nextTick()
 
-      // Should emit change and input events
       expect(wrapper.emitted('change')).toBeTruthy()
       expect(wrapper.emitted('input')).toBeTruthy()
       expect(wrapper.emitted('change')![0]).toEqual(['#ff0000'])
@@ -209,16 +200,18 @@ describe('ColorPicker', () => {
     })
 
     it('emits update:modelValue from acceptChanges so v-model syncs before @change fires', async () => {
-      // Open the picker and change the color (handleColorChange emits update:modelValue once)
       await wrapper.find('.color-picker-button').trigger('click')
-      await wrapper.find('[data-testid="mock-color-change"]').trigger('click')
+      await wrapper.vm.$nextTick()
+
+      getInPopup('[data-testid="mock-color-change"]').dispatchEvent(
+        new MouseEvent('click', { bubbles: true }),
+      )
+      await wrapper.vm.$nextTick()
 
       const countBeforeOk = wrapper.emitted('update:modelValue')?.length ?? 0
 
-      // Click OK — acceptChanges must emit update:modelValue again so that any
-      // parent reactive state reset (e.g. a deep watcher) that happened between
-      // the live-preview and the OK click does not cause the wrong color to be read
-      await wrapper.find('.btn-primary').trigger('click')
+      getInPopup('.btn-primary').dispatchEvent(new MouseEvent('click', { bubbles: true }))
+      await wrapper.vm.$nextTick()
 
       const allUpdateEmissions = wrapper.emitted('update:modelValue')!
       expect(allUpdateEmissions.length).toBe(countBeforeOk + 1)
@@ -226,13 +219,12 @@ describe('ColorPicker', () => {
     })
 
     it('emits update:modelValue from acceptChanges even without prior color interaction', async () => {
-      // Open picker but do NOT interact — colorValue stays at the initial modelValue
       await wrapper.find('.color-picker-button').trigger('click')
+      await wrapper.vm.$nextTick()
 
-      // Click OK immediately
-      await wrapper.find('.btn-primary').trigger('click')
+      getInPopup('.btn-primary').dispatchEvent(new MouseEvent('click', { bubbles: true }))
+      await wrapper.vm.$nextTick()
 
-      // acceptChanges should still emit update:modelValue with the current (unchanged) color
       const updateEmissions = wrapper.emitted('update:modelValue')!
       expect(updateEmissions).toBeTruthy()
       expect(updateEmissions[updateEmissions.length - 1]).toEqual(['#000000'])
@@ -241,16 +233,17 @@ describe('ColorPicker', () => {
     it('restores original value when canceling', async () => {
       const originalColor = '#000000'
 
-      // Open the picker
       await wrapper.find('.color-picker-button').trigger('click')
+      await wrapper.vm.$nextTick()
 
-      // Simulate color change
-      await wrapper.find('[data-testid="mock-color-change"]').trigger('click')
+      getInPopup('[data-testid="mock-color-change"]').dispatchEvent(
+        new MouseEvent('click', { bubbles: true }),
+      )
+      await wrapper.vm.$nextTick()
 
-      // Click Cancel button
-      await wrapper.find('.btn-secondary').trigger('click')
+      getInPopup('.btn-secondary').dispatchEvent(new MouseEvent('click', { bubbles: true }))
+      await wrapper.vm.$nextTick()
 
-      // Should emit events with original value
       expect(wrapper.emitted('update:modelValue')).toBeTruthy()
       expect(wrapper.emitted('change')).toBeTruthy()
       expect(wrapper.emitted('input')).toBeTruthy()

@@ -19,13 +19,12 @@
           <input id="setting-show-grid" type="checkbox" v-model="settingsStore.showGrid" />
         </div>
 
-        <label class="setting-label" for="setting-highlight-color">Highlight Color</label>
+        <label class="setting-label">Highlight Color</label>
         <div class="setting-control">
-          <input
-            id="setting-highlight-color"
-            type="color"
+          <ColorPicker
             v-model="settingsStore.highlightColor"
-            class="color-input"
+            placement="bottom-end"
+            style="width: 20px; height: 20px; flex: none"
             title="Selection highlight color"
           />
           <button
@@ -48,6 +47,7 @@ import {
   useLayoutEditorSettingsStore,
   DEFAULT_HIGHLIGHT_COLOR,
 } from '@/stores/layoutEditorSettings'
+import ColorPicker from './ColorPicker.vue'
 
 defineEmits<{
   close: []
@@ -124,15 +124,6 @@ const settingsStore = useLayoutEditorSettingsStore()
   align-items: center;
   gap: 5px;
   justify-content: flex-end;
-}
-
-.color-input {
-  width: 20px;
-  height: 20px;
-  padding: 0;
-  border: none;
-  cursor: pointer;
-  background: none;
 }
 
 .reset-btn {
