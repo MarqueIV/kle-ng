@@ -107,6 +107,11 @@
         <span class="status-label">{{ matrixRenumberingStatus.message }}</span>
         <span class="status-hint">Press <kbd>Enter</kbd> to confirm, <kbd>Esc</kbd> to cancel</span>
       </div>
+
+      <!-- Canvas feedback message (e.g. selection required) -->
+      <div v-if="canvasFeedback" class="canvas-feedback">
+        {{ canvasFeedback }}
+      </div>
     </div>
 
     <!-- Link URL preview (shown at bottom when hovering over links) -->
@@ -212,6 +217,18 @@ const canvasHeight = ref(600)
 const devicePixelRatio = ref(window.devicePixelRatio || 1)
 const renderer = ref<CanvasRenderer>()
 const containerWidth = ref(0)
+
+const canvasFeedback = ref<string | null>(null)
+let canvasFeedbackTimer: ReturnType<typeof setTimeout> | null = null
+
+const showCanvasFeedback = (message: string) => {
+  if (canvasFeedbackTimer) clearTimeout(canvasFeedbackTimer)
+  canvasFeedback.value = message
+  canvasFeedbackTimer = setTimeout(() => {
+    canvasFeedback.value = null
+    canvasFeedbackTimer = null
+  }, 2500)
+}
 const containerHeight = ref(0)
 const resizeObserver = ref<ResizeObserver>()
 
@@ -1561,6 +1578,22 @@ const handleKeyDown = async (event: KeyboardEvent) => {
         event.preventDefault()
         adjustSelectedKeysSize('height', keyboardStore.moveStep)
         break
+      case 'M':
+        event.preventDefault()
+        if (keyboardStore.selectedKeys.length === 0) {
+          showCanvasFeedback('Select keys first to use Move Exactly')
+        } else {
+          keyboardStore.setCanvasMode('move-exactly')
+        }
+        break
+      case 'R':
+        event.preventDefault()
+        if (keyboardStore.selectedKeys.length === 0) {
+          showCanvasFeedback('Select keys first to use Rotate Selection')
+        } else {
+          keyboardStore.setCanvasMode('rotate')
+        }
+        break
     }
   } else {
     switch (event.key) {
@@ -2268,6 +2301,24 @@ defineExpose({})
   font-size: 11px;
   font-weight: 600;
   border: 1px solid rgba(0, 0, 0, 0.2);
+}
+
+/* Canvas Feedback Message */
+.canvas-feedback {
+  position: absolute;
+  bottom: 8px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(30, 30, 30, 0.85);
+  color: #e0e0e0;
+  padding: 6px 14px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+  pointer-events: none;
+  z-index: 1000;
+  animation: slideIn 0.15s ease-out;
 }
 
 .canvas-search-trigger {

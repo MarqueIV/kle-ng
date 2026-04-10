@@ -168,6 +168,20 @@
               <div>Toggle label search bar</div>
             </div>
           </div>
+          <div class="control-item">
+            <div class="kbd-combo"><kbd>Shift</kbd><kbd>M</kbd></div>
+            <div>
+              <strong>Move Exactly</strong>
+              <div>Open move by exact amount tool</div>
+            </div>
+          </div>
+          <div class="control-item">
+            <div class="kbd-combo"><kbd>Shift</kbd><kbd>R</kbd></div>
+            <div>
+              <strong>Rotate Selection</strong>
+              <div>Open rotate selection tool</div>
+            </div>
+          </div>
         </div>
       </div>
     </div>

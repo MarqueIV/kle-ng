@@ -149,6 +149,25 @@ test.describe('Selection Rotation Tool', () => {
     await editor.rotation.expectEnabled()
   })
 
+  test('should open rotation modal with Shift+R shortcut', async ({ page }) => {
+    const editor = new KeyboardEditorPage(page)
+
+    // Add a key - it is auto-selected after adding
+    await canvasHelper.addKey()
+    await editor.expectSelectedCount(1)
+
+    // Focus the canvas and press Shift+R
+    await page.locator('[data-testid="canvas-main"]').focus()
+    await page.keyboard.press('Shift+R')
+
+    // Modal should open
+    await editor.rotation.expectModalVisible()
+
+    // Dismiss
+    await editor.rotation.cancel()
+    await editor.rotation.expectModalHidden()
+  })
+
   test('should disable rotation tool when no keys selected', async ({ page }) => {
     const editor = new KeyboardEditorPage(page)
 

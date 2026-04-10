@@ -446,6 +446,25 @@ test.describe('Move Exactly Tool', () => {
     })
   })
 
+  test.describe('Keyboard Shortcut', () => {
+    test('should open Move Exactly modal with Shift+M shortcut', async ({ page }) => {
+      // Add a key - it is auto-selected after adding
+      await canvasHelper.addKey()
+      await expect(page.getByTestId('counter-selected')).toContainText('Selected: 1')
+
+      // Focus the canvas and press Shift+M
+      await page.locator('[data-testid="canvas-main"]').focus()
+      await page.keyboard.press('Shift+M')
+
+      // Modal should open
+      await expect(moveExactlyHelper.getModal()).toBeVisible()
+
+      // Dismiss
+      await moveExactlyHelper.cancel()
+      await expect(moveExactlyHelper.getModal()).toBeHidden()
+    })
+  })
+
   test.describe('UX Improvements', () => {
     test('should auto-focus X input when modal opens', async ({ page }) => {
       // Add a key
