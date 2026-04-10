@@ -157,6 +157,7 @@ import { CanvasRenderer, type RenderOptions } from '@/utils/canvas-renderer'
 import { renderScheduler } from '@/utils/utils/RenderScheduler'
 import { D } from '@/utils/decimal-math'
 import { keyIntersectsSelection } from '@/utils/geometry'
+import { hexToRgb } from '@/utils/color-utils'
 import { parseBorderRadius, createRoundedRectanglePath } from '@/utils/border-radius'
 import { extractKleLayout, hasKleMetadata } from '@/utils/png-metadata'
 import { parseJsonString } from '@/utils/serialization'
@@ -711,13 +712,15 @@ const drawRectangleSelection = (ctx: CanvasRenderingContext2D) => {
   if (width < 2 && height < 2) return
 
   // Draw selection rectangle with dashed border
-  ctx.strokeStyle = '#dc3545'
+  const highlightColor = layoutEditorSettingsStore.highlightColor
+  const { r, g, b } = hexToRgb(highlightColor)
+  ctx.strokeStyle = highlightColor
   ctx.lineWidth = 2
   ctx.setLineDash([8, 4])
   ctx.strokeRect(x, y, width, height)
 
   // Draw semi-transparent fill
-  ctx.fillStyle = 'rgba(220, 53, 69, 0.1)'
+  ctx.fillStyle = `rgba(${r}, ${g}, ${b}, 0.1)`
   ctx.fillRect(x, y, width, height)
 
   // Reset line dash
