@@ -21,6 +21,10 @@
             class="text-decoration-none"
             >Keyboard Layout Editor
           </a>
+          <br />
+          <a href="https://keyboard-tools.xyz" target="_blank" class="text-decoration-none">
+            keyboard-tools.xyz</a
+          >
         </div>
         <div class="col-md-6 text-end">
           <div class="footer-links">
@@ -33,6 +37,9 @@
               class="text-decoration-none"
             >
               Report Issues</a
+            ><br />
+            <a href="https://ko-fi.com/adamws" target="_blank" class="text-decoration-none">
+              Support</a
             ><br />
           </div>
         </div>
