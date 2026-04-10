@@ -91,6 +91,9 @@
     @close="showRotationOriginsPanel = false"
   />
 
+  <!-- Theme Tools Panel -->
+  <ThemeToolsPanel :visible="showThemeToolsPanel" @close="showThemeToolsPanel = false" />
+
   <!-- Matrix Coordinates Modal -->
   <MatrixCoordinatesModal
     ref="matrixModalRef"
@@ -106,6 +109,7 @@ import { useKeyboardStore } from '@/stores/keyboard'
 import { SPECIAL_KEYS, type SpecialKeyTemplate } from '@/data/specialKeys'
 import LegendToolsPanel from './LegendToolsPanel.vue'
 import RotationOriginsPanel from './RotationOriginsPanel.vue'
+import ThemeToolsPanel from './ThemeToolsPanel.vue'
 import MatrixCoordinatesModal from './MatrixCoordinatesModal.vue'
 import ToolbarEditSection from './ToolbarEditSection.vue'
 import ToolbarToolsSection from './ToolbarToolsSection.vue'
@@ -122,6 +126,9 @@ const showLegendToolsPanel = ref(false)
 
 // Rotation origins panel
 const showRotationOriginsPanel = ref(false)
+
+// Theme tools panel
+const showThemeToolsPanel = ref(false)
 
 // Matrix coordinates modal
 const showMatrixModal = ref(false)
@@ -170,6 +177,15 @@ const extraTools = computed((): ExtraTool[] => [
     disabled: false,
     action: () => {
       showRotationOriginsPanel.value = true
+    },
+  },
+  {
+    id: 'theme-tools',
+    name: 'Theme Tools',
+    description: 'Apply color themes to keys',
+    disabled: false,
+    action: () => {
+      showThemeToolsPanel.value = true
     },
   },
 ])

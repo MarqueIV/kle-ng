@@ -225,3 +225,20 @@ export function lightenColor(color: string, factor = 1.2): string {
 
   return `#${rFinal.toString(16).padStart(2, '0')}${gFinal.toString(16).padStart(2, '0')}${bFinal.toString(16).padStart(2, '0')}`
 }
+
+/**
+ * Inverse of lightenColor: given a target key-top color, return the KLE base color
+ * that would produce it after lightening.
+ *
+ * Mathematically this divides L* by `factor` (multiplies by 1/factor).
+ * Note: when the target color is very light (L* > 100/factor ≈ 83.3 for the default
+ * factor of 1.2), the forward pass would have been clamped at L*=100, so multiple
+ * base colors map to the same top color — the returned value is the closest answer.
+ *
+ * @param color  - 6-digit hex string of the desired key-top color
+ * @param factor - Same factor used in lightenColor (default 1.2)
+ * @returns KLE base color to set, or input unchanged if not a valid 6-digit hex
+ */
+export function invertLightenColor(color: string, factor = 1.2): string {
+  return lightenColor(color, 1 / factor)
+}
