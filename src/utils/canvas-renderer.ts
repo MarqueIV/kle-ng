@@ -17,6 +17,7 @@ export interface RenderOptions {
   unit: number
   background: string
   showGrid?: boolean
+  gridStep?: number
   highlightColor?: string
   scale?: number
   fontFamily?: string
@@ -421,14 +422,17 @@ export class CanvasRenderer {
   private drawGrid(): void {
     const ctx = this.ctx
     const unit = this.options.unit
+    const gridStep = this.options.gridStep ?? 1
     const transform = ctx.getTransform()
     const scale = transform.a // zoom * dpr
 
-    // Compute visible range in keyboard units
-    const startKX = Math.floor((0 - transform.e) / (scale * unit)) - 1
-    const endKX = Math.ceil((ctx.canvas.width - transform.e) / (scale * unit)) + 1
-    const startKY = Math.floor((0 - transform.f) / (scale * unit)) - 1
-    const endKY = Math.ceil((ctx.canvas.height - transform.f) / (scale * unit)) + 1
+    // Compute visible range in keyboard units, aligned to gridStep boundaries
+    const startKX = Math.floor((0 - transform.e) / (scale * unit) / gridStep) * gridStep - gridStep
+    const endKX =
+      Math.ceil((ctx.canvas.width - transform.e) / (scale * unit) / gridStep) * gridStep + gridStep
+    const startKY = Math.floor((0 - transform.f) / (scale * unit) / gridStep) * gridStep - gridStep
+    const endKY =
+      Math.ceil((ctx.canvas.height - transform.f) / (scale * unit) / gridStep) * gridStep + gridStep
 
     // 1 device pixel expressed in ctx coordinates
     const px = 1 / scale
@@ -439,11 +443,15 @@ export class CanvasRenderer {
     ctx.lineWidth = px
     ctx.strokeStyle = 'rgba(128, 128, 128, 0.35)'
 
-    for (let kx = startKX; kx <= endKX; kx++) {
+    const nX = Math.round((endKX - startKX) / gridStep)
+    for (let i = 0; i <= nX; i++) {
+      const kx = startKX + i * gridStep
       ctx.moveTo(kx * unit, startKY * unit)
       ctx.lineTo(kx * unit, endKY * unit)
     }
-    for (let ky = startKY; ky <= endKY; ky++) {
+    const nY = Math.round((endKY - startKY) / gridStep)
+    for (let i = 0; i <= nY; i++) {
+      const ky = startKY + i * gridStep
       ctx.moveTo(startKX * unit, ky * unit)
       ctx.lineTo(endKX * unit, ky * unit)
     }

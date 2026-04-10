@@ -305,6 +305,7 @@ const renderOptions = computed<RenderOptions>(() => ({
   background: keyboardStore.metadata?.backcolor || '#ffffff',
   fontFamily: fontStore.canvasFontFamily,
   showGrid: layoutEditorSettingsStore.showGrid,
+  gridStep: keyboardStore.moveStep,
   highlightColor: layoutEditorSettingsStore.highlightColor,
 }))
 
@@ -539,7 +540,11 @@ watch(
 
 // Watch for layout editor settings changes and re-render
 watch(
-  () => [layoutEditorSettingsStore.showGrid, layoutEditorSettingsStore.highlightColor],
+  () => [
+    layoutEditorSettingsStore.showGrid,
+    layoutEditorSettingsStore.highlightColor,
+    keyboardStore.moveStep,
+  ],
   () => {
     if (renderer.value) {
       renderer.value.updateOptions(renderOptions.value)
