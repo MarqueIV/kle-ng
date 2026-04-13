@@ -52,6 +52,7 @@ Just import your JSON files and continue where you left off.
         <li>Legend Tools</li>
         <li>Add Switch Matrix Coordinates</li>
         <li>Move Rotation Origins</li>
+        <li>Theme Tools</li>
       </ul>
     </td>
   </tr>
