@@ -1,15 +1,22 @@
 {
-  "buildCommand": "npm run build",
+  "buildCommand": "npm run build && npm run build:docs",
   "outputDirectory": "dist",
   "installCommand": "npm ci",
-  "framework": "vite",
+  "framework": null,
   "github": {
     "enabled": true,
     "autoAlias": false
   },
+  "redirects": [
+    {
+      "source": "/docs",
+      "destination": "/docs/",
+      "permanent": false
+    }
+  ],
   "rewrites": [
     {
-      "source": "/(.*)",
+      "source": "/:path*",
       "destination": "/index.html"
     }
   ]

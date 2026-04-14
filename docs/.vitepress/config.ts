@@ -1,0 +1,82 @@
+import { defineConfig } from 'vitepress'
+
+export default defineConfig({
+  title: 'KLE-NG Documentation',
+  description: 'User documentation for Keyboard Layout Editor NG',
+
+  base: '/docs/',
+  outDir: '../dist/docs',
+
+  head: [
+    ['link', { rel: 'icon', href: '/docs/favicon.ico' }],
+  ],
+
+  themeConfig: {
+
+    nav: [
+      { text: 'Home', link: '/' },
+      { text: 'Open Editor', link: 'https://editor.keyboard-tools.xyz/', target: '_blank' },
+    ],
+
+    sidebar: [
+      {
+        text: 'Getting Started',
+        items: [
+          { text: 'Introduction', link: '/' },
+          { text: 'Getting Started', link: '/getting-started' },
+        ],
+      },
+      {
+        text: 'Canvas Editor',
+        items: [
+          { text: 'Layout Editor', link: '/canvas-editor' },
+          { text: 'Import & Export', link: '/import-export' },
+        ],
+      },
+      {
+        text: 'Generators',
+        items: [
+          { text: 'Plate Generator', link: '/plate-generator' },
+          { text: 'PCB Generator', link: '/pcb-generator' },
+        ],
+      },
+      {
+        text: 'Advanced',
+        items: [
+          { text: 'Custom Fonts & CSS', link: '/custom-fonts' },
+          { text: 'VIA & Vial Format', link: '/via-and-metadata' },
+          { text: 'KLE Compatibility', link: '/compatibility' },
+        ],
+      },
+      {
+        text: 'Development',
+        collapsed: true,
+        items: [
+          { text: 'Canvas Rendering Pipeline', link: '/development/canvas-rendering-pipeline' },
+          { text: 'Color Theme Tool', link: '/development/color-theme-tool' },
+          { text: 'Layout Export', link: '/development/layout-export' },
+          { text: 'Matrix Annotation', link: '/development/matrix-annotation' },
+          { text: 'Plate Generator', link: '/development/plate-generator' },
+        ],
+      },
+    ],
+
+    search: {
+      provider: 'local',
+    },
+
+    editLink: {
+      pattern: 'https://github.com/adamws/kle-ng/edit/master/docs/:path',
+      text: 'Edit this page on GitHub',
+    },
+
+    socialLinks: [
+      { icon: 'github', link: 'https://github.com/adamws/kle-ng' },
+    ],
+
+    footer: {
+      message: 'Released under the MIT License.',
+      copyright: 'Keyboard Layout Editor NG',
+    },
+  },
+})

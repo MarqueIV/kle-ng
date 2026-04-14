@@ -8,7 +8,9 @@
   },
   "scripts": {
     "dev": "vite",
+    "dev:docs": "vitepress dev docs",
     "build": "run-p type-check \"build-only {@}\" --",
+    "build:docs": "vitepress build docs",
     "preview": "vite preview",
     "test:unit": "vitest run --reporter=github-actions",
     "test:unit:watch": "vitest watch",
@@ -78,6 +80,7 @@
     "vite": "^7.3.1",
     "vite-plugin-vue-devtools": "^8.0.5",
     "vite-svg-loader": "^5.1.0",
+    "vitepress": "^1.6.4",
     "vitest": "^4.0.18",
     "vue-tsc": "^3.2.4"
   }
