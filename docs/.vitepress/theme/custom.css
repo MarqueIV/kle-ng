@@ -7,9 +7,8 @@
 
   /* Match app font stack */
   --vp-font-family-base:
-    Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
-    Oxygen, Ubuntu, Cantarell, 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-    sans-serif;
+    Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell,
+    'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
 }
 
 .dark {
@@ -28,6 +27,104 @@ kbd {
   font-size: 0.8em;
   padding: 0.1em 0.4em;
   white-space: nowrap;
+}
+
+/* Hero image — allow larger display */
+:root {
+  --vp-home-hero-image-max-width: 500px;
+}
+
+.VPHero .image-src {
+  max-width: 500px;
+  width: 100%;
+}
+
+/* Light/dark image variants */
+.dark .light-only {
+  display: none;
+}
+.dark-only {
+  display: none;
+}
+.dark .dark-only {
+  display: block;
+}
+
+/* Home page feature cards */
+.home-features {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+  max-width: 1152px;
+  margin: 0 auto;
+  padding: 48px 24px;
+}
+
+@media (max-width: 768px) {
+  .home-features {
+    grid-template-columns: 1fr;
+  }
+}
+
+.home-feature,
+.vp-doc .home-feature {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--vp-c-border);
+  border-radius: 12px;
+  overflow: hidden;
+  text-decoration: none !important;
+  color: inherit;
+  transition: border-color 0.25s;
+}
+
+.home-feature:hover,
+.vp-doc .home-feature:hover {
+  border-color: var(--vp-c-brand-1);
+  text-decoration: none !important;
+}
+
+.home-feature img {
+  width: 100%;
+  height: auto;
+}
+
+.home-feature img:not(.light-only):not(.dark-only),
+.home-feature img.light-only,
+.dark .home-feature img.dark-only {
+  display: block;
+}
+
+.home-feature img.dark-only {
+  display: none;
+}
+
+.dark .home-feature img.light-only {
+  display: none;
+}
+
+.home-feature-title {
+  margin: 0;
+  padding: 16px 20px 4px;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--vp-c-text-1);
+}
+
+.home-feature-details {
+  margin: 0;
+  padding: 0 20px 12px;
+  font-size: 14px;
+  color: var(--vp-c-text-2);
+  flex: 1;
+}
+
+.home-feature-link {
+  margin: 0;
+  padding: 0 20px 16px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--vp-c-brand-1);
 }
 
 /* Make screenshots look nicer */

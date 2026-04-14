@@ -7,12 +7,9 @@ export default defineConfig({
   base: '/docs/',
   outDir: '../dist/docs',
 
-  head: [
-    ['link', { rel: 'icon', href: '/docs/favicon.ico' }],
-  ],
+  head: [['link', { rel: 'icon', href: '/docs/favicon.ico' }]],
 
   themeConfig: {
-
     nav: [
       { text: 'Home', link: '/' },
       { text: 'Open Editor', link: 'https://editor.keyboard-tools.xyz/', target: '_blank' },
@@ -27,9 +24,12 @@ export default defineConfig({
         ],
       },
       {
-        text: 'Canvas Editor',
+        text: 'Keyboard editing',
         items: [
-          { text: 'Layout Editor', link: '/canvas-editor' },
+          { text: 'Layout Editor', link: '/layout-editor' },
+          { text: 'Key Properties', link: '/key-properties' },
+          { text: 'Keyboard Metadata', link: '/keyboard-metadata' },
+          { text: 'Keyboard Summary', link: '/keyboard-summary' },
           { text: 'Import & Export', link: '/import-export' },
         ],
       },
@@ -44,6 +44,7 @@ export default defineConfig({
         text: 'Advanced',
         items: [
           { text: 'Custom Fonts & CSS', link: '/custom-fonts' },
+          { text: 'Color Themes', link: '/color-themes' },
           { text: 'VIA & Vial Format', link: '/via-and-metadata' },
           { text: 'KLE Compatibility', link: '/compatibility' },
         ],
@@ -70,9 +71,7 @@ export default defineConfig({
       text: 'Edit this page on GitHub',
     },
 
-    socialLinks: [
-      { icon: 'github', link: 'https://github.com/adamws/kle-ng' },
-    ],
+    socialLinks: [{ icon: 'github', link: 'https://github.com/adamws/kle-ng' }],
 
     footer: {
       message: 'Released under the MIT License.',

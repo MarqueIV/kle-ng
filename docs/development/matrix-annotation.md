@@ -8,7 +8,7 @@ coordinates are applied to keys.
 **Relevant source files:**
 
 | File                                         | Role                                                    |
-|----------------------------------------------|---------------------------------------------------------|
+| -------------------------------------------- | ------------------------------------------------------- |
 | `src/components/MatrixCoordinatesModal.vue`  | Modal UI, automatic annotation orchestration            |
 | `src/utils/matrix-utils.ts`                  | Rotation grouping, de-rotation, label parsing           |
 | `src/utils/matrix-validation.ts`             | Coordinate parsing, duplicate validation, option/choice |
@@ -88,13 +88,13 @@ When the modal opens, it inspects the current layout state and picks one of
 five paths. The decision tree lives in the visibility watcher inside
 `MatrixCoordinatesModal.vue`.
 
-| # | Condition                                          | Behavior                                                                                          |
-|---|----------------------------------------------------|---------------------------------------------------------------------------------------------------|
-| 1 | Fully annotated **with** invalid duplicates        | Show overlay preview, stay on `warning` step. User sees a yellow alert about duplicate positions. |
-| 2 | Fully annotated, no invalid duplicates             | Show overlay preview, skip directly to `draw` step (editing existing annotations).                |
-| 3 | No labels at all (blank layout)                    | Skip directly to `draw` step.                                                                     |
-| 4 | Partially annotated (mix of VIA labels and blanks) | Stay on `warning` step, show "Continue" and "Start over" buttons.                                 |
-| 5 | Non-matrix labels present                          | Stay on `warning` step with only "OK (clear all labels)" available.                               |
+| #   | Condition                                          | Behavior                                                                                          |
+| --- | -------------------------------------------------- | ------------------------------------------------------------------------------------------------- |
+| 1   | Fully annotated **with** invalid duplicates        | Show overlay preview, stay on `warning` step. User sees a yellow alert about duplicate positions. |
+| 2   | Fully annotated, no invalid duplicates             | Show overlay preview, skip directly to `draw` step (editing existing annotations).                |
+| 3   | No labels at all (blank layout)                    | Skip directly to `draw` step.                                                                     |
+| 4   | Partially annotated (mix of VIA labels and blanks) | Stay on `warning` step, show "Continue" and "Start over" buttons.                                 |
+| 5   | Non-matrix labels present                          | Stay on `warning` step with only "OK (clear all labels)" available.                               |
 
 "Fully annotated" means `keyboardStore.isViaAnnotated` is `true` -- every
 regular key has a label matching the pattern `/^\d+,\d+$/` in position 0.
@@ -376,7 +376,7 @@ The overlay only renders wires for "default layout" keys (those with
 The Pinia store manages all drawing state:
 
 | State                   | Type                                    | Purpose                                          |
-|-------------------------|-----------------------------------------|--------------------------------------------------|
+| ----------------------- | --------------------------------------- | ------------------------------------------------ |
 | `drawingType`           | `'row' \| 'column' \| 'remove' \| null` | Current editing mode                             |
 | `currentSequence`       | `Key[]`                                 | Keys being drawn in the active (incomplete) wire |
 | `completedRows`         | `Map<number, Key[]>`                    | Finished row wires, keyed by row number          |
@@ -480,7 +480,7 @@ Tie-break: prefer forward-after > forward-before > reversed-after > reversed-bef
 The drawing mode toggle includes a "Remove" option. In this mode:
 
 | Action               | Ctrl held? | Result                                                      |
-|----------------------|------------|-------------------------------------------------------------|
+| -------------------- | ---------- | ----------------------------------------------------------- |
 | Click node           | No         | Remove that single key from its row or column               |
 | Click node (overlap) | No         | Remove key from both its row and column                     |
 | Click segment        | No         | Split the wire at that segment boundary (creates two wires) |
@@ -551,7 +551,7 @@ where the removal handler has already updated labels directly.
 the keyboard canvas. It draws:
 
 | Element                 | Color                   | Style                                     |
-|-------------------------|-------------------------|-------------------------------------------|
+| ----------------------- | ----------------------- | ----------------------------------------- |
 | Completed row wires     | Blue (#007bff)          | Solid line, filled circles at nodes       |
 | Completed column wires  | Green (#28a745)         | Solid line, filled circles at nodes       |
 | Active drawing sequence | Orange/yellow (#ffc107) | Thicker solid line                        |

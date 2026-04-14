@@ -41,11 +41,11 @@
                 <div>
                   For comprehensive help, visit the
                   <a
-                    href="https://github.com/adamws/kle-ng"
+                    href="https://editor.keyboard-tools.xyz/docs"
                     target="_blank"
                     rel="noopener noreferrer"
                   >
-                    GitHub repository
+                    documentation
                   </a>
                 </div>
               </div>

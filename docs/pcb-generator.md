@@ -2,6 +2,9 @@
 
 The PCB Generator creates [KiCad](https://kicad.org) project files from your keyboard layout. It generates a key matrix schematic, places switch and diode footprints according to key positions, and can optionally route connections between components.
 
+<img src="/screenshots/pcb-generator-panel-light.png" class="docs-screenshot light-only" alt="PCB generator panel" />
+<img src="/screenshots/pcb-generator-panel-dark.png" class="docs-screenshot dark-only" alt="PCB generator panel" />
+
 ## Overview {#overview}
 
 Open the **PCB Generator** panel in the right sidebar. The panel displays a footprint preview and generation controls.
@@ -10,7 +13,7 @@ Open the **PCB Generator** panel in the right sidebar. The panel displays a foot
 
 Before generating a PCB, your layout must have:
 
-- **Matrix coordinates** — Each key must have row/column assignments in VIA label format (e.g., `0,0` for row 0, column 0). Use **Extra Tools → Add Switch Matrix Coordinates** if not already set. See [Add Switch Matrix Coordinates](./canvas-editor#extra-tools) for instructions.
+- **Matrix coordinates** — Each key must have row/column assignments in VIA label format (e.g., `0,0` for row 0, column 0). Use **Extra Tools → Add Switch Matrix Coordinates** if not already set. See [Add Switch Matrix Coordinates](./layout-editor#extra-tools) for instructions.
 - **Maximum 150 keys** — Layouts with more than 150 keys are not supported.
 
 Matrix coordinates determine how switches are wired in the keyboard matrix.
@@ -19,7 +22,7 @@ Matrix coordinates determine how switches are wired in the keyboard matrix.
 
 ## Matrix Coordinates {#matrix-coordinates}
 
-Matrix coordinates in KLE-NG use VIA label format. Each key's top-left label contains the row and column assignment as `row,col` (e.g., `0,0`, `0,1`, `1,0`).
+Matrix coordinates in kle-ng use VIA label format. Each key's top-left label contains the row and column assignment as `row,col` (e.g., `0,0`, `0,1`, `1,0`).
 
 The easiest way to assign matrix coordinates is to use **Extra Tools → Add Switch Matrix Coordinates**, which can annotate your layout automatically or let you draw rows and columns manually.
 
@@ -35,9 +38,26 @@ The easiest way to assign matrix coordinates is to use **Extra Tools → Add Swi
 5. Click **Generate PCB**
 6. Wait for the server to process your layout
 7. Once complete, preview renders will be displayed
-8. Click **Download** to save the `.kicad_pcb` file, or **New Task** to start over
+8. Click **Download ZIP** to save the archive, or **New Task** to start over
 
-> **Note:** The preview does not support displaying traces.
+::: info
+The preview does not support displaying traces.
+:::
+
+## After Downloading the PCB
+
+The downloaded ZIP archive contains two files:
+
+- **`.kicad_sch`** — Schematic with the switch matrix
+- **`.kicad_pcb`** — Board file with switch footprints placed according to key positions and matrix coordinates, diode footprints for each switch, routed connections (if routing was enabled)
+
+Extract the ZIP and open the `.kicad_pcb` file in KiCad 9+ to continue PCB design. Typical next steps:
+
+1. **Add a microcontroller** — Place your MCU footprint (e.g., Pro Micro, RP2040) and connect row/column lines.
+2. **Add a USB connector** — Route the data lines from the MCU to the connector.
+3. **Add mounting holes** — Use the footprint library to place M2 or M3 standoff holes.
+4. **Add the edge cut** — Generator does not include PCB outline; create it to match your intended case.
+5. **Run DRC** — Use KiCad's Design Rule Check to catch errors before sending to fabrication.
 
 ## Tips
 
@@ -46,4 +66,14 @@ The easiest way to assign matrix coordinates is to use **Extra Tools → Add Swi
 - **Worker status** — The PCB generator runs on a remote worker. If the service is temporarily unavailable, try again later.
 - **KiCad compatibility** — Generated files are compatible with **KiCad 9+**. Open the file in KiCad to add mounting holes, USB connector, microcontroller, and other components.
 
-> **Privacy note:** This feature sends your layout data to a backend server for processing. Generated files are stored for 1 hour and then automatically deleted. No data is used for any other purposes.
+## Troubleshooting
+
+**"Download VIA JSON" option is missing** — This is a separate export from **Import & Export**. For PCB generation, you only need matrix coordinates on the keys, not a full VIA metadata block.
+
+**Keys are missing from the generated PCB** — Only keys with valid matrix coordinates (`row,col` in the top-left label) are included. Use **Extra Tools → Add Switch Matrix Coordinates** to assign coordinates to all keys, then verify none are missing.
+
+**The PCB worker is unavailable** — The generator uses a remote server. If requests fail, try again after a few minutes. Your layout data is not lost — regenerate from the same layout.
+
+::: info Privacy note
+This feature sends your layout data to a backend server for processing. Generated files are stored for 1 hour and then automatically deleted. No data is used for any other purposes.
+:::

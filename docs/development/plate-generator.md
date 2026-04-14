@@ -116,22 +116,23 @@ result as stale and sets `pendingRegeneration` so regeneration proceeds after th
 
 ### Components
 
-| File                         | Purpose                                                                                                                                                             |
-|------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `PlateGeneratorPanel.vue`    | Root container. Tabbed two-column layout (controls left, preview right). Three tabs: Cutouts, Holes, Outline. Preloads maker.js and Three.js on mount via `requestIdleCallback`. |
-| `PlateGeneratorSettings.vue` | [Cutouts tab] Form controls for cutout type, stabilizer type, fillet radius, size adjustment, custom dimensions, and merge cutouts toggle. Validates inputs.        |
-| `PlateHolesSettings.vue`     | [Holes tab] Corner mounting holes (require outline) and custom holes at arbitrary positions with configurable diameter and X/Y offsets in keyboard units.           |
-| `PlateOutlineSettings.vue`   | [Outline tab] Outline generation settings: enable toggle, outline type dropdown (None / Rectangular / Tight), per-mode margin controls, shared fillet radius, merge-with-cutouts option, and plate thickness for 3D export. |
-| `PlateGeneratorControls.vue` | "Generate Plate" button with loading state, auto-refresh checkbox, error alerts, and empty-layout warnings.                                                         |
-| `PlateGeneratorResults.vue`  | Segmented 2D/3D tab bar above the preview area. 2D tab renders the SVG preview (with dimmed previous result + spinner during regeneration). 3D tab hosts `Plate3DPreview`. Shows idle instructions before first generation. |
+| File                         | Purpose                                                                                                                                                                                                                                                                                                                                                                                                                    |
+| ---------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `PlateGeneratorPanel.vue`    | Root container. Tabbed two-column layout (controls left, preview right). Three tabs: Cutouts, Holes, Outline. Preloads maker.js and Three.js on mount via `requestIdleCallback`.                                                                                                                                                                                                                                           |
+| `PlateGeneratorSettings.vue` | [Cutouts tab] Form controls for cutout type, stabilizer type, fillet radius, size adjustment, custom dimensions, and merge cutouts toggle. Validates inputs.                                                                                                                                                                                                                                                               |
+| `PlateHolesSettings.vue`     | [Holes tab] Corner mounting holes (require outline) and custom holes at arbitrary positions with configurable diameter and X/Y offsets in keyboard units.                                                                                                                                                                                                                                                                  |
+| `PlateOutlineSettings.vue`   | [Outline tab] Outline generation settings: enable toggle, outline type dropdown (None / Rectangular / Tight), per-mode margin controls, shared fillet radius, merge-with-cutouts option, and plate thickness for 3D export.                                                                                                                                                                                                |
+| `PlateGeneratorControls.vue` | "Generate Plate" button with loading state, auto-refresh checkbox, error alerts, and empty-layout warnings.                                                                                                                                                                                                                                                                                                                |
+| `PlateGeneratorResults.vue`  | Segmented 2D/3D tab bar above the preview area. 2D tab renders the SVG preview (with dimmed previous result + spinner during regeneration). 3D tab hosts `Plate3DPreview`. Shows idle instructions before first generation.                                                                                                                                                                                                |
 | `Plate3DPreview.vue`         | Interactive Three.js WebGL viewer for the generated STL. Lazy-loads Three.js on mount. Renders the plate mesh with `MeshPhongMaterial` colored by the active Bootstrap theme. Supports OrbitControls (click-to-activate, click-outside-to-deactivate). Reset view button restores the initial camera. Updates mesh and background colors when the website theme changes. Pauses the render loop when the 3D tab is hidden. |
-| `PlateDownloadButtons.vue`   | SVG, DXF, STL, and JSCAD download buttons, visible only after successful generation. STL and JSCAD buttons appear only when outline is enabled (required for 3D export). Handles separate vs. merged SVG/DXF exports based on settings. |
+| `PlateDownloadButtons.vue`   | SVG, DXF, STL, and JSCAD download buttons, visible only after successful generation. STL and JSCAD buttons appear only when outline is enabled (required for 3D export). Handles separate vs. merged SVG/DXF exports based on settings.                                                                                                                                                                                    |
 
 ### Store
 
 **`stores/plateGenerator.ts`** — Pinia store managing all plate generator state.
 
 **State:**
+
 - `settings: PlateSettings` — Current configuration including cutouts, outline, mounting holes, and plate thickness settings.
 - `autoRefresh: boolean` — Whether to regenerate on layout changes.
 - `generationState: GenerationState` — Status (`idle` | `generating` | `success` | `error`), result, and error message.
@@ -139,12 +140,14 @@ result as stale and sets `pendingRegeneration` so regeneration proceeds after th
 Note: the `GenerationStatus` type definition still includes `'loading'` for backward compatibility, but the store never sets it. Components that check for `'loading'` do so defensively.
 
 **Internal state (not exposed):**
+
 - `worker: Worker | null` — Persistent Web Worker instance, created lazily on first `generatePlate()` call.
 - `generationId: number` — Counter used to detect and discard stale worker responses. Incremented on cache hits and layout changes.
 - `cache: Map<string, PlateGenerationResult>` — Cache of generated results keyed by JSON-stringified settings (not layout). Cleared on layout change.
 - `pendingRegeneration: boolean` — Flag indicating that `generatePlate()` was called while a generation was already in-flight. Checked on worker completion to trigger a follow-up generation.
 
 **Actions:**
+
 - `generatePlate()` — Serializes current keys and settings, checks the cache, and dispatches work to a Web Worker. On cache hit, returns the cached result instantly and increments `generationId` to invalidate any in-flight worker response. On cache miss during an in-flight generation, sets `pendingRegeneration` and returns without queueing redundant work. On worker completion, caches the result and checks `pendingRegeneration` to re-enter if needed.
 - `downloadSvg()` / `downloadDxf()` — Download cutouts only (`keyboard-plate.svg` / `keyboard-plate.dxf`).
 - `downloadAllSvg()` — Downloads all SVG files. When `outline.mergeWithCutouts` is enabled, downloads a single merged file; otherwise downloads separate cutouts and outline files.
@@ -227,15 +230,15 @@ Generates individual cutout shapes and handles validation.
 
 **Switch cutout dimensions:**
 
-| Type               | Width (mm)       | Height (mm)  |
-|--------------------|------------------|--------------|
-| Cherry MX Basic    | 14.0             | 14.0         |
-| Cherry MX Openable | 14.0 + (2 * 0.8) | 14.0         |
-| Alps SKCM/L        | 15.5             | 12.8         |
-| Alps SKCP          | 16.0             | 16.0         |
-| Kailh Choc CPG1350 | 14.0             | 14.0         |
-| Kailh Choc CPG1232 | 13.7             | 12.7         |
-| Custom Rectangle   | User-defined     | User-defined |
+| Type               | Width (mm)        | Height (mm)  |
+| ------------------ | ----------------- | ------------ |
+| Cherry MX Basic    | 14.0              | 14.0         |
+| Cherry MX Openable | 14.0 + (2 \* 0.8) | 14.0         |
+| Alps SKCM/L        | 15.5              | 12.8         |
+| Alps SKCP          | 16.0              | 16.0         |
+| Kailh Choc CPG1350 | 14.0              | 14.0         |
+| Kailh Choc CPG1232 | 13.7              | 12.7         |
+| Custom Rectangle   | User-defined      | User-defined |
 
 **Cherry MX Openable:**
 
@@ -257,17 +260,17 @@ The Openable cutout is a 14x14mm base with 4 symmetrical notches on the left and
 
 **Stabilizer spacing by key size:**
 
-| Key Size | Cherry MX Spacing (mm) | Alps Spacing (mm)    |
-|----------|------------------------|----------------------|
-| 1.75U    | -                      | 12                   |
-| 2U       | 11.938                 | 14                   |
-| 2.75     | 11.938                 | 14 (AT101: 20.5)     |
-| 3U       | 19.05                  | -                    |
-| 6U       | 47.625                 | -                    |
-| 6.25U    | 50.0                   | 41.86                |
-| 6.5U     | 52.375                 | 45.3                 |
-| 7U       | 57.15                  | -                    |
-| 8U       | 66.675                 | -                    |
+| Key Size | Cherry MX Spacing (mm) | Alps Spacing (mm) |
+| -------- | ---------------------- | ----------------- |
+| 1.75U    | -                      | 12                |
+| 2U       | 11.938                 | 14                |
+| 2.75     | 11.938                 | 14 (AT101: 20.5)  |
+| 3U       | 19.05                  | -                 |
+| 6U       | 47.625                 | -                 |
+| 6.25U    | 50.0                   | 41.86             |
+| 6.5U     | 52.375                 | 45.3              |
+| 7U       | 57.15                  | -                 |
+| 8U       | 66.675                 | -                 |
 
 For vertical keys (height > width), the stabilizer pair is rotated -90 degrees.
 
@@ -284,6 +287,7 @@ and are negated internally for maker.js (counter-clockwise positive).
   `totalStabRotation = -(rotation_angle) - stabRotation`.
 
 **Validation functions:**
+
 - `validateFilletRadius()` — Ensures radius does not exceed `min(width, height) / 2`.
 - `validateStabilizerFilletRadius()` — Checks against the per-type maximum.
 - `validateCustomCutoutDimension()` — Validates custom width/height are between 0 and 50mm.
@@ -299,14 +303,16 @@ Positive values shrink cutouts (compensating for kerf in laser cutting), negativ
 When `mergeCutouts` is enabled in `PlateSettings`, overlapping cutout shapes are combined into unified paths using boolean union operations.
 
 | Setting        | Default | Description                                           |
-|----------------|---------|-------------------------------------------------------|
+| -------------- | ------- | ----------------------------------------------------- |
 | `mergeCutouts` | `false` | Combine overlapping cutouts into simplified outlines. |
 
 **When to use merge cutouts:**
+
 - Exporting to CAD/CAM software that handles overlapping paths poorly
 - Producing cleaner DXF files for CNC machining
 
 **Trade-offs:**
+
 - Merging adds processing time, especially for large layouts
 - The merged output loses the distinction between individual cutout types
 - Some minor path simplification may occur at intersection points
@@ -433,31 +439,33 @@ The plate outline feature generates a border around all cutouts, useful for defi
 
 ### Settings
 
-| Setting             | Applies to          | Default | Description                                                               |
-|---------------------|---------------------|---------|---------------------------------------------------------------------------|
-| `enabled`           | all                 | `false` | Enable outline generation.                                                |
-| `outlineType`       | all                 | `'rectangular'` | Outline shape: `'none'`, `'rectangular'`, or `'tight'`.           |
-| `marginTop`         | `rectangular`       | `5`     | Distance from topmost cutout to top edge (mm).                            |
-| `marginBottom`      | `rectangular`       | `5`     | Distance from bottommost cutout to bottom edge (mm).                      |
-| `marginLeft`        | `rectangular`       | `5`     | Distance from leftmost cutout to left edge (mm).                          |
-| `marginRight`       | `rectangular`       | `5`     | Distance from rightmost cutout to right edge (mm).                        |
-| `tightMargin`       | `tight`             | `5`     | Uniform margin around the key cluster hull (mm). Minimum: 0.5mm.          |
-| `filletRadius`      | `rectangular`, `tight` | `1` | Corner radius for rounded outline corners (mm). 0 = sharp. Shared by both non-none modes. |
-| `mergeWithCutouts`  | all                 | `true`  | When downloading, combine outline and cutouts into one file.              |
+| Setting            | Applies to             | Default         | Description                                                                               |
+| ------------------ | ---------------------- | --------------- | ----------------------------------------------------------------------------------------- |
+| `enabled`          | all                    | `false`         | Enable outline generation.                                                                |
+| `outlineType`      | all                    | `'rectangular'` | Outline shape: `'none'`, `'rectangular'`, or `'tight'`.                                   |
+| `marginTop`        | `rectangular`          | `5`             | Distance from topmost cutout to top edge (mm).                                            |
+| `marginBottom`     | `rectangular`          | `5`             | Distance from bottommost cutout to bottom edge (mm).                                      |
+| `marginLeft`       | `rectangular`          | `5`             | Distance from leftmost cutout to left edge (mm).                                          |
+| `marginRight`      | `rectangular`          | `5`             | Distance from rightmost cutout to right edge (mm).                                        |
+| `tightMargin`      | `tight`                | `5`             | Uniform margin around the key cluster hull (mm). Minimum: 0.5mm.                          |
+| `filletRadius`     | `rectangular`, `tight` | `1`             | Corner radius for rounded outline corners (mm). 0 = sharp. Shared by both non-none modes. |
+| `mergeWithCutouts` | all                    | `true`          | When downloading, combine outline and cutouts into one file.                              |
 
 The `thickness` setting lives on the top-level `PlateSettings` (not inside `OutlineSettings`) and is exposed in the Outline tab:
 
-| Setting     | Default | Description                                              |
-|-------------|---------|----------------------------------------------------------|
-| `thickness` | `1.5`   | Plate thickness in mm used when extruding the 3D model.  |
+| Setting     | Default | Description                                             |
+| ----------- | ------- | ------------------------------------------------------- |
+| `thickness` | `1.5`   | Plate thickness in mm used when extruding the 3D model. |
 
 ### Merge With Cutouts
 
 When `mergeWithCutouts` is enabled:
+
 - `downloadAllSvg()` and `downloadAllDxf()` produce a single file containing both the outline and cutouts.
 - The merged export simplifies the workflow for manufacturing.
 
 When disabled:
+
 - Downloads produce separate files for cutouts and outline.
 - Useful when outline and cutouts need different processing (e.g., different cutting speeds).
 
@@ -467,11 +475,11 @@ The mounting holes feature adds circular holes at the four corners of the plate 
 
 ### Settings
 
-| Setting        | Default | Description                                         |
-|----------------|---------|-----------------------------------------------------|
-| `enabled`      | `false` | Enable corner mounting holes.                       |
-| `diameter`     | `3`     | Hole diameter (mm). Minimum: 0.5mm.                 |
-| `edgeDistance` | `3`     | Distance from outline corner to hole center (mm).   |
+| Setting        | Default | Description                                       |
+| -------------- | ------- | ------------------------------------------------- |
+| `enabled`      | `false` | Enable corner mounting holes.                     |
+| `diameter`     | `3`     | Hole diameter (mm). Minimum: 0.5mm.               |
+| `edgeDistance` | `3`     | Distance from outline corner to hole center (mm). |
 
 ### Dependencies
 
@@ -483,18 +491,18 @@ The custom holes feature allows placing circular holes at arbitrary positions on
 
 ### Settings
 
-| Setting    | Default | Description                                              |
-|------------|---------|----------------------------------------------------------|
-| `enabled`  | `false` | Enable custom holes.                                     |
-| `holes`    | `[]`    | Array of hole definitions.                               |
+| Setting   | Default | Description                |
+| --------- | ------- | -------------------------- |
+| `enabled` | `false` | Enable custom holes.       |
+| `holes`   | `[]`    | Array of hole definitions. |
 
 Each hole definition has the following properties:
 
-| Property   | Default | Description                                              |
-|------------|---------|----------------------------------------------------------|
-| `diameter` | `3`     | Hole diameter (mm). Minimum: 0.5mm.                      |
-| `offsetX`  | `0`     | X offset from origin in keyboard units (U).              |
-| `offsetY`  | `0`     | Y offset from origin in keyboard units (U).              |
+| Property   | Default | Description                                 |
+| ---------- | ------- | ------------------------------------------- |
+| `diameter` | `3`     | Hole diameter (mm). Minimum: 0.5mm.         |
+| `offsetX`  | `0`     | X offset from origin in keyboard units (U). |
+| `offsetY`  | `0`     | Y offset from origin in keyboard units (U). |
 
 ### Usage
 
@@ -509,12 +517,13 @@ Custom hole positions use keyboard units (U) relative to the origin (the center 
 The plate builder transforms between two coordinate systems:
 
 | Property | KLE (input)        | Maker.js (output)          |
-|----------|--------------------|----------------------------|
+| -------- | ------------------ | -------------------------- |
 | Origin   | Top-left           | First key center           |
 | Y axis   | +Y down            | +Y up                      |
 | Rotation | Clockwise positive | Counter-clockwise positive |
 
 **Transformation for each key:**
+
 1. Compute center in KLE layout units using `getKeyCenter()`.
 2. Use the first non-ghost key's center as the origin reference (ghost keys are skipped here so they do not shift the coordinate system).
 3. X position: `(key.centerX - origin.centerX) * spacingX`
@@ -544,16 +553,16 @@ The `PlateGeneratorControls` component also checks `keyboardStore.keys.length` t
 
 ### Export Options
 
-| Export Type        | Filename                    | Contents                                   |
-|--------------------|-----------------------------|--------------------------------------------|
-| Cutouts SVG        | `keyboard-plate.svg`        | Switch and stabilizer cutouts only         |
-| Cutouts DXF        | `keyboard-plate.dxf`        | Switch and stabilizer cutouts only         |
-| Outline SVG        | `keyboard-outline.svg`      | Outline only (when not merged)             |
-| Outline DXF        | `keyboard-outline.dxf`      | Outline only (when not merged)             |
-| Merged SVG         | `keyboard-plate.svg`        | Combined cutouts + outline                 |
-| Merged DXF         | `keyboard-plate.dxf`        | Combined cutouts + outline                 |
-| STL                | `keyboard-plate.stl`        | 3D solid plate (requires outline enabled)  |
-| JSCAD              | `keyboard-plate.jscad`      | OpenJSCAD script (requires outline enabled)|
+| Export Type | Filename               | Contents                                    |
+| ----------- | ---------------------- | ------------------------------------------- |
+| Cutouts SVG | `keyboard-plate.svg`   | Switch and stabilizer cutouts only          |
+| Cutouts DXF | `keyboard-plate.dxf`   | Switch and stabilizer cutouts only          |
+| Outline SVG | `keyboard-outline.svg` | Outline only (when not merged)              |
+| Outline DXF | `keyboard-outline.dxf` | Outline only (when not merged)              |
+| Merged SVG  | `keyboard-plate.svg`   | Combined cutouts + outline                  |
+| Merged DXF  | `keyboard-plate.dxf`   | Combined cutouts + outline                  |
+| STL         | `keyboard-plate.stl`   | 3D solid plate (requires outline enabled)   |
+| JSCAD       | `keyboard-plate.jscad` | OpenJSCAD script (requires outline enabled) |
 
 Files are created as in-memory blobs and downloaded via a temporary anchor element.
 

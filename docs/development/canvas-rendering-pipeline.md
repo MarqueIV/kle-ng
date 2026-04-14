@@ -213,6 +213,7 @@ CanvasRenderer.render(keys, selectedKeys, metadata)
 **Purpose**: Main orchestrator that manages the entire rendering pipeline.
 
 **Key Responsibilities**:
+
 - Owns the Canvas 2D rendering context
 - Manages render options (unit size, background, scale, font)
 - Delegates to specialized renderers (Key, Label, Rotation)
@@ -224,9 +225,18 @@ CanvasRenderer.render(keys, selectedKeys, metadata)
 ```typescript
 class CanvasRenderer {
   // Rendering
-  render(keys, selectedKeys, metadata, clearCanvas?, showRotationPoints?,
-         hoveredRotationPointId?, selectedRotationOrigin?, popupHoveredKey?,
-         hoveredLinkHref?, searchMatchKeys?)
+  render(
+    keys,
+    selectedKeys,
+    metadata,
+    clearCanvas?,
+    showRotationPoints?,
+    hoveredRotationPointId?,
+    selectedRotationOrigin?,
+    popupHoveredKey?,
+    hoveredLinkHref?,
+    searchMatchKeys?,
+  )
 
   // Configuration
   updateOptions(options: RenderOptions)
@@ -250,9 +260,9 @@ class CanvasRenderer {
 
   // Hit testing
   getKeyAtPosition(x: number, y: number, keys: Key[])
-  getAllKeysAtPosition(x: number, y: number, keys: Key[])  // For overlapping key disambiguation
+  getAllKeysAtPosition(x: number, y: number, keys: Key[]) // For overlapping key disambiguation
   getRotationPointAtPosition(x: number, y: number)
-  getLinkAtPosition(x: number, y: number)  // For clickable link detection
+  getLinkAtPosition(x: number, y: number) // For clickable link detection
 }
 ```
 
@@ -260,11 +270,11 @@ class CanvasRenderer {
 
 ```typescript
 interface RenderOptions {
-  unit: number          // Pixel size of 1U (typically 54px)
-  background: string    // Background color (e.g., "#f0f0f0")
-  showGrid?: boolean    // Reserved for future grid feature
-  scale?: number        // DPI scaling factor
-  fontFamily?: string   // Custom font family for labels
+  unit: number // Pixel size of 1U (typically 54px)
+  background: string // Background color (e.g., "#f0f0f0")
+  showGrid?: boolean // Reserved for future grid feature
+  scale?: number // DPI scaling factor
+  fontFamily?: string // Custom font family for labels
 }
 ```
 
@@ -294,6 +304,7 @@ interface RenderOptions {
 **Purpose**: Renders keyboard key shapes (borders, fills, special shapes).
 
 **Key Features**:
+
 - **Multiple key shapes**: Rectangular, non-rectangular (ISO Enter, Big-Ass Enter), circular (rotary encoders)
 - **Vector union**: Seamless non-rectangular key rendering using polygon-clipping
 - **Pixel alignment**: Ensures crisp 1px borders on all screens
@@ -339,11 +350,11 @@ if (key.rotation_angle && axisAlignedAngle === null) {
 
 // 4. Draw key shape
 if (isCircular) {
-  drawCircularKey()  // For rotary encoders
+  drawCircularKey() // For rotary encoders
 } else if (nonRectangular) {
-  drawKeyRectangleLayers()  // Vector union for ISO Enter
+  drawKeyRectangleLayers() // Vector union for ISO Enter
 } else {
-  drawRoundedRect()  // Standard rectangular key
+  drawRoundedRect() // Standard rectangular key
 }
 
 // 5. Draw selection border (if selected)
@@ -374,22 +385,38 @@ if (isCircular) {
 ```typescript
 interface KeyRenderParams {
   // Outer border (visible edge)
-  outercapx, outercapy, outercapwidth, outercapheight
-  outercapx2?, outercapy2?, outercapwidth2?, outercapheight2?  // For non-rectangular
+  outercapx
+  outercapy
+  outercapwidth
+  outercapheight
+  outercapx2?
+  outercapy2?
+  outercapwidth2?
+  outercapheight2? // For non-rectangular
 
   // Inner surface (top of key)
-  innercapx, innercapy, innercapwidth, innercapheight
-  innercapx2?, innercapy2?, innercapwidth2?, innercapheight2?  // For non-rectangular
+  innercapx
+  innercapy
+  innercapwidth
+  innercapheight
+  innercapx2?
+  innercapy2?
+  innercapwidth2?
+  innercapheight2? // For non-rectangular
 
   // Text rendering area
-  textcapx, textcapy, textcapwidth, textcapheight
+  textcapx
+  textcapy
+  textcapwidth
+  textcapheight
 
   // Colors
-  darkColor: string   // Outer border color
-  lightColor: string  // Inner surface color (calculated via Lab color space)
+  darkColor: string // Outer border color
+  lightColor: string // Inner surface color (calculated via Lab color space)
 
   // Rotation
-  origin_x, origin_y  // Rotation origin in pixels
+  origin_x
+  origin_y // Rotation origin in pixels
 
   // Flags
   nonRectangular: boolean
@@ -400,26 +427,26 @@ interface KeyRenderParams {
 
 ```typescript
 // Visual constants
-SELECTION_COLOR = '#dc3545'    // Red for selected keys
-HOVER_COLOR = '#dc3545'        // Same color for hovered keys (popup disambiguation)
+SELECTION_COLOR = '#dc3545' // Red for selected keys
+HOVER_COLOR = '#dc3545' // Same color for hovered keys (popup disambiguation)
 SEARCH_MATCH_COLOR = '#f59e0b' // Amber color for search match keys
-GHOST_OPACITY = 0.3            // Opacity for ghost keys
-PIXEL_ALIGNMENT_OFFSET = 0.5   // For crisp 1px strokes
+GHOST_OPACITY = 0.3 // Opacity for ghost keys
+PIXEL_ALIGNMENT_OFFSET = 0.5 // For crisp 1px strokes
 
 // Homing nub (F/J keys)
 HOMING_NUB_WIDTH = 10
 HOMING_NUB_HEIGHT = 2
-HOMING_NUB_POSITION_RATIO = 0.9  // 90% down the key
+HOMING_NUB_POSITION_RATIO = 0.9 // 90% down the key
 HOMING_NUB_OPACITY = 0.3
 
 // Default sizes
-keySpacing = 0        // Gap between keys
-bevelMargin = 6       // Border width
-bevelOffsetTop = 3    // 3D bevel offset
+keySpacing = 0 // Gap between keys
+bevelMargin = 6 // Border width
+bevelOffsetTop = 3 // 3D bevel offset
 bevelOffsetBottom = 3
-padding = 3           // Text padding
-roundOuter = 5        // Outer corner radius
-roundInner = 3        // Inner corner radius
+padding = 3 // Text padding
+roundOuter = 5 // Outer corner radius
+roundInner = 3 // Inner corner radius
 ```
 
 ---
@@ -431,6 +458,7 @@ roundInner = 3        // Inner corner radius
 **Purpose**: Renders text labels, images, and SVG graphics on keys.
 
 **Key Features**:
+
 - **12 label positions**: 3x3 grid on top + 3 front legends
 - **Rich formatting**: Bold, italic, nested styles
 - **Clickable links**: `<a>` tag support with hover underline and URL preview
@@ -478,16 +506,13 @@ for (const [index, label] of key.labels.entries()) {
     drawSvgLabel(label, x, y)
   } else {
     // 4. Parse HTML into AST nodes
-    const nodes = labelParser.parse(label)  // Cached! Returns LabelNode[]
+    const nodes = labelParser.parse(label) // Cached! Returns LabelNode[]
 
     // 5. Build rotation context for link tracking (if key is rotated)
-    const rotationContext = key.rotation_angle
-      ? { angle, originX, originY }
-      : undefined
+    const rotationContext = key.rotation_angle ? { angle, originX, originY } : undefined
 
     // 6. Render with wrapping (handles text, links, images, SVGs)
-    drawWrappedNodes(nodes, x, y, availableWidth, availableHeight,
-                     rotationContext, hoveredLinkHref)
+    drawWrappedNodes(nodes, x, y, availableWidth, availableHeight, rotationContext, hoveredLinkHref)
   }
 }
 ```
@@ -495,6 +520,7 @@ for (const [index, label] of key.labels.entries()) {
 **HTML Label Parsing**:
 
 Supported tags:
+
 - `<b>...</b>` or `<strong>...</strong>` - Bold text
 - `<i>...</i>` or `<em>...</em>` - Italic text
 - `<b><i>...</i></b>` - Bold + italic (nested)
@@ -508,21 +534,31 @@ Supported tags:
 Example:
 
 ```html
-<b>Shift</b>          → Bold "Shift"
-<i>Ctrl</i>           → Italic "Ctrl"
-<strong>Alt</strong>  → Bold "Alt" (same as <b>)
-<em>Meta</em>         → Italic "Meta" (same as <i>)
-<b><i>Alt</i></b>     → Bold italic "Alt"
-Hello<br>World        → "Hello" on line 1, "World" on line 2
-<a href="https://example.com">Link</a>  → Blue clickable link with underline on hover
-<img src="icon.png" width="16" height="16">  → 16x16 image
-<ul><li>Item 1</li><li>Item 2</li></ul>  → Bulleted list
-<ol><li>First</li><li>Second</li></ol>   → Numbered list
+<b>Shift</b> → Bold "Shift" <i>Ctrl</i> → Italic "Ctrl" <strong>Alt</strong> → Bold "Alt" (same as
+<b
+  >) <em>Meta</em> → Italic "Meta" (same as
+  <i
+    >) <b><i>Alt</i></b> → Bold italic "Alt" Hello<br />World → "Hello" on line 1, "World" on line 2
+    <a href="https://example.com">Link</a> → Blue clickable link with underline on hover
+    <img src="icon.png" width="16" height="16" /> → 16x16 image
+    <ul>
+      <li>Item 1</li>
+      <li>Item 2</li>
+    </ul>
+    → Bulleted list
+    <ol>
+      <li>First</li>
+      <li>Second</li>
+    </ol>
+    → Numbered list</i
+  ></b
+>
 ```
 
 **Link Rendering**:
 
 Links (`<a>` tags) are rendered with special styling and interactivity:
+
 - **Color**: Links render in blue (#0066cc)
 - **Hover underline**: When `hoveredLinkHref` matches the link's href, an underline is drawn
 - **Hit testing**: Link bounding boxes are registered with LinkTracker for click detection
@@ -532,6 +568,7 @@ Links (`<a>` tags) are rendered with special styling and interactivity:
 **List Rendering**:
 
 Lists (`<ul>` and `<ol>` tags) are rendered as block elements with proper formatting:
+
 - **Unordered lists**: Rendered with bullet markers (`•`)
 - **Ordered lists**: Rendered with numbered markers (`1.`, `2.`, etc.)
 - **Nested lists**: Supported with proper indentation (12px per level)
@@ -541,13 +578,15 @@ Lists (`<ul>` and `<ol>` tags) are rendered as block elements with proper format
 - **Item spacing**: 2px extra vertical spacing between items
 
 List Rendering Constants:
+
 ```typescript
-LIST_BULLET = '•'        // Bullet character for unordered lists
-LIST_INDENT = 12         // Pixels to indent nested list content
-LIST_ITEM_SPACING = 2    // Extra vertical spacing between items
+LIST_BULLET = '•' // Bullet character for unordered lists
+LIST_INDENT = 12 // Pixels to indent nested list content
+LIST_ITEM_SPACING = 2 // Extra vertical spacing between items
 ```
 
 Example rendering:
+
 ```
 Unordered list:           Ordered list:
 • Item 1                  1. First
@@ -589,6 +628,7 @@ Vertical alignment (by row):
 **Purpose**: Renders rotation UI elements (origin indicators, control points).
 
 **Key Features**:
+
 - **Rotation origin indicator**: Orange crosshair at rotation point
 - **Rotation control points**: 5 points per key (4 corners + 1 center)
 - **Hover effects**: Visual feedback on mouse-over
@@ -627,18 +667,20 @@ The rendering pipeline uses a **four-level caching system** for optimal performa
 **Purpose**: Cache SVG → data URL conversions
 
 **How it works**:
+
 ```typescript
 // Without cache:
 const dataUrl = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`
 // encodeURIComponent is expensive for large SVGs!
 
 // With cache:
-const dataUrl = svgCache.toDataUrl(svg)  // Only encodes once
+const dataUrl = svgCache.toDataUrl(svg) // Only encodes once
 ```
 
 **Implementation**: LRU cache with max 1000 entries
 
 **Statistics**:
+
 ```typescript
 const stats = svgCache.getStats()
 // → { hits, misses, size, maxSize, evictions, hitRate }
@@ -649,12 +691,14 @@ const stats = svgCache.getStats()
 **Purpose**: Manage asynchronous image loading and caching
 
 **Key features**:
+
 - Prevents duplicate loading of same URL
 - Tracks loading states: `'loading'` | `'error'` | `HTMLImageElement`
 - Batches callbacks via `RenderScheduler`
 - Validates SVG dimensions (warns if missing width/height)
 
 **Loading flow**:
+
 ```typescript
 // First call: starts loading
 imageCache.loadImage(url, onLoad)
@@ -673,6 +717,7 @@ imageCache.loadImage(url, onLoad3)
 ```
 
 **CORS handling**:
+
 ```typescript
 img.crossOrigin = 'anonymous'
 // Allows canvas.toBlob() and canvas.toDataURL()
@@ -688,6 +733,7 @@ img.crossOrigin = 'anonymous'
 **Why needed**: DOMParser-based parsing is expensive, labels rarely change
 
 **Usage**:
+
 ```typescript
 const nodes = parseCache.getParsed(label, (text) => {
   // Parser function only called on cache miss
@@ -696,12 +742,16 @@ const nodes = parseCache.getParsed(label, (text) => {
 ```
 
 **Cached type**:
+
 ```typescript
 // Now caches LabelNode[] (AST nodes) instead of old ParsedSegment[]
 type LabelNode = TextNode | LinkNode | ImageNode | SVGNode
 
 // TextNode and LinkNode include TextStyle for bold/italic
-interface TextStyle { bold?: boolean; italic?: boolean }
+interface TextStyle {
+  bold?: boolean
+  italic?: boolean
+}
 ```
 
 **Implementation**: LRU cache with max 1000 entries
@@ -713,6 +763,7 @@ interface TextStyle { bold?: boolean; italic?: boolean }
 **Why needed**: Lab color space conversion is computationally expensive; keys often use the same colors
 
 **How it works**:
+
 ```typescript
 // In KeyRenderer:
 private colorCache = new Map<string, string>()
@@ -739,6 +790,7 @@ clearColorCache(): void {
 ```
 
 **Cache invalidation**:
+
 - Called when render options change (via `CanvasRenderer.updateOptions()`)
 - Ensures cache doesn't grow unbounded
 - Clears stale entries when rendering parameters change
@@ -752,6 +804,7 @@ clearColorCache(): void {
 **Algorithm**: Least Recently Used eviction
 
 **How it works**:
+
 ```typescript
 // Map maintains insertion order in ES6+
 // Most recently used items are at the end
@@ -769,6 +822,7 @@ set(key, val):
 ```
 
 **Statistics tracking**:
+
 - `hits`: Number of cache hits
 - `misses`: Number of cache misses
 - `evictions`: Number of evicted entries
@@ -785,6 +839,7 @@ set(key, val):
 **Purpose**: Calculate bounding boxes for keys and layouts
 
 **Key features**:
+
 - Rotation support (rotates corners, finds min/max)
 - Non-rectangular keys (includes both rectangles)
 - Stroke width inclusion (adds 1px)
@@ -795,10 +850,10 @@ set(key, val):
 ```typescript
 // 1. Get all corners (4 for rect, 8 for non-rect)
 const corners = [
-  { x: keyX, y: keyY },                      // top-left
-  { x: keyX + width, y: keyY },              // top-right
-  { x: keyX, y: keyY + height },             // bottom-left
-  { x: keyX + width, y: keyY + height },     // bottom-right
+  { x: keyX, y: keyY }, // top-left
+  { x: keyX + width, y: keyY }, // top-right
+  { x: keyX, y: keyY + height }, // bottom-left
+  { x: keyX + width, y: keyY + height }, // bottom-right
   // + 4 more for non-rectangular keys
 ]
 
@@ -834,6 +889,7 @@ return { minX, minY, maxX: maxX + strokeWidth, maxY: maxY + strokeWidth }
 **Purpose**: Determine which key (if any) is at a canvas position
 
 **Key features**:
+
 - Reverse iteration (last key = topmost)
 - Rotation support (inverse transformation)
 - Non-rectangular keys (test both rectangles)
@@ -898,10 +954,12 @@ getAllKeysAtPosition(x, y, keys):
 **Purpose**: Track clickable link bounding boxes during label rendering for hit testing
 
 Since HTML Canvas has no native link support, the LinkTracker provides a mechanism to:
+
 1. Register link bounding boxes during rendering
 2. Provide hit testing with rotation support for click/hover detection
 
 **Key Features**:
+
 - **Bounding box registration**: During rendering, links register their position and dimensions
 - **Hit testing with rotation**: `getLinkAtPosition(x, y)` returns the link at canvas coordinates
 - **Rotation support**: Applies inverse rotation transformation for accurate hit testing on rotated keys
@@ -911,14 +969,14 @@ Since HTML Canvas has no native link support, the LinkTracker provides a mechani
 
 ```typescript
 interface LinkBoundingBox {
-  id: string              // Unique identifier
-  href: string            // URL to open when clicked
-  displayText: string     // Link text (for debugging)
-  localX: number          // X position in key's coordinate space
-  localY: number          // Y position (top of bounding box)
-  localWidth: number      // Width of bounding box
-  localHeight: number     // Height of bounding box
-  rotationAngle: number   // Key's rotation angle in degrees
+  id: string // Unique identifier
+  href: string // URL to open when clicked
+  displayText: string // Link text (for debugging)
+  localX: number // X position in key's coordinate space
+  localY: number // Y position (top of bounding box)
+  localWidth: number // Width of bounding box
+  localHeight: number // Height of bounding box
+  rotationAngle: number // Key's rotation angle in degrees
   rotationOriginX: number // Rotation origin X in canvas coordinates
   rotationOriginY: number // Rotation origin Y in canvas coordinates
 }
@@ -970,6 +1028,7 @@ getLinkAtPosition(canvasX, canvasY):
 **Architecture**: Event-driven communication between store and canvas component
 
 **What triggers the event**:
+
 - Key position changes (drag, arrow keys, rotation)
 - Key property changes (color, label, size, shape)
 - Layout modifications (add/delete keys, undo/redo)
@@ -1028,6 +1087,7 @@ onBeforeUnmount(() => {
 ```
 
 **Benefits over Vue watchers**:
+
 - **Decoupled architecture**: Store doesn't need to know about canvas implementation
 - **Explicit communication**: Clear event-based API for layout changes
 - **Better performance**: Avoids expensive deep watchers on key position arrays
@@ -1077,6 +1137,7 @@ watch(
 ```
 
 This watcher was problematic because:
+
 - Created new arrays on every Vue reactivity check
 - Performed deep comparison on nested objects
 - Fired redundantly with other watchers
@@ -1093,6 +1154,7 @@ This watcher was problematic because:
 **Solution**: Batch all callbacks in the same frame and deduplicate identical callback references
 
 **How it works**:
+
 ```typescript
 schedule(callback):
   callbacks.add(callback)  // Set automatically deduplicates
@@ -1112,9 +1174,9 @@ The scheduler uses a `Set` instead of an array to store callbacks, which automat
 
 ```typescript
 // During a drag operation:
-renderScheduler.schedule(renderKeyboard)  // From mouse handler
-renderScheduler.schedule(renderKeyboard)  // From keys watcher
-renderScheduler.schedule(renderKeyboard)  // From event listener
+renderScheduler.schedule(renderKeyboard) // From mouse handler
+renderScheduler.schedule(renderKeyboard) // From keys watcher
+renderScheduler.schedule(renderKeyboard) // From event listener
 // → Set contains only 1 unique callback
 // → renderKeyboard() executes only once per frame!
 ```
@@ -1123,6 +1185,7 @@ renderScheduler.schedule(renderKeyboard)  // From event listener
 Without deduplication, the same render callback could execute 10-30+ times in a single animation frame during intensive operations like drag, causing severe performance degradation (60fps → ~10fps). Deduplication ensures optimal performance by executing each unique callback exactly once per frame.
 
 **Benefits**:
+
 - Prevents multiple renders per frame (60 FPS performance)
 - Automatically deduplicates identical callbacks
 - Reduces layout thrashing
@@ -1130,6 +1193,7 @@ Without deduplication, the same render callback could execute 10-30+ times in a 
 - Eliminates redundant render operations
 
 **Usage**:
+
 ```typescript
 // Multiple image loads in same frame
 imageCache.loadImage(url1, () => renderScheduler.schedule(rerender))
@@ -1187,6 +1251,7 @@ HitTester.getAllKeysAtPosition(x, y, keys)
 4. **CanvasRenderer `popupHoveredKey` parameter**: Draws hovered key on top with highlight
 
 **Popup Features**:
+
 - Displays key color swatch and label for identification
 - Shows position info (x, y coordinates)
 - Keyboard navigation (arrow keys, Enter, Escape)
@@ -1197,6 +1262,7 @@ HitTester.getAllKeysAtPosition(x, y, keys)
 **Visual Feedback**:
 
 When hovering over a key in the popup:
+
 1. Store sets `popupHoveredKey` to the hovered key
 2. Canvas re-renders with the hovered key drawn on top
 3. KeyRenderer draws the key with `isHovered=true` (2px red border)
@@ -1204,16 +1270,16 @@ When hovering over a key in the popup:
 ```typescript
 // In CanvasRenderer.render()
 if (popupHoveredKey) {
-  this.drawKey(popupHoveredKey, false, true)  // isHovered=true
+  this.drawKey(popupHoveredKey, false, true) // isHovered=true
 }
 
 // In KeyRenderer.drawKey()
 const borderColor = options.isHovered
-  ? KeyRenderer.HOVER_COLOR         // Red highlight
+  ? KeyRenderer.HOVER_COLOR // Red highlight
   : options.isSelected
-    ? KeyRenderer.SELECTION_COLOR   // Red
+    ? KeyRenderer.SELECTION_COLOR // Red
     : options.isSearchMatch
-      ? KeyRenderer.SEARCH_MATCH_COLOR  // Amber
+      ? KeyRenderer.SEARCH_MATCH_COLOR // Amber
       : '#000000'
 ```
 
@@ -1241,6 +1307,7 @@ setPopupHoveredKey(key | null)
 ### Canvas Search
 
 **Locations**:
+
 - `src/composables/useKeySearch.ts` — search state and logic
 - `src/components/CanvasSearchBar.vue` — search UI component
 - `src/components/KeyboardCanvas.vue` — integration (shortcut, wiring, render call)
@@ -1323,7 +1390,7 @@ function keyMatchesQuery(key: Key, query: string): boolean {
   const q = query.toLowerCase()
   for (const label of key.labels) {
     if (!label) continue
-    const nodes = labelParser.parse(label)       // uses ParseCache
+    const nodes = labelParser.parse(label) // uses ParseCache
     const text = labelParser.getPlainText(nodes) // strips HTML formatting
     if (text.toLowerCase().includes(q)) return true
   }
@@ -1349,7 +1416,7 @@ renderer.value.render(
   keyboardStore.rotationOrigin,
   keyboardStore.popupHoveredKey,
   hoveredLinkHref.value,
-  searchMatchKeys,    // ← 10th arg; empty array when search is closed
+  searchMatchKeys, // ← 10th arg; empty array when search is closed
 )
 ```
 
@@ -1408,11 +1475,15 @@ The LabelParser uses DOMParser for robust HTML parsing instead of regex, providi
 <em>Also italic</em>
 <b><i>Bold and italic</i></b>
 <a href="https://example.com">Clickable link</a>
-Text<br>with<br>breaks
-<img src="icon.png" width="16" height="16">
+Text<br />with<br />breaks
+<img src="icon.png" width="16" height="16" />
 <svg width="24" height="24">...</svg>
-<ul><li>Unordered item</li></ul>
-<ol><li>Ordered item</li></ol>
+<ul>
+  <li>Unordered item</li>
+</ul>
+<ol>
+  <li>Ordered item</li>
+</ol>
 ```
 
 **Parsing Architecture**:
@@ -1546,7 +1617,7 @@ interface SVGNode {
  */
 interface ListItemNode {
   type: 'list-item'
-  children: LabelNode[]  // Text content only: text, links, nested lists
+  children: LabelNode[] // Text content only: text, links, nested lists
 }
 
 /**
@@ -1554,7 +1625,7 @@ interface ListItemNode {
  */
 interface ListNode {
   type: 'list'
-  ordered: boolean  // true = <ol>, false = <ul>
+  ordered: boolean // true = <ol>, false = <ul>
   items: ListItemNode[]
 }
 
@@ -1750,6 +1821,7 @@ With alignment:
 ```
 
 **Implementation**:
+
 ```typescript
 alignRectToPixels(x, y, width, height):
   alignedX = Math.round(x) + 0.5
@@ -1772,10 +1844,11 @@ This ensures crisp edges for the most common rotation angles while avoiding the 
 was applied before rotation (see [#30](https://github.com/adamws/kle-ng/issues/30)).
 
 For non-axis-aligned rotations (45°, 89°, 91°, etc.):
+
 - Skip pixel alignment entirely
 - Apply ctx.rotate() transformation
 - Result: Smooth antialiased rendering,
-    - small visual 'jump' when transitioning angles 89°→90°→91° due to change of render approach,
+  - small visual 'jump' when transitioning angles 89°→90°→91° due to change of render approach,
     user must really pay attention to notice
 
 ### 4. Progressive Rendering
@@ -1804,11 +1877,13 @@ Image loads (async):
 **Architectural Boundary**: Decimal.js usage is strategically limited to maximize performance
 
 **Layout Operations** (keyboard store, geometry calculations):
+
 - Uses `decimal-math` library for exact arithmetic
 - Prevents accumulated floating-point errors in key positions
 - Critical for precise layout calculations
 
 **Rendering Operations** (canvas drawing):
+
 - Uses native JavaScript `Math` for optimal performance
 - Pixel alignment discards sub-pixel precision anyway
 
@@ -1816,11 +1891,11 @@ Image loads (async):
 
 ```javascript
 // JavaScript standard:
-0.1 + 0.2 === 0.30000000000000004  // NOT 0.3!
+0.1 + 0.2 === 0.30000000000000004 // NOT 0.3!
 
 // For key positions:
-key.x = 0.25   // 0.25U position
-key.y = 1.5    // 1.5U position
+key.x = 0.25 // 0.25U position
+key.y = 1.5 // 1.5U position
 // Accumulated errors can cause misalignment
 ```
 
@@ -1830,10 +1905,10 @@ key.y = 1.5    // 1.5U position
 import { D } from './decimal-math'
 
 // Precise arithmetic for layout:
-D.add(0.1, 0.2) === 0.3  // ✓
+D.add(0.1, 0.2) === 0.3 // ✓
 
 // Key position calculation:
-const x = D.mul(key.x, unit)  // Precise for layout
+const x = D.mul(key.x, unit) // Precise for layout
 const y = D.mul(key.y, unit)
 ```
 
@@ -1842,7 +1917,7 @@ const y = D.mul(key.y, unit)
 ```typescript
 // In KeyRenderer, LabelRenderer, RotationRenderer:
 // Native Math operations (post Phase 1 optimization)
-const angle = key.rotation_angle * Math.PI / 180  // Fast!
+const angle = (key.rotation_angle * Math.PI) / 180 // Fast!
 const cos = Math.cos(angle)
 const sin = Math.sin(angle)
 const rotatedX = dx * cos - dy * sin
@@ -1850,6 +1925,7 @@ const rotatedY = dx * sin + dy * cos
 ```
 
 **Why this works**:
+
 - Canvas pixels are integers after `alignRectToPixels()`
 - Sub-pixel precision from Decimal.js is lost during pixel alignment
 - Native Math maintains sufficient precision for visual rendering
@@ -1864,24 +1940,27 @@ const rotatedY = dx * sin + dy * cos
 **Layout vs Rendering Separation**: The system maintains a clear separation between layout calculations and rendering operations:
 
 **Layout Layer** (Keyboard Store, BoundsCalculator):
+
 - Uses `decimal-math` (Decimal.js) for all arithmetic operations
 - Maintains exact precision for key positions and dimensions
 - Critical for serialization, deserialization, and layout modifications
 - Examples: Key positioning, bounds calculation, layout transformations
 
 **Rendering Layer** (KeyRenderer, LabelRenderer, RotationRenderer):
+
 - Uses native JavaScript `Math` for all arithmetic operations
 - Optimized for performance (51% faster than using Decimal.js)
 - Sub-pixel precision unnecessary due to pixel alignment
 - Examples: Canvas transformations, rotation calculations, color operations
 
 **Conversion Point**: The boundary occurs when layout data is passed to renderers:
+
 ```typescript
 // Layout: Decimal.js precision
-const keyX = D.mul(key.x, unit)  // Exact arithmetic
+const keyX = D.mul(key.x, unit) // Exact arithmetic
 
 // Rendering: Native Math performance
-const angle = key.rotation_angle * Math.PI / 180  // Fast conversion
+const angle = (key.rotation_angle * Math.PI) / 180 // Fast conversion
 const cos = Math.cos(angle)
 const rotatedX = dx * cos - dy * sin
 ```
@@ -1901,10 +1980,11 @@ const rotatedX = dx * cos - dy * sin
 
 3. **Screen Pixels** (display)
    - `scale` parameter handles high DPI screens
-   - canvas.width = layoutWidth * unit * scale
-   - canvas.height = layoutHeight * unit * scale
+   - canvas.width = layoutWidth _ unit _ scale
+   - canvas.height = layoutHeight _ unit _ scale
 
 **Conversion**:
+
 ```typescript
 // Key units → Canvas pixels
 const canvasX = D.mul(key.x, unit)
@@ -1924,8 +2004,8 @@ const keyY = D.div(canvasY, unit)
 ctx.save()
 
 // Apply rotation:
-ctx.translate(originX, originY)  // 1. Move origin to rotation point
-ctx.rotate(angleRadians)         // 2. Rotate around origin
+ctx.translate(originX, originY) // 1. Move origin to rotation point
+ctx.rotate(angleRadians) // 2. Rotate around origin
 ctx.translate(-originX, -originY) // 3. Move origin back
 
 // Draw rotated content
@@ -1942,7 +2022,7 @@ ctx.restore()
 // Given: canvas position (x, y)
 // Find: position in key's local space
 
-const angle = -key.rotation_angle  // Negate for inverse
+const angle = -key.rotation_angle // Negate for inverse
 const dx = x - originX
 const dy = y - originY
 
@@ -2066,7 +2146,7 @@ fromLinear(c):
 - RGB/HSL lightening: `lighten(#4287f5)` → Shifts hue (looks wrong)
 - Lab lightening: `lighten(#4287f5)` → Preserves hue (looks natural)
 
-Lab is **perceptually uniform**: Equal changes in L* produce equal perceived lightness changes.
+Lab is **perceptually uniform**: Equal changes in L\* produce equal perceived lightness changes.
 
 ### Text Rendering
 
@@ -2129,6 +2209,7 @@ wrapText(text, maxWidth):
 **Cause**: Non-aligned coordinates or missing DPI scaling
 
 **Solution**:
+
 - Ensure `alignRectToPixels()` is used for all strokes
 - Check `scale` parameter matches `devicePixelRatio`
 
@@ -2139,7 +2220,7 @@ canvas.height = layoutHeight * unit * scale
 ctx.scale(scale, scale)
 
 // Incorrect:
-canvas.width = layoutWidth * unit  // No scaling!
+canvas.width = layoutWidth * unit // No scaling!
 ```
 
 **2. Images not loading**
@@ -2147,6 +2228,7 @@ canvas.width = layoutWidth * unit  // No scaling!
 **Cause**: CORS errors or missing dimensions
 
 **Solution**:
+
 - Serve images with `Access-Control-Allow-Origin: *` header
 - Add explicit `width` and `height` to SVG elements
 - Check browser console for errors
@@ -2162,6 +2244,7 @@ console.log(`Loaded: ${stats.loaded}, Errors: ${stats.errors}`)
 **Cause**: Vector union failed or disabled
 
 **Solution**:
+
 - Check browser console for "Vector union calculation failed" warning
 - Ensure `polygon-clipping` library is loaded
 - Verify rectangles actually overlap or touch
@@ -2171,6 +2254,7 @@ console.log(`Loaded: ${stats.loaded}, Errors: ${stats.errors}`)
 **Cause**: Font size too large or wrapping disabled
 
 **Solution**:
+
 - Reduce `textSize` property
 - Check available space: `params.textcapwidth`, `params.textcapheight`
 - Verify wrapping algorithm is enabled
@@ -2180,6 +2264,7 @@ console.log(`Loaded: ${stats.loaded}, Errors: ${stats.errors}`)
 **Cause**: Too many re-renders, large layouts, or render scheduler issues
 
 **Solution**:
+
 - Verify `RenderScheduler` is using Set-based deduplication (not array)
 - Check that identical callbacks are being deduplicated
 - Monitor render frequency (should be ≤ 60 FPS)
@@ -2189,7 +2274,7 @@ console.log(`Loaded: ${stats.loaded}, Errors: ${stats.errors}`)
 // Monitor render calls and check for deduplication:
 let renderCount = 0
 const original = canvasRenderer.render
-canvasRenderer.render = function(...args) {
+canvasRenderer.render = function (...args) {
   renderCount++
   console.log(`Render #${renderCount}`)
   return original.apply(this, args)
@@ -2216,10 +2301,12 @@ Prior to commit `595127f`, the RenderScheduler used an array to store callbacks,
 Added key-label search with amber highlighting, prev/next navigation, and a magnifier trigger button.
 
 **New files**:
+
 - `src/composables/useKeySearch.ts` — composable owning all transient search state
 - `src/components/CanvasSearchBar.vue` — self-contained search UI (input, count, nav buttons, close)
 
 **Modified files**:
+
 - `src/utils/renderers/KeyRenderer.ts` — added `isSearchMatch` to `KeyRenderOptions`, `SEARCH_MATCH_COLOR` constant (`#f59e0b`), decal border fix
 - `src/utils/canvas-renderer.ts` — added `searchMatchKeys` 10th parameter to `render()`, single-pass partition for four-layer draw order
 - `src/components/KeyboardCanvas.vue` — shortcut handler, magnifier button, `useKeySearch` wiring
@@ -2260,6 +2347,7 @@ const doc = parser.parseFromString(`<div>${text}</div>`, 'text/html')
 ```
 
 **Benefits**:
+
 - More robust handling of malformed HTML
 - Proper support for nested tags
 - Easy to add new element types
@@ -2268,6 +2356,7 @@ const doc = parser.parseFromString(`<div>${text}</div>`, 'text/html')
 **2. New LabelAST Module**
 
 Created `src/utils/parsers/LabelAST.ts` to define the AST structure:
+
 - `TextNode` - Plain text with optional bold/italic styling
 - `LinkNode` - Clickable links with href and styling
 - `ImageNode` - External images with optional dimensions
@@ -2287,6 +2376,7 @@ Added full support for `<a href="...">` tags in key labels:
 **4. New LinkTracker Component**
 
 Created `src/utils/renderers/LinkTracker.ts` for link hit testing:
+
 - Registers link bounding boxes during rendering
 - Provides `getLinkAtPosition(x, y)` for hover/click detection
 - Handles rotated keys via inverse rotation transformation
@@ -2300,6 +2390,7 @@ Created `src/utils/renderers/LinkTracker.ts` for link hit testing:
 - **KeyboardCanvas.vue**: Link hover detection, click handling, URL preview
 
 **New Supported Tags**:
+
 - `<strong>` - Bold text (alias for `<b>`)
 - `<em>` - Italic text (alias for `<i>`)
 - `<a href="...">` - Clickable links
@@ -2311,6 +2402,7 @@ Created `src/utils/renderers/LinkTracker.ts` for link hit testing:
 **Problem**: The original RenderScheduler implementation used an array to store callbacks, allowing duplicate callbacks to accumulate. During drag operations with multiple event sources (mouse handlers, Vue watchers, event listeners), the same `renderKeyboard()` function would be scheduled 10-30+ times per frame, causing severe lag (60fps → ~10fps).
 
 **Solution**: Changed storage from array to Set:
+
 ```typescript
 // Before:
 private callbacks: (() => void)[] = []
@@ -2330,11 +2422,13 @@ this.callbacks.add(callback)  // Automatic deduplication
 **Problem**: The system used an "aggressive watcher" that created new arrays on every Vue reactivity check to monitor key positions for layout changes. This watcher performed deep comparisons and fired redundantly with other watchers, contributing to performance issues.
 
 **Solution**: Replaced Vue watcher with event-driven architecture:
+
 - Keyboard store dispatches `keys-modified` custom event whenever the layout is modified (position, color, labels, rotation, etc.)
 - Canvas component listens for event and responds by updating canvas size and scheduling render
 - Direct `updateCanvasSize()` call during drag operations for immediate feedback when keys are dragged beyond bounds
 
 **Benefits**:
+
 - Decoupled store and canvas component
 - Eliminated expensive deep watcher on key position arrays
 - Clearer communication intent through explicit events
@@ -2342,10 +2436,14 @@ this.callbacks.add(callback)  // Automatic deduplication
 - Comprehensive coverage of all layout changes (position, color, labels, rotation, etc.)
 
 **Removed Code** (aggressive watcher):
+
 ```typescript
 // This 21-line watcher was removed:
 watch(
-  () => keyboardStore.keys.map((key) => ({ /* position data */ })),
+  () =>
+    keyboardStore.keys.map((key) => ({
+      /* position data */
+    })),
   async () => {
     await nextTick()
     updateCanvasSize()
@@ -2356,6 +2454,7 @@ watch(
 ```
 
 **Added Code** (event-based system):
+
 ```typescript
 // Store dispatches event (3 locations: saveState, undo, redo):
 window.dispatchEvent(new CustomEvent('keys-modified'))
@@ -2371,6 +2470,7 @@ window.addEventListener('keys-modified', handleKeysModified)
 ### Bug Analysis Documentation (Commit 273494b)
 
 Added comprehensive code review documentation analyzing the RenderScheduler bug that caused drag lag. The analysis provided:
+
 - Root cause identification (lack of deduplication)
 - Performance impact measurements (300-600% degradation)
 - Evidence from code showing multiple render sources

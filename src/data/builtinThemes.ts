@@ -95,9 +95,4 @@ export const GRUVBOX_DARK_THEME: Theme = {
   ],
 }
 
-export const BUILTIN_THEMES: Theme[] = [
-  CLASSIC_THEME,
-  DARK_THEME,
-  VIA_THEME,
-  GRUVBOX_DARK_THEME,
-]
+export const BUILTIN_THEMES: Theme[] = [CLASSIC_THEME, DARK_THEME, VIA_THEME, GRUVBOX_DARK_THEME]

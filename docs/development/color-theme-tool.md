@@ -63,9 +63,9 @@ src/
 
 ```typescript
 interface Theme {
-  name: string            // Display name, also used as export filename
+  name: string // Display name, also used as export filename
   backgroundColor?: string // Keyboard background color (6-digit hex, e.g. "#eeeeee")
-  rules: ThemeRule[]      // Ordered rules; last match wins
+  rules: ThemeRule[] // Ordered rules; last match wins
 }
 ```
 
@@ -73,8 +73,8 @@ interface Theme {
 
 ```typescript
 interface ThemeRule {
-  name: string        // Human-readable label (shown in help, useful for debugging)
-  matchers?: string   // Matcher expression string; omit or leave empty to match all keys
+  name: string // Human-readable label (shown in help, useful for debugging)
+  matchers?: string // Matcher expression string; omit or leave empty to match all keys
   colors: ThemeColorAssignment
 }
 ```
@@ -85,8 +85,8 @@ A rule with no `matchers` field (or an empty/whitespace string) matches every ke
 
 ```typescript
 interface ThemeColorAssignment {
-  color?: string                          // Keycap background color (hex)
-  defaultTextColor?: string               // Default label color for all positions
+  color?: string // Keycap background color (hex)
+  defaultTextColor?: string // Default label color for all positions
   textColors?: Partial<Record<number, string>> // Per-position overrides (positions 0–11)
 }
 ```
@@ -148,35 +148,35 @@ primary     = "(" expr ")"
 
 ### Numeric Properties
 
-| Property   | Description                          |
-|------------|--------------------------------------|
-| `width`    | Key width in keyboard units          |
-| `height`   | Key height in keyboard units         |
-| `x`        | Key X position (keyboard units)      |
-| `y`        | Key Y position (keyboard units)      |
-| `rotation` | Key rotation angle in degrees        |
+| Property   | Description                     |
+| ---------- | ------------------------------- |
+| `width`    | Key width in keyboard units     |
+| `height`   | Key height in keyboard units    |
+| `x`        | Key X position (keyboard units) |
+| `y`        | Key Y position (keyboard units) |
+| `rotation` | Key rotation angle in degrees   |
 
 Comparison operators: `==`, `!=`, `<>`, `<`, `<=`, `>`, `>=`
 
 ### Boolean Flags
 
-| Flag      | Description              |
-|-----------|--------------------------|
-| `decal`   | Key is a decorative decal |
+| Flag      | Description                    |
+| --------- | ------------------------------ |
+| `decal`   | Key is a decorative decal      |
 | `ghost`   | Key is a ghost/transparent key |
-| `stepped` | Key has a stepped profile |
-| `nub`     | Key has a homing nub     |
+| `stepped` | Key has a stepped profile      |
+| `nub`     | Key has a homing nub           |
 
 Flags are used as standalone terms — no operator or value needed.
 
 ### Label Checks
 
-| Operator   | Meaning                            |
-|------------|------------------------------------|
-| `==`       | Label equals value (exact match)   |
-| `!=`       | No label position equals value     |
-| `contains` | Label contains substring           |
-| `matches`  | Label matches regular expression   |
+| Operator   | Meaning                          |
+| ---------- | -------------------------------- |
+| `==`       | Label equals value (exact match) |
+| `!=`       | No label position equals value   |
+| `contains` | Label contains substring         |
+| `matches`  | Label matches regular expression |
 
 `label` without an index checks **all 12 positions** (0–11). Use `label[n]` to check a specific position.
 
@@ -189,9 +189,9 @@ label matches "^F[0-9]+"  // any legend matches regex
 
 ### Logic Operators
 
-| Operator | Description              |
-|----------|--------------------------|
-| `and`    | Both sub-expressions true |
+| Operator | Description                |
+| -------- | -------------------------- |
+| `and`    | Both sub-expressions true  |
 | `or`     | Either sub-expression true |
 | `not`    | Negates the sub-expression |
 
@@ -233,11 +233,11 @@ Parsed matcher expressions are **cached by string** to avoid repeated parsing wh
 
 Four presets are defined in `src/data/builtinThemes.ts`:
 
-| Name         | Description                                                                  |
-|--------------|------------------------------------------------------------------------------|
-| **Classic**  | Light gray background, medium gray keycaps, black text. Single default rule. |
-| **Dark**     | Near-black background, dark gray keycaps, light gray text.                   |
-| **VIA**      | Light theme with modifier and accent rules based on key size.                |
+| Name             | Description                                                                                |
+| ---------------- | ------------------------------------------------------------------------------------------ |
+| **Classic**      | Light gray background, medium gray keycaps, black text. Single default rule.               |
+| **Dark**         | Near-black background, dark gray keycaps, light gray text.                                 |
+| **VIA**          | Light theme with modifier and accent rules based on key size.                              |
 | **Gruvbox Dark** | Gruvbox color palette with 8 rules, including label-based text coloring for function keys. |
 
 ---
@@ -248,17 +248,17 @@ Four presets are defined in `src/data/builtinThemes.ts`:
 
 **State / Computed:**
 
-| Name                 | Type              | Description                                   |
-|----------------------|-------------------|-----------------------------------------------|
-| `activeBuiltinIndex` | `number \| null`  | Index into `builtinThemes`, or `null`         |
-| `customTheme`        | `Theme \| null`   | User-loaded custom theme                      |
-| `currentTheme`       | `Theme \| null`   | Active theme (custom if set, else builtin)    |
-| `isCustomTheme`      | `boolean`         | Whether a custom theme is currently active    |
+| Name                 | Type             | Description                                |
+| -------------------- | ---------------- | ------------------------------------------ |
+| `activeBuiltinIndex` | `number \| null` | Index into `builtinThemes`, or `null`      |
+| `customTheme`        | `Theme \| null`  | User-loaded custom theme                   |
+| `currentTheme`       | `Theme \| null`  | Active theme (custom if set, else builtin) |
+| `isCustomTheme`      | `boolean`        | Whether a custom theme is currently active |
 
 **Actions:**
 
-| Action                      | Description                                                    |
-|-----------------------------|----------------------------------------------------------------|
+| Action                      | Description                                                   |
+| --------------------------- | ------------------------------------------------------------- |
 | `selectBuiltinTheme(index)` | Switch to a builtin preset; clears custom theme               |
 | `loadCustomTheme(theme)`    | Set a custom `Theme` object; clears builtin selection         |
 | `parseThemeJson(json)`      | Validate and parse a JSON string; returns `Theme` or throws   |
@@ -322,16 +322,16 @@ Theme application is **atomic**: a single Undo operation reverts color changes t
 
 `src/utils/color-utils.ts` provides the following exports:
 
-| Function                          | Description                                              |
-|-----------------------------------|----------------------------------------------------------|
-| `hsvToRgb(h, s, v)`               | HSV → RGB (h: 0–360, s/v: 0–100)                        |
-| `rgbToHsv(r, g, b)`               | RGB → HSV                                                |
-| `hexToRgb(hex)`                   | Hex string → `{r, g, b}`                                 |
-| `rgbToHex(r, g, b)`               | RGB → 6-digit hex string                                 |
-| `hexToHsv(hex)` / `hsvToHex(...)` | Shorthand conversions                                    |
-| `isValidHex(hex)`                 | Validates 6-digit or 8-digit hex                         |
-| `hexToAlpha(hex)`                 | Extract alpha byte from 8-digit hex                      |
-| `hexWithAlpha(hex6, alpha)`       | Combine 6-digit hex with alpha byte                      |
-| `normalizeHex(hex)`               | Ensures `#` prefix                                       |
-| `lightenColor(color, factor?)`    | CIE Lab lightening — multiplies L\* by `factor` (default 1.2) |
-| `invertLightenColor(color, factor?)` | Inverse — divides L\* by `factor`                    |
+| Function                             | Description                                                   |
+| ------------------------------------ | ------------------------------------------------------------- |
+| `hsvToRgb(h, s, v)`                  | HSV → RGB (h: 0–360, s/v: 0–100)                              |
+| `rgbToHsv(r, g, b)`                  | RGB → HSV                                                     |
+| `hexToRgb(hex)`                      | Hex string → `{r, g, b}`                                      |
+| `rgbToHex(r, g, b)`                  | RGB → 6-digit hex string                                      |
+| `hexToHsv(hex)` / `hsvToHex(...)`    | Shorthand conversions                                         |
+| `isValidHex(hex)`                    | Validates 6-digit or 8-digit hex                              |
+| `hexToAlpha(hex)`                    | Extract alpha byte from 8-digit hex                           |
+| `hexWithAlpha(hex6, alpha)`          | Combine 6-digit hex with alpha byte                           |
+| `normalizeHex(hex)`                  | Ensures `#` prefix                                            |
+| `lightenColor(color, factor?)`       | CIE Lab lightening — multiplies L\* by `factor` (default 1.2) |
+| `invertLightenColor(color, factor?)` | Inverse — divides L\* by `factor`                             |

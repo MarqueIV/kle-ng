@@ -175,7 +175,7 @@ import { normalizeLayoutInput, htmlLayoutRenderer, svgLayoutRenderer } from '@/u
 
 const input = normalizeLayoutInput(keys, metadata, filename)
 const html = htmlLayoutRenderer.render(input)
-const svg  = svgLayoutRenderer.render(input)
+const svg = svgLayoutRenderer.render(input)
 ```
 
 `normalizeLayoutInput` can be called once and the resulting `LayoutRenderInput` passed to both renderers. To change output scale, pass a custom `unit` as the fourth argument (default is 54). Bevel and border constants do not scale with `unit`, so very small unit values will produce disproportionate bevels.
