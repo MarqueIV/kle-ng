@@ -16,8 +16,8 @@ Full documentation is available at **[editor.keyboard-tools.xyz/docs](https://ed
 
 **See also**:
 
-:link: [KiCad plugin for automatic keyboard's key placement and routing](https://github.com/adamws/kicad-kbplacer)
-:link: [Modifying ergogen layouts without learning ergogen](https://adamws.github.io/modifying-ergogen-layouts-without-learning-ergogen/)
+- [KiCad plugin for automatic keyboard's key placement and routing](https://github.com/adamws/kicad-kbplacer)
+- [Modifying ergogen layouts without learning ergogen](https://adamws.github.io/modifying-ergogen-layouts-without-learning-ergogen/)
 
 ## Support
 
