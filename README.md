@@ -6,7 +6,7 @@
 
 **[editor.keyboard-tools.xyz](https://editor.keyboard-tools.xyz/)**
 
-A modern reimplementation of the [Keyboard Layout Editor](http://www.keyboard-layout-editor.com), designed for better user experience while maintaining full compatibility with existing layouts — with built-in plate and PCB generators for the DIY keyboard community.
+A modern reimplementation of the [Keyboard Layout Editor](http://www.keyboard-layout-editor.com), designed for better user experience while maintaining compatibility with existing layouts — with built-in plate and PCB generators for the DIY keyboard community.
 
 </div>
 

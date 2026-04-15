@@ -4,7 +4,7 @@ layout: home
 hero:
   name: KLE-NG
   text: Keyboard Layout Editor NG
-  tagline: A modern reimplementation of the Keyboard Layout Editor — better UX, full KLE compatibility, and built-in plate and PCB generators.
+  tagline: A modern reimplementation of the Keyboard Layout Editor — better UX, KLE compatibility, and built-in plate and PCB generators.
   image:
     light: /hero-light.png
     dark: /hero-dark.png
