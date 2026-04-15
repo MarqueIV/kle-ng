@@ -2,8 +2,8 @@
 
 The PCB Generator creates [KiCad](https://kicad.org) project files from your keyboard layout. It generates a key matrix schematic, places switch and diode footprints according to key positions, and can optionally route connections between components.
 
-<img src="/screenshots/pcb-generator-panel-light.png" class="docs-screenshot light-only" alt="PCB generator panel" />
-<img src="/screenshots/pcb-generator-panel-dark.png" class="docs-screenshot dark-only" alt="PCB generator panel" />
+<img src="/pcb-generator-panel-light.png" class="docs-screenshot light-only" alt="PCB generator panel" />
+<img src="/pcb-generator-panel-dark.png" class="docs-screenshot dark-only" alt="PCB generator panel" />
 
 ## Overview {#overview}
 

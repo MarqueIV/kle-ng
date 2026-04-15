@@ -7,5 +7,5 @@ The **Summary** panel shows statistics about the current layout:
 - **Keyboard Dimensions** — Total width and height of the key cluster, in U or mm.
 - **CSV Export** — Download a CSV file with key center positions, dimensions, and rotation angles. Optionally include ghost and decal keys. Useful for external tooling or documentation.
 
-<img src="/screenshots/summary-panel-light.png" class="docs-screenshot light-only" alt="Summary panel" />
-<img src="/screenshots/summary-panel-dark.png" class="docs-screenshot dark-only" alt="Summary panel" />
+<img src="/summary-panel-light.png" class="docs-screenshot light-only" alt="Summary panel" />
+<img src="/summary-panel-dark.png" class="docs-screenshot dark-only" alt="Summary panel" />

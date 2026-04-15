@@ -9,16 +9,16 @@ Visit [editor.keyboard-tools.xyz](https://editor.keyboard-tools.xyz/) and start 
 
 The main editing area where keys are displayed and manipulated. Click to select individual keys, drag to box-select multiple keys, and use side toolbar to launch editing tools.
 
-<img src="/screenshots/layout-editor-panel-light.png" class="docs-screenshot light-only" alt="Layout editor canvas with a keyboard layout" />
-<img src="/screenshots/layout-editor-panel-dark.png" class="docs-screenshot dark-only" alt="Layout editor canvas with a keyboard layout" />
+<img src="/layout-editor-panel-light.png" class="docs-screenshot light-only" alt="Layout editor canvas with a keyboard layout" />
+<img src="/layout-editor-panel-dark.png" class="docs-screenshot dark-only" alt="Layout editor canvas with a keyboard layout" />
 
 ### Key Properties
 
 Controls position, size, labels, colors, and key options (ghost, stepped, homing nub, etc.). Changes apply immediately to the canvas.
 Controls are activated when one or more keys are selected. Properties are applied to all selected keys.
 
-<img src="/screenshots/key-properties-panel-light.png" class="docs-screenshot light-only" alt="Key Properties panel" />
-<img src="/screenshots/key-properties-panel-dark.png" class="docs-screenshot dark-only" alt="Key Properties panel" />
+<img src="/key-properties-panel-light.png" class="docs-screenshot light-only" alt="Key Properties panel" />
+<img src="/key-properties-panel-dark.png" class="docs-screenshot dark-only" alt="Key Properties panel" />
 
 ### Keyboard Metadata
 
@@ -26,38 +26,38 @@ Layout-wide settings: name, author, background color, border radius, key spacing
 The CSS field accepts standard CSS and is useful for applying custom fonts — see [Custom Fonts](./custom-fonts) for details.
 The VIA metadata section stores matrix size and key assignments needed by VIA-compatible firmware — see [VIA & Vial Format](./via-and-metadata) for details.
 
-<img src="/screenshots/keyboard-metadata-panel-light.png" class="docs-screenshot light-only" alt="Keyboard Metadata panel" />
-<img src="/screenshots/keyboard-metadata-panel-dark.png" class="docs-screenshot dark-only" alt="Keyboard Metadata panel" />
+<img src="/keyboard-metadata-panel-light.png" class="docs-screenshot light-only" alt="Keyboard Metadata panel" />
+<img src="/keyboard-metadata-panel-dark.png" class="docs-screenshot dark-only" alt="Keyboard Metadata panel" />
 
 ### Summary
 
 Shows layout statistics (key count, dimensions) and a table of key center positions. Includes a CSV export of all key data.
 
-<img src="/screenshots/summary-panel-light.png" class="docs-screenshot light-only" alt="Summary panel" />
-<img src="/screenshots/summary-panel-dark.png" class="docs-screenshot dark-only" alt="Summary panel" />
+<img src="/summary-panel-light.png" class="docs-screenshot light-only" alt="Summary panel" />
+<img src="/summary-panel-dark.png" class="docs-screenshot dark-only" alt="Summary panel" />
 
 ### JSON Editor
 
 Lets you view and edit the raw KLE JSON directly. Syncing changes with canvas requires clicking **Apply Changes** button.
 
-<img src="/screenshots/json-editor-panel-light.png" class="docs-screenshot light-only" alt="JSON editor panel" />
-<img src="/screenshots/json-editor-panel-dark.png" class="docs-screenshot dark-only" alt="JSON editor panel" />
+<img src="/json-editor-panel-light.png" class="docs-screenshot light-only" alt="JSON editor panel" />
+<img src="/json-editor-panel-dark.png" class="docs-screenshot dark-only" alt="JSON editor panel" />
 
 ### Plate Generator
 
 Generates switch and stabilizer cutout files for manufacturing keyboard plates. Supports Cherry MX, Alps, and Kailh Choc switch types, and exports to SVG, DXF, STL, and JSCAD.
 See [Plate Generator](./plate-generator) for full details.
 
-<img src="/screenshots/plate-generator-panel-light.png" class="docs-screenshot light-only" alt="Plate generator panel" />
-<img src="/screenshots/plate-generator-panel-dark.png" class="docs-screenshot dark-only" alt="Plate generator panel" />
+<img src="/plate-generator-panel-light.png" class="docs-screenshot light-only" alt="Plate generator panel" />
+<img src="/plate-generator-panel-dark.png" class="docs-screenshot dark-only" alt="Plate generator panel" />
 
 ### PCB Generator
 
 Generates a KiCad PCB project file from your layout, with switch footprints placed at the correct positions and a routed switch matrix. Requires matrix coordinates assigned to all keys beforehand.
 See [PCB Generator](./pcb-generator) for full details.
 
-<img src="/screenshots/pcb-generator-panel-light.png" class="docs-screenshot light-only" alt="PCB generator panel" />
-<img src="/screenshots/pcb-generator-panel-dark.png" class="docs-screenshot dark-only" alt="PCB generator panel" />
+<img src="/pcb-generator-panel-light.png" class="docs-screenshot light-only" alt="PCB generator panel" />
+<img src="/pcb-generator-panel-dark.png" class="docs-screenshot dark-only" alt="PCB generator panel" />
 
 ## The Unit System
 

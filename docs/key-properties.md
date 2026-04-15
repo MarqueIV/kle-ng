@@ -2,8 +2,8 @@
 
 The **Key Properties** panel is enabled whenever one or more keys are selected. When multiple keys are selected, editing a property applies it to all selected keys simultaneously.
 
-<img src="/screenshots/key-properties-panel-light.png" class="docs-screenshot light-only" alt="Key Properties panel" />
-<img src="/screenshots/key-properties-panel-dark.png" class="docs-screenshot dark-only" alt="Key Properties panel" />
+<img src="/key-properties-panel-light.png" class="docs-screenshot light-only" alt="Key Properties panel" />
+<img src="/key-properties-panel-dark.png" class="docs-screenshot dark-only" alt="Key Properties panel" />
 
 ### Position & Rotation
 

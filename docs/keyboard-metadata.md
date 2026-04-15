@@ -2,8 +2,8 @@
 
 The **Keyboard Metadata** panel stores layout-wide properties that are saved in the KLE JSON.
 
-<img src="/screenshots/keyboard-metadata-panel-light.png" class="docs-screenshot light-only" alt="Keyboard Metadata panel" />
-<img src="/screenshots/keyboard-metadata-panel-dark.png" class="docs-screenshot dark-only" alt="Keyboard Metadata panel" />
+<img src="/keyboard-metadata-panel-light.png" class="docs-screenshot light-only" alt="Keyboard Metadata panel" />
+<img src="/keyboard-metadata-panel-dark.png" class="docs-screenshot dark-only" alt="Keyboard Metadata panel" />
 
 | Field                | Description                                                                                                                                                                                         |
 | -------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |

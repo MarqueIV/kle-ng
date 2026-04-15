@@ -2,8 +2,8 @@
 
 The Plate Generator creates switch and stabilizer cutouts for your keyboard layout, exporting to SVG, DXF, STL, and JSCAD formats for manufacturing processes like laser cutting or 3D printing.
 
-<img src="/screenshots/plate-generator-panel-light.png" class="docs-screenshot light-only" alt="Plate generator panel" />
-<img src="/screenshots/plate-generator-panel-dark.png" class="docs-screenshot dark-only" alt="Plate generator panel" />
+<img src="/plate-generator-panel-light.png" class="docs-screenshot light-only" alt="Plate generator panel" />
+<img src="/plate-generator-panel-dark.png" class="docs-screenshot dark-only" alt="Plate generator panel" />
 
 ::: warning
 The Plate Generator does **not** prevent usage of settings which are not manufacturable in practice. Always validate your settings against your intended manufacturing method.
