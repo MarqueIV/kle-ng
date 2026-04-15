@@ -7,13 +7,14 @@ The PCB Generator creates [KiCad](https://kicad.org) project files from your key
 
 ## Overview {#overview}
 
-Open the **PCB Generator** panel in the right sidebar. The panel displays a footprint preview and generation controls.
+Open the **PCB Generator** panel. The panel displays a footprint preview and generation controls.
+After project generation the footprint preview is replaced with preview of the resulting schematic and PCB file.
 
 ## Prerequisites {#prerequisites}
 
 Before generating a PCB, your layout must have:
 
-- **Matrix coordinates** — Each key must have row/column assignments in VIA label format (e.g., `0,0` for row 0, column 0). Use **Extra Tools → Add Switch Matrix Coordinates** if not already set. See [Add Switch Matrix Coordinates](./layout-editor#extra-tools) for instructions.
+- **Matrix coordinates** — Each key must have row/column assignments in VIA label format (e.g., `0,0` for row 0, column 0). Use [Add Switch Matrix Coordinates](./layout-editor#add-switch-matrix-coordinates) if not already set.
 - **Maximum 150 keys** — Layouts with more than 150 keys are not supported.
 
 Matrix coordinates determine how switches are wired in the keyboard matrix.
@@ -24,7 +25,7 @@ Matrix coordinates determine how switches are wired in the keyboard matrix.
 
 Matrix coordinates in kle-ng use VIA label format. Each key's top-left label contains the row and column assignment as `row,col` (e.g., `0,0`, `0,1`, `1,0`).
 
-The easiest way to assign matrix coordinates is to use **Extra Tools → Add Switch Matrix Coordinates**, which can annotate your layout automatically or let you draw rows and columns manually.
+The easiest way to assign matrix coordinates is to use [Add Switch Matrix Coordinates](./layout-editor#add-switch-matrix-coordinates), which can annotate your layout automatically or let you draw rows and columns manually.
 
 ## Generating a PCB {#generating}
 
@@ -33,15 +34,16 @@ The easiest way to assign matrix coordinates is to use **Extra Tools → Add Swi
 3. Configure switch, diode, and routing options as needed
 4. Use the preview window to check key-diode placement
 
-   ![PCB footprints preview](/pcb-generator-footprints-preview.png){.docs-screenshot}
+<img src="/pcb-generator-footprint-preview-light.png" class="docs-screenshot light-only" alt="PCB footprints preview" style="max-width:50%" />
+<img src="/pcb-generator-footprint-preview-dark.png" class="docs-screenshot dark-only" alt="PCB footprints preview" style="max-width:50%" />
 
 5. Click **Generate PCB**
 6. Wait for the server to process your layout
 7. Once complete, preview renders will be displayed
 8. Click **Download ZIP** to save the archive, or **New Task** to start over
 
-::: info
-The preview does not support displaying traces.
+::: warning
+The preview does not support displaying traces for **Routing** option enabled.
 :::
 
 ## After Downloading the PCB
@@ -70,7 +72,7 @@ Extract the ZIP and open the `.kicad_pcb` file in KiCad 9+ to continue PCB desig
 
 **"Download VIA JSON" option is missing** — This is a separate export from **Import & Export**. For PCB generation, you only need matrix coordinates on the keys, not a full VIA metadata block.
 
-**Keys are missing from the generated PCB** — Only keys with valid matrix coordinates (`row,col` in the top-left label) are included. Use **Extra Tools → Add Switch Matrix Coordinates** to assign coordinates to all keys, then verify none are missing.
+**Keys are missing from the generated PCB** — Only keys with valid matrix coordinates (`row,col` in the top-left label) are included. Use [Add Switch Matrix Coordinates](./layout-editor#add-switch-matrix-coordinates) to assign coordinates to all keys, then verify none are missing.
 
 **The PCB worker is unavailable** — The generator uses a remote server. If requests fail, try again after a few minutes. Your layout data is not lost — regenerate from the same layout.
 

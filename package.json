@@ -43,6 +43,7 @@
     "json5": "^2.2.3",
     "lz-string": "^1.5.0",
     "makerjs": "^0.19.2",
+    "medium-zoom": "^1.1.0",
     "pinia": "^3.0.4",
     "polygon-clipping": "^0.15.7",
     "three": "^0.183.2",

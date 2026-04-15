@@ -127,9 +127,36 @@ kbd {
   color: var(--vp-c-brand-1);
 }
 
+/* External link icon — add class="ext-link" to <a target="_blank"> */
+.ext-link::after {
+  content: '';
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  background-color: currentColor;
+  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M10 6v2H5v11h11v-5h2v6a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h6zm11-3v8h-2V6.413l-7.793 7.794-1.414-1.414L17.585 5H13V3h8z'/%3E%3C/svg%3E");
+  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M10 6v2H5v11h11v-5h2v6a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h6zm11-3v8h-2V6.413l-7.793 7.794-1.414-1.414L17.585 5H13V3h8z'/%3E%3C/svg%3E");
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-size: contain;
+  mask-size: contain;
+  vertical-align: middle;
+  margin-left: 3px;
+}
+
 /* Make screenshots look nicer */
 .docs-screenshot {
   border: 1px solid var(--vp-c-border);
   border-radius: 8px;
   max-width: 100%;
+  cursor: zoom-in;
+}
+
+/* medium-zoom overlay */
+.medium-zoom-overlay {
+  z-index: 100;
+}
+.medium-zoom-image--opened {
+  z-index: 101;
+  border-radius: 4px;
 }
