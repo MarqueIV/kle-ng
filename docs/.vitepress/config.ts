@@ -7,7 +7,17 @@ export default defineConfig({
   base: '/docs/',
   outDir: '../dist/docs',
 
-  head: [['link', { rel: 'icon', href: '/docs/favicon.ico' }]],
+  head: [
+    ['link', { rel: 'icon', href: '/docs/favicon.ico' }],
+    [
+      'script',
+      {
+        defer: '',
+        src: 'https://cloud.umami.is/script.js',
+        'data-website-id': '4e25208b-5f07-4aca-b8fc-15cd6f487a5a',
+      },
+    ],
+  ],
 
   themeConfig: {
     nav: [
