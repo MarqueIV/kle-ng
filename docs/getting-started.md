@@ -121,3 +121,8 @@ See [PCB Generator](./pcb-generator) for full details.
 - [Import & Export](./import-export) — Supported formats and import methods
 - [Plate Generator](./plate-generator) — Create manufacturing-ready plate files
 - [PCB Generator](./pcb-generator) — Generate KiCad PCB projects
+
+## External References
+
+- [KiCad plugin for automatic keyboard's key placement and routing](https://github.com/adamws/kicad-kbplacer)
+- [Modifying ergogen layouts without learning ergogen](https://adamws.github.io/modifying-ergogen-layouts-without-learning-ergogen/)
