@@ -66,7 +66,7 @@ function getProgressPercentage(): number {
     </div>
 
     <!-- Success State with Renders -->
-    <div v-else-if="isTaskSuccess && hasRenders()">
+    <div v-else-if="isTaskSuccess && hasRenders()" class="success-wrapper">
       <PcbRenderViewer
         :front-svg="renders.front"
         :back-svg="renders.back"
@@ -159,6 +159,13 @@ function getProgressPercentage(): number {
   overflow-wrap: break-word;
   word-break: break-word;
   display: block;
+}
+
+.success-wrapper {
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
 
 .idle-preview-container {
