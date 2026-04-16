@@ -8,6 +8,7 @@ import PlateHolesSettings from './PlateHolesSettings.vue'
 import PlateGeneratorControls from './PlateGeneratorControls.vue'
 import PlateGeneratorResults from './PlateGeneratorResults.vue'
 import PlateDownloadButtons from './PlateDownloadButtons.vue'
+import PlateJsonView from './PlateJsonView.vue'
 import BiChevronLeft from 'bootstrap-icons/icons/chevron-left.svg'
 import BiChevronRight from 'bootstrap-icons/icons/chevron-right.svg'
 
@@ -126,10 +127,9 @@ onMounted(() => {
             </div>
 
             <!-- JSON Tab -->
-            <div
-              class="tab-pane-content"
-              :class="{ 'tab-pane-hidden': activeTab !== 'json' }"
-            ></div>
+            <div class="tab-pane-content" :class="{ 'tab-pane-hidden': activeTab !== 'json' }">
+              <PlateJsonView />
+            </div>
           </div>
         </div>
 
@@ -224,8 +224,6 @@ onMounted(() => {
   overflow: hidden;
 }
 
-
-
 /* Inner scrollable row — overflow hidden, scrolled via JS */
 .tab-track {
   display: flex;
@@ -303,7 +301,7 @@ onMounted(() => {
   pointer-events: none;
 }
 
-/* CSS Grid stacks both tab panes in same cell - height is max of both */
+/* CSS Grid stacks all tab panes in same cell - height is max of all panes */
 .tab-content-grid {
   display: grid;
 }
