@@ -31,6 +31,14 @@ let loadedApi: CodeMirrorAPI | null = null
 let loadingPromise: Promise<CodeMirrorAPI> | null = null
 
 /**
+ * Return the already-loaded CodeMirror API synchronously, or null if not yet loaded.
+ * Use this for cleanup paths (e.g. onUnmounted) where async is undesirable.
+ */
+export function getLoadedCodeMirror(): CodeMirrorAPI | null {
+  return loadedApi
+}
+
+/**
  * Preload CodeMirror modules after initial render.
  */
 export function preloadCodeMirror(): void {

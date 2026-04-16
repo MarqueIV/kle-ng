@@ -5,11 +5,16 @@ import {
   validateFilletRadius,
   validateStabilizerFilletRadius,
   validateCustomCutoutDimension,
-  getCutoutOptions,
 } from '@/utils/plate/cutout-generator'
 import { useKeyboardStore } from '@/stores/keyboard'
 import type { PlateWorkerResponse } from '@/utils/plate/plate-worker'
 import PlateWorker from '@/utils/plate/plate-worker?worker'
+import {
+  serializePlateSettings,
+  deserializePlateSettings,
+  type PlateSettingsJson,
+} from '@/utils/plate/plate-settings-serializer'
+import { validatePlateSettingsJson } from '@/utils/plate/plate-settings-validator'
 
 const STORAGE_KEY = 'kle-ng-plate-settings'
 
@@ -324,41 +329,29 @@ export const usePlateGeneratorStore = defineStore('plateGenerator', () => {
   // Settings persistence
   function loadSettings(): void {
     const saved = localStorage.getItem(STORAGE_KEY)
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved)
-        const validCutoutTypes = new Set([
-          'custom-rectangle',
-          ...getCutoutOptions().map((o) => o.value),
-        ])
-        const cutoutType = validCutoutTypes.has(parsed.cutoutType)
-          ? parsed.cutoutType
-          : defaultSettings.cutoutType
-        settings.value = {
-          ...defaultSettings,
-          ...parsed,
-          cutoutType,
-          outline: {
-            ...defaultSettings.outline,
-            ...parsed.outline,
-          },
-          mountingHoles: {
-            ...defaultSettings.mountingHoles,
-            ...parsed.mountingHoles,
-          },
-          customHoles: {
-            ...defaultSettings.customHoles,
-            ...parsed.customHoles,
-          },
-        }
-      } catch (error) {
-        console.warn('Failed to load plate settings:', error)
+    if (!saved) return
+    try {
+      const result = validatePlateSettingsJson(saved)
+      if (!result.valid) {
+        console.warn('Plate settings: invalid format, resetting to defaults:', result.error)
+        localStorage.removeItem(STORAGE_KEY)
+        return
       }
+      settings.value = deserializePlateSettings(result.json, defaultSettings)
+    } catch (error) {
+      console.warn('Failed to load plate settings:', error)
     }
   }
 
   function saveSettings(): void {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify({ ...settings.value }))
+    localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify(serializePlateSettings(settings.value), null, 2),
+    )
+  }
+
+  function applySettings(json: PlateSettingsJson): void {
+    settings.value = deserializePlateSettings(json, defaultSettings)
   }
 
   // Manual debounce helper
@@ -441,6 +434,7 @@ export const usePlateGeneratorStore = defineStore('plateGenerator', () => {
     generatePlate,
     resetGeneration,
     requestRegenerate,
+    applySettings,
     downloadSvg,
     downloadDxf,
     downloadAllSvg,

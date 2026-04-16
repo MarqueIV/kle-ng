@@ -1,29 +1,10 @@
-import type { PlateSettings, CutoutType, StabilizerType } from '@/types/plate'
+import { CUTOUT_TYPE_VALUES, STABILIZER_TYPE_VALUES } from '@/types/plate'
+import type { CutoutType, StabilizerType } from '@/types/plate'
+import type { PlateSettingsJson } from './plate-settings-serializer'
 
 export type ValidationResult =
-  | { valid: true; settings: PlateSettings; warnings: string[] }
+  | { valid: true; json: PlateSettingsJson; warnings: string[] }
   | { valid: false; error: string }
-
-const CUTOUT_TYPES: CutoutType[] = [
-  'cherry-mx-basic',
-  'cherry-mx-openable',
-  'alps-skcm',
-  'alps-skcp',
-  'kailh-choc-cpg1350',
-  'kailh-choc-cpg1232',
-  'custom-rectangle',
-]
-
-const STABILIZER_TYPES: StabilizerType[] = [
-  'mx-basic',
-  'mx-bidirectional',
-  'mx-tight',
-  'mx-spec',
-  'mx-spec-narrow',
-  'alps-aek',
-  'alps-at101',
-  'none',
-]
 
 const OUTLINE_TYPES = ['none', 'rectangular', 'tight'] as const
 
@@ -55,17 +36,11 @@ const KNOWN_OUTLINE_KEYS_TIGHT = new Set([
   'mergeWithCutouts',
 ])
 
-const KNOWN_MOUNTING_HOLES_KEYS = new Set(['enabled', 'diameter', 'edgeDistance'])
-const KNOWN_CUSTOM_HOLES_KEYS = new Set(['enabled', 'holes'])
+const KNOWN_HOLES_KEYS = new Set(['mounting', 'custom'])
+const KNOWN_MOUNTING_KEYS = new Set(['diameter', 'edgeDistance'])
 const KNOWN_HOLE_KEYS = new Set(['diameter', 'offsetX', 'offsetY'])
 
-const KNOWN_TOP_LEVEL_KEYS = new Set([
-  'cutout',
-  'thickness',
-  'outline',
-  'mountingHoles',
-  'customHoles',
-])
+const KNOWN_TOP_LEVEL_KEYS = new Set(['cutout', 'thickness', 'outline', 'holes'])
 
 function isFiniteNumber(v: unknown): v is number {
   return typeof v === 'number' && isFinite(v)
@@ -84,6 +59,14 @@ export function validatePlateSettingsJson(text: string): ValidationResult {
   }
 
   const obj = parsed as Record<string, unknown>
+
+  // Fast-reject old format (has top-level 'cutoutType' key)
+  if ('cutoutType' in obj) {
+    return {
+      valid: false,
+      error: 'Unsupported format: this appears to be an older settings format',
+    }
+  }
   const warnings: string[] = []
 
   // Validate cutout sub-object
@@ -93,7 +76,7 @@ export function validatePlateSettingsJson(text: string): ValidationResult {
     }
     const cutout = obj.cutout as Record<string, unknown>
 
-    if ('switchType' in cutout && !CUTOUT_TYPES.includes(cutout.switchType as CutoutType)) {
+    if ('switchType' in cutout && !CUTOUT_TYPE_VALUES.includes(cutout.switchType as CutoutType)) {
       return {
         valid: false,
         error: `Invalid value for 'cutout.switchType': ${JSON.stringify(cutout.switchType)}`,
@@ -101,7 +84,7 @@ export function validatePlateSettingsJson(text: string): ValidationResult {
     }
     if (
       'stabilizerType' in cutout &&
-      !STABILIZER_TYPES.includes(cutout.stabilizerType as StabilizerType)
+      !STABILIZER_TYPE_VALUES.includes(cutout.stabilizerType as StabilizerType)
     ) {
       return {
         valid: false,
@@ -119,13 +102,19 @@ export function validatePlateSettingsJson(text: string): ValidationResult {
       return { valid: false, error: `'cutout.stabilizerFilletRadius' must be a finite number` }
     }
 
+    if ('merge' in cutout && typeof cutout.merge !== 'boolean') {
+      return { valid: false, error: `'cutout.merge' must be a boolean` }
+    }
+
+    // Validate width/height as numbers whenever present (regardless of switchType)
+    for (const key of ['width', 'height'] as const) {
+      if (key in cutout && !isFiniteNumber(cutout[key])) {
+        return { valid: false, error: `'cutout.${key}' must be a finite number` }
+      }
+    }
+
     const switchType = cutout.switchType as string | undefined
     if (switchType === 'custom-rectangle') {
-      for (const key of ['width', 'height'] as const) {
-        if (key in cutout && !isFiniteNumber(cutout[key])) {
-          return { valid: false, error: `'cutout.${key}' must be a finite number` }
-        }
-      }
       for (const key of Object.keys(cutout)) {
         if (!KNOWN_CUTOUT_KEYS_BASE.has(key) && !KNOWN_CUTOUT_CUSTOM_KEYS.has(key))
           warnings.push(`Unknown field: cutout.${key}`)
@@ -173,6 +162,9 @@ export function validatePlateSettingsJson(text: string): ValidationResult {
           return { valid: false, error: `'outline.${key}' must be a finite number` }
         }
       }
+      if ('mergeWithCutouts' in outline && typeof outline.mergeWithCutouts !== 'boolean') {
+        return { valid: false, error: `'outline.mergeWithCutouts' must be a boolean` }
+      }
       for (const key of Object.keys(outline)) {
         if (!KNOWN_OUTLINE_KEYS_RECTANGULAR.has(key)) warnings.push(`Unknown field: outline.${key}`)
       }
@@ -182,6 +174,9 @@ export function validatePlateSettingsJson(text: string): ValidationResult {
       }
       if ('filletRadius' in outline && !isFiniteNumber(outline.filletRadius)) {
         return { valid: false, error: `'outline.filletRadius' must be a finite number` }
+      }
+      if ('mergeWithCutouts' in outline && typeof outline.mergeWithCutouts !== 'boolean') {
+        return { valid: false, error: `'outline.mergeWithCutouts' must be a boolean` }
       }
       for (const key of Object.keys(outline)) {
         if (!KNOWN_OUTLINE_KEYS_TIGHT.has(key)) warnings.push(`Unknown field: outline.${key}`)
@@ -193,64 +188,60 @@ export function validatePlateSettingsJson(text: string): ValidationResult {
     }
   }
 
-  // Validate mountingHoles (optional — omitted when disabled)
-  if ('mountingHoles' in obj) {
-    if (
-      obj.mountingHoles === null ||
-      typeof obj.mountingHoles !== 'object' ||
-      Array.isArray(obj.mountingHoles)
-    ) {
-      return { valid: false, error: "'mountingHoles' must be an object" }
+  // Validate holes sub-object (groups mounting and custom holes)
+  if ('holes' in obj) {
+    if (obj.holes === null || typeof obj.holes !== 'object' || Array.isArray(obj.holes)) {
+      return { valid: false, error: "'holes' must be an object" }
     }
-    const mh = obj.mountingHoles as Record<string, unknown>
-    for (const key of ['diameter', 'edgeDistance'] as const) {
-      if (key in mh && !isFiniteNumber(mh[key])) {
-        return { valid: false, error: `'mountingHoles.${key}' must be a finite number` }
+    const holes = obj.holes as Record<string, unknown>
+
+    // Validate holes.mounting (optional — presence implies enabled)
+    if ('mounting' in holes) {
+      if (
+        holes.mounting === null ||
+        typeof holes.mounting !== 'object' ||
+        Array.isArray(holes.mounting)
+      ) {
+        return { valid: false, error: "'holes.mounting' must be an object" }
+      }
+      const mh = holes.mounting as Record<string, unknown>
+      for (const key of ['diameter', 'edgeDistance'] as const) {
+        if (key in mh && !isFiniteNumber(mh[key])) {
+          return { valid: false, error: `'holes.mounting.${key}' must be a finite number` }
+        }
+      }
+      for (const key of Object.keys(mh)) {
+        if (!KNOWN_MOUNTING_KEYS.has(key)) warnings.push(`Unknown field: holes.mounting.${key}`)
       }
     }
-    for (const key of Object.keys(mh)) {
-      if (!KNOWN_MOUNTING_HOLES_KEYS.has(key)) warnings.push(`Unknown field: mountingHoles.${key}`)
-    }
-  }
 
-  // Validate customHoles (optional — omitted when disabled and empty)
-  if ('customHoles' in obj) {
-    if (
-      obj.customHoles === null ||
-      typeof obj.customHoles !== 'object' ||
-      Array.isArray(obj.customHoles)
-    ) {
-      return { valid: false, error: "'customHoles' must be an object" }
-    }
-    const ch = obj.customHoles as Record<string, unknown>
-
-    if ('holes' in ch) {
-      if (!Array.isArray(ch.holes)) {
-        return { valid: false, error: "'customHoles.holes' must be an array" }
+    // Validate holes.custom (optional — presence implies enabled)
+    if ('custom' in holes) {
+      if (!Array.isArray(holes.custom)) {
+        return { valid: false, error: "'holes.custom' must be an array" }
       }
-      for (let i = 0; i < ch.holes.length; i++) {
-        const hole = ch.holes[i]
+      for (let i = 0; i < holes.custom.length; i++) {
+        const hole = holes.custom[i]
         if (hole === null || typeof hole !== 'object' || Array.isArray(hole)) {
-          return { valid: false, error: `'customHoles.holes[${i}]' must be an object` }
+          return { valid: false, error: `'holes.custom[${i}]' must be an object` }
         }
         const h = hole as Record<string, unknown>
         for (const key of ['diameter', 'offsetX', 'offsetY'] as const) {
           if (!isFiniteNumber(h[key])) {
             return {
               valid: false,
-              error: `'customHoles.holes[${i}].${key}' must be a finite number`,
+              error: `'holes.custom[${i}].${key}' must be a finite number`,
             }
           }
         }
         for (const key of Object.keys(h)) {
-          if (!KNOWN_HOLE_KEYS.has(key))
-            warnings.push(`Unknown field: customHoles.holes[${i}].${key}`)
+          if (!KNOWN_HOLE_KEYS.has(key)) warnings.push(`Unknown field: holes.custom[${i}].${key}`)
         }
       }
     }
 
-    for (const key of Object.keys(ch)) {
-      if (!KNOWN_CUSTOM_HOLES_KEYS.has(key)) warnings.push(`Unknown field: customHoles.${key}`)
+    for (const key of Object.keys(holes)) {
+      if (!KNOWN_HOLES_KEYS.has(key)) warnings.push(`Unknown field: holes.${key}`)
     }
   }
 
@@ -259,5 +250,5 @@ export function validatePlateSettingsJson(text: string): ValidationResult {
     if (!KNOWN_TOP_LEVEL_KEYS.has(key)) warnings.push(`Unknown field: ${key}`)
   }
 
-  return { valid: true, settings: parsed as PlateSettings, warnings }
+  return { valid: true, json: parsed as PlateSettingsJson, warnings }
 }

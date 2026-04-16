@@ -180,7 +180,7 @@ test.describe('Matrix Coordinates Tool', () => {
     await editor.matrix.autoAnnotate()
 
     // Check Annotation Complete section
-    const successSection = page.locator('.alert-success')
+    const successSection = page.locator('.draw-section .alert-success')
     await expect(successSection).toBeVisible()
     await expect(successSection).toContainText('Annotation Complete!')
 
@@ -199,7 +199,7 @@ test.describe('Matrix Coordinates Tool', () => {
       await waitHelpers.waitForDoubleAnimationFrame()
 
       // Check that the JSON contains matrix coordinates
-      const jsonContent = page.locator('.json-editor, textarea, .monaco-editor, .cm-editor')
+      const jsonContent = page.locator('[data-section-id="json"] .cm-editor')
       if (await jsonContent.isVisible()) {
         const jsonText = await jsonContent.textContent()
         // The JSON should contain coordinate patterns like "0,0", "0,1", etc.
@@ -282,7 +282,7 @@ test.describe('Matrix Coordinates Tool', () => {
     // Should skip warning and go directly to draw step with "Layout Already Annotated" message
     await expect(page.locator('.draw-section')).toBeVisible()
 
-    const completionAlert = page.locator('.alert-success')
+    const completionAlert = page.locator('.draw-section .alert-success')
     await expect(completionAlert).toBeVisible()
     await expect(completionAlert).toContainText('Layout Already Annotated')
     await expect(completionAlert).toContainText('valid "row,column" annotations')
@@ -475,7 +475,7 @@ test.describe('Matrix Coordinates Tool', () => {
     await editor.matrix.autoAnnotate()
 
     // Wait for annotation to complete and success message to appear
-    const completionAlert = page.locator('.alert-success')
+    const completionAlert = page.locator('.draw-section .alert-success')
     await expect(completionAlert).toBeVisible({ timeout: 10000 })
     await expect(completionAlert).toContainText('Annotation Complete!')
     await expect(completionAlert).toContainText('All 3 keys have been assigned')
@@ -549,7 +549,7 @@ test.describe('Matrix Coordinates Tool', () => {
     await expect(drawSection).toBeVisible()
 
     // Should show "Layout Already Annotated" since Default 60% (VIA) is pre-annotated
-    const completionAlert = page.locator('.alert-success')
+    const completionAlert = page.locator('.draw-section .alert-success')
     await expect(completionAlert).toBeVisible()
     await expect(completionAlert).toContainText('Layout Already Annotated')
     await expect(completionAlert).toContainText('valid "row,column" annotations')

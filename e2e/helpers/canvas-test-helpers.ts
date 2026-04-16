@@ -458,14 +458,17 @@ export class CanvasTestHelper {
     }
 
     // Wait for CodeMirror editor to be ready (replaces old textarea.form-control.font-monospace)
-    const cmContent = this.page.locator('.cm-editor-container .cm-content')
+    // Scope to jsonSection to avoid matching the plate settings editor (.plate-json-view)
+    const cmContent = jsonSection.locator('.cm-editor-container .cm-content')
     await cmContent.waitFor({ state: 'visible' })
 
     // Use page.evaluate to directly dispatch a CodeMirror transaction to replace
     // the editor content. CodeMirror attaches its internal tile tree to DOM nodes
     // via the `cmTile` property, allowing access to the EditorView instance.
     const success = await this.page.evaluate((content) => {
-      const cmContentEl = document.querySelector('.cm-editor-container .cm-content') as Element & {
+      const cmContentEl = document.querySelector(
+        '[data-section-id="json"] .cm-editor-container .cm-content',
+      ) as Element & {
         cmTile?: {
           root?: { view?: { state: { doc: { length: number } }; dispatch: (tr: unknown) => void } }
         }

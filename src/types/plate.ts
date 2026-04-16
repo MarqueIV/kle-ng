@@ -5,27 +5,31 @@
 /**
  * Available cutout types for switch plates.
  */
-export type CutoutType =
-  | 'cherry-mx-basic'
-  | 'cherry-mx-openable'
-  | 'alps-skcm'
-  | 'alps-skcp'
-  | 'kailh-choc-cpg1350'
-  | 'kailh-choc-cpg1232'
-  | 'custom-rectangle'
+export const CUTOUT_TYPE_VALUES = [
+  'cherry-mx-basic',
+  'cherry-mx-openable',
+  'alps-skcm',
+  'alps-skcp',
+  'kailh-choc-cpg1350',
+  'kailh-choc-cpg1232',
+  'custom-rectangle',
+] as const
+export type CutoutType = (typeof CUTOUT_TYPE_VALUES)[number]
 
 /**
  * Available stabilizer cutout types.
  */
-export type StabilizerType =
-  | 'mx-basic'
-  | 'mx-bidirectional'
-  | 'mx-tight'
-  | 'mx-spec'
-  | 'mx-spec-narrow'
-  | 'alps-aek'
-  | 'alps-at101'
-  | 'none'
+export const STABILIZER_TYPE_VALUES = [
+  'mx-basic',
+  'mx-bidirectional',
+  'mx-tight',
+  'mx-spec',
+  'mx-spec-narrow',
+  'alps-aek',
+  'alps-at101',
+  'none',
+] as const
+export type StabilizerType = (typeof STABILIZER_TYPE_VALUES)[number]
 
 /**
  * Settings for plate outline generation
