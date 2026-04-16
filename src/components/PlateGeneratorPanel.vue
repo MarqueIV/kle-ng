@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { preloadMakerJsModule } from '@/utils/makerjs-loader'
 import { preloadThreeModule } from '@/utils/three-loader'
 import PlateGeneratorSettings from './PlateGeneratorSettings.vue'
@@ -8,9 +8,52 @@ import PlateHolesSettings from './PlateHolesSettings.vue'
 import PlateGeneratorControls from './PlateGeneratorControls.vue'
 import PlateGeneratorResults from './PlateGeneratorResults.vue'
 import PlateDownloadButtons from './PlateDownloadButtons.vue'
+import BiChevronLeft from 'bootstrap-icons/icons/chevron-left.svg'
+import BiChevronRight from 'bootstrap-icons/icons/chevron-right.svg'
 
-type TabId = 'cutouts' | 'outline' | 'holes'
+const tabs = [
+  { id: 'cutouts', label: 'Switch Cutouts' },
+  { id: 'holes', label: 'Holes' },
+  { id: 'outline', label: 'Outline' },
+  { id: 'json', label: 'JSON' },
+] as const
+
+type TabId = (typeof tabs)[number]['id']
+
+const VISIBLE_TABS = 3
+
 const activeTab = ref<TabId>('cutouts')
+const tabOffset = ref(0)
+const tabTrackRef = ref<HTMLElement | null>(null)
+
+const canGoPrev = computed(() => tabOffset.value > 0)
+const canGoNext = computed(() => tabOffset.value + VISIBLE_TABS < tabs.length)
+
+function scrollTrack(offset: number) {
+  tabOffset.value = offset
+  const el = tabTrackRef.value
+  if (!el) return
+  const tabWidth = el.offsetWidth / VISIBLE_TABS
+  el.scrollTo({ left: offset * tabWidth, behavior: 'smooth' })
+}
+
+function selectTab(id: TabId) {
+  activeTab.value = id
+  const idx = tabs.findIndex((t) => t.id === id)
+  if (idx < tabOffset.value) {
+    scrollTrack(idx)
+  } else if (idx >= tabOffset.value + VISIBLE_TABS) {
+    scrollTrack(idx - VISIBLE_TABS + 1)
+  }
+}
+
+function goPrev() {
+  scrollTrack(Math.max(0, tabOffset.value - 1))
+}
+
+function goNext() {
+  scrollTrack(Math.min(tabs.length - VISIBLE_TABS, tabOffset.value + 1))
+}
 
 // Preload maker.js and Three.js when component mounts
 onMounted(() => {
@@ -30,26 +73,38 @@ onMounted(() => {
           <!-- Tab Bar -->
           <div class="tab-bar">
             <button
-              class="tab-bar-item"
-              :class="{ active: activeTab === 'cutouts' }"
-              @click="activeTab = 'cutouts'"
+              class="tab-nav-btn"
+              :class="{ 'tab-nav-btn--hidden': !canGoPrev }"
+              :disabled="!canGoPrev"
+              aria-label="Previous tabs"
+              @click="goPrev"
             >
-              Switch Cutouts
+              <BiChevronLeft />
             </button>
+
+            <div class="tab-track-wrapper">
+              <div ref="tabTrackRef" class="tab-track">
+                <button
+                  v-for="tab in tabs"
+                  :key="tab.id"
+                  class="tab-bar-item"
+                  :class="{ active: activeTab === tab.id }"
+                  :data-testid="tab.id === 'outline' ? 'plate-tab-outline' : undefined"
+                  @click="selectTab(tab.id)"
+                >
+                  {{ tab.label }}
+                </button>
+              </div>
+            </div>
+
             <button
-              class="tab-bar-item"
-              :class="{ active: activeTab === 'holes' }"
-              @click="activeTab = 'holes'"
+              class="tab-nav-btn"
+              :class="{ 'tab-nav-btn--hidden': !canGoNext }"
+              :disabled="!canGoNext"
+              aria-label="Next tabs"
+              @click="goNext"
             >
-              Holes
-            </button>
-            <button
-              class="tab-bar-item"
-              :class="{ active: activeTab === 'outline' }"
-              @click="activeTab = 'outline'"
-              data-testid="plate-tab-outline"
-            >
-              Outline
+              <BiChevronRight />
             </button>
           </div>
 
@@ -69,6 +124,12 @@ onMounted(() => {
             <div class="tab-pane-content" :class="{ 'tab-pane-hidden': activeTab !== 'outline' }">
               <PlateOutlineSettings />
             </div>
+
+            <!-- JSON Tab -->
+            <div
+              class="tab-pane-content"
+              :class="{ 'tab-pane-hidden': activeTab !== 'json' }"
+            ></div>
           </div>
         </div>
 
@@ -147,23 +208,42 @@ onMounted(() => {
 /* Segmented tab bar */
 .tab-bar {
   display: flex;
+  align-items: center;
   background-color: var(--bs-secondary-bg);
-  border-radius: 5px;
+  border-radius: 6px;
   padding: 3px;
   gap: 2px;
   margin-bottom: 12px;
 }
 
-.tab-bar-item {
+/* Scrollable track that clips overflow */
+.tab-track-wrapper {
+  position: relative;
   flex: 1;
-  padding: 0.375rem 0.75rem;
+  min-width: 0;
+  overflow: hidden;
+}
+
+
+
+/* Inner scrollable row — overflow hidden, scrolled via JS */
+.tab-track {
+  display: flex;
+  overflow: hidden;
+}
+
+.tab-bar-item {
+  flex: 0 0 calc(100% / 3);
+  min-width: 0;
+  padding: 0.35rem 0.4rem;
   font-size: 0.75rem;
   font-weight: 600;
   letter-spacing: 0.3px;
+  line-height: 1.2;
   color: var(--bs-secondary-color);
   background: transparent;
   border: none;
-  border-radius: 3px;
+  border-radius: 4px;
   cursor: pointer;
   transition:
     background-color 0.15s ease,
@@ -173,13 +253,54 @@ onMounted(() => {
 
 .tab-bar-item:hover:not(.active) {
   color: var(--bs-body-color);
-  background-color: var(--bs-tertiary-bg);
+  background-color: color-mix(in srgb, var(--bs-tertiary-bg) 80%, var(--bs-body-color) 5%);
 }
 
 .tab-bar-item.active {
   color: var(--bs-body-color);
   background-color: var(--bs-body-bg);
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+  box-shadow:
+    0 1px 3px rgba(0, 0, 0, 0.12),
+    0 0 0 1px rgba(0, 0, 0, 0.04);
+}
+
+/* Nav arrow buttons */
+.tab-nav-btn {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  padding: 0;
+  color: var(--bs-secondary-color);
+  background: var(--bs-tertiary-bg);
+  border: 1px solid var(--bs-border-color);
+  border-radius: 4px;
+  cursor: pointer;
+  transition:
+    background-color 0.15s ease,
+    color 0.15s ease,
+    border-color 0.15s ease,
+    opacity 0.2s ease;
+}
+
+.tab-nav-btn :deep(svg) {
+  width: 0.8rem;
+  height: 0.8rem;
+  display: block;
+  fill: currentColor;
+}
+
+.tab-nav-btn:hover:not(:disabled) {
+  color: var(--bs-body-color);
+  background-color: var(--bs-body-bg);
+  border-color: var(--bs-border-color-translucent);
+}
+
+.tab-nav-btn--hidden {
+  opacity: 0;
+  pointer-events: none;
 }
 
 /* CSS Grid stacks both tab panes in same cell - height is max of both */
