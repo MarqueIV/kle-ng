@@ -103,6 +103,18 @@
         </ul>
       </div>
     </div>
+
+    <template #footer>
+      <a
+        href="https://editor.keyboard-tools.xyz/docs/pcb-generator"
+        target="_blank"
+        rel="noopener noreferrer"
+        class="btn btn-outline-secondary me-auto d-inline-flex align-items-center gap-1 docs-link"
+      >
+        Documentation <BiBoxArrowUpRight />
+      </a>
+      <button type="button" class="btn btn-primary" @click="close">Got it!</button>
+    </template>
   </BaseHelpModal>
 </template>
 
@@ -113,6 +125,7 @@ import { useTheme } from '@/composables/useTheme'
 
 import BiExclamationTriangle from 'bootstrap-icons/icons/exclamation-triangle.svg'
 import BiLightbulb from 'bootstrap-icons/icons/lightbulb.svg'
+import BiBoxArrowUpRight from 'bootstrap-icons/icons/box-arrow-up-right.svg'
 
 interface Props {
   isVisible: boolean
@@ -156,6 +169,11 @@ const close = () => {
 </script>
 
 <style scoped>
+.docs-link svg {
+  width: 0.75em;
+  height: 0.75em;
+}
+
 .info-box {
   background: var(--bs-tertiary-bg);
   padding: 12px;

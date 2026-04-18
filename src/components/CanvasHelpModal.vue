@@ -185,13 +185,25 @@
         </div>
       </div>
     </div>
+
+    <template #footer>
+      <a
+        href="https://editor.keyboard-tools.xyz/docs/layout-editor"
+        target="_blank"
+        rel="noopener noreferrer"
+        class="btn btn-outline-secondary me-auto d-inline-flex align-items-center gap-1 docs-link"
+      >
+        Documentation <BiBoxArrowUpRight />
+      </a>
+      <button type="button" class="btn btn-primary" @click="close">Got it!</button>
+    </template>
   </BaseHelpModal>
 </template>
 
 <script setup lang="ts">
 import BaseHelpModal from './BaseHelpModal.vue'
 import BiMouse from 'bootstrap-icons/icons/mouse.svg'
-import BiBook from 'bootstrap-icons/icons/book.svg'
+import BiBoxArrowUpRight from 'bootstrap-icons/icons/box-arrow-up-right.svg'
 import BiLightbulb from 'bootstrap-icons/icons/lightbulb.svg'
 import BiClipboardPlus from 'bootstrap-icons/icons/clipboard-plus.svg'
 import BiImage from 'bootstrap-icons/icons/image.svg'
@@ -213,6 +225,11 @@ const close = () => {
 </script>
 
 <style scoped>
+.docs-link svg {
+  width: 0.75em;
+  height: 0.75em;
+}
+
 /* Grid layout for interactions - two main columns */
 .interactions-grid {
   display: grid;
