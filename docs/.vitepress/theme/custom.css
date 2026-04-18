@@ -144,6 +144,28 @@ kbd {
   margin-left: 3px;
 }
 
+/* Two-column code+image example tables: equal columns, scroll inside code block only.
+   VitePress sets .vp-doc table { display: block } which breaks table-layout: fixed.
+   We must restore display: table before fixed layout and cell overflow will work. */
+.vp-doc table.example-table {
+  display: table;
+  table-layout: fixed;
+  width: 100%;
+  overflow: visible;
+}
+
+.vp-doc table.example-table th,
+.vp-doc table.example-table td {
+  width: 50%;
+  vertical-align: top;
+  overflow: hidden;
+}
+
+.vp-doc table.example-table td div[class*='language-'] {
+  margin: 0;
+  overflow-x: auto;
+}
+
 /* Make screenshots look nicer */
 .docs-screenshot {
   border: 1px solid var(--vp-c-border);

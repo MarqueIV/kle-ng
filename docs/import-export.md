@@ -35,7 +35,7 @@ Zoom in on the canvas before exporting to PNG to increase the output image resol
 
 **On export**, layouts containing `_kleng_via_data` metadata can be exported back to VIA JSON format using **Export → Download VIA JSON**.
 
-<table>
+<table class="example-table">
 <thead><tr>
 <th>Imported file</th>
 <th>Import result</th>
@@ -60,10 +60,9 @@ Zoom in on the canvas before exporting to PNG to increase the output image resol
 
 </td>
 <td>
+<img src="/layout-with-via-metadata.png" alt="VIA layout import result">
 
-<a href="https://editor.keyboard-tools.xyz/#share=NobwRA+g1gNgpgOwOYQG4EsCGEAmmAumYAXGAHIAsAkkjkgBZL5IAO6AQgMZUCCAjgFkAIgHkeADR7seZAIoApKgFEAYgJ4AtAMI8AKgHcAEgGd24nEp4BxejyGcAmvr2ck8gIwAPBwCUePBx4ABR4qZwBbHgFnAHURdH8RAHZOdAAGAHt2ACscFU8KHQAnO0Ck-woWAFUtEQQHdgAZADMkGHYATx4kviRdIQA2dAAOJHZ8ACNhzlkVAE4B3WMYcQBlVCQkgFcAVn8AXjAAXwAaYDA0k7SwE4uT9xu7gCZHy4BmMABdM7B3K8e-g9bn8XsCTh9Pp8gA">
-  <img src="/layout-with-via-metadata.png" alt="VIA layout import result">
-</a>
+[Open in editor →](https://editor.keyboard-tools.xyz/#share=NobwRA+g1gNgpgOwOYQG4EsCGEAmmAumYAXGAHIAsAkkjkgBZL5IAO6AQgMZUCCAjgFkAIgHkeADR7seZAIoApKgFEAYgJ4AtAMI8AKgHcAEgGd24nEp4BxejyGcAmvr2ck8gIwAPBwCUePBx4ABR4qZwBbHgFnAHURdH8RAHZOdAAGAHt2ACscFU8KHQAnO0Ck-woWAFUtEQQHdgAZADMkGHYATx4kviRdIQA2dAAOJHZ8ACNhzlkVAE4B3WMYcQBlVCQkgFcAVn8AXjAAXwAaYDA0k7SwE4uT9xu7gCZHy4BmMABdM7B3K8e-g9bn8XsCTh9Pp8gA)
 
 </td>
 </tr></tbody>
@@ -82,7 +81,7 @@ Imported keys receive:
 - Rotation from `r`, `rx`, `ry`
 - Matrix coordinates in the top-left label as `row,col`
 
-<table>
+<table class="example-table">
 <thead><tr>
 <th>Imported file</th>
 <th>Import result</th>
@@ -108,10 +107,9 @@ Imported keys receive:
 
 </td>
 <td>
+<img src="/qmk-example-layout.png" alt="QMK layout import result">
 
-<a href="https://editor.keyboard-tools.xyz/#share=NobwRAhgrgLgFgewE5gFxgKIA8IFsAOANgKZgA0YAdnqetnkaQL5mhhZoAsFAnlwHQAmAKwswAZjLiwAXVbgUqAIzCKSDqk79VYJH1QBOfkooaAtAAZtvNGa0AOURUmdZ83WnEW1G4f266+kaS7LZK-haRUdHRAfpmfhbCMSkWJmBwaOFOEmTCsjJAA">
-  <img src="/qmk-example-layout.png" alt="QMK layout import result">
-</a>
+[Open in editor →](https://editor.keyboard-tools.xyz/#share=NobwRAhgrgLgFgewE5gFxgKIA8IFsAOANgKZgA0YAdnqetnkaQL5mhhZoAsFAnlwHQAmAKwswAZjLiwAXVbgUqAIzCKSDqk79VYJH1QBOfkooaAtAAZtvNGa0AOURUmdZ83WnEW1G4f266+kaS7LZK-haRUdHRAfpmfhbCMSkWJmBwaOFOEmTCsjJAA")
 
 </td>
 </tr></tbody>
@@ -132,7 +130,7 @@ kle-ng does **not** support export to QMK format.
 
 kle-ng decodes the URL, processes it with the Ergogen library, and converts the result to KLE format for editing.
 
-<table>
+<table class="example-table">
 <thead><tr>
 <th>Imported file</th>
 <th>Import result</th>
@@ -157,10 +155,9 @@ points:
 
 </td>
 <td>
+<img src="/ergogen-import-result.png" alt="Ergogen layout import result">
 
-<a href="https://editor.keyboard-tools.xyz/#share=NobwRAzgDghgxgSwHYHMD6APMAuAjATgBpJZFU0BPHAgX0NDACdqBWYxrbABgDo2mq2AEw8AbC1wAOACwBmYpwC0vfoOV86YALYwALowQY0UZAGsKaAEYB7XbutawAXXrgOOXgHYWkyQXaCuGKSLPhSCjjqqpEqmjr6hsZmFgAWDgCmzq5MnEFcuJ6ispIBHjyeBPj4QhHYUcRqscTxBkYmSOZo9lBZDMzCXOy5YviiXELyAjgisp74xfxKKg0xGs16rWgG5DZ2Dr1unCJcxVxypXg8cqPztfVgjWvaG4nb6GlamS59RzynXKJpBdlmAlnwVnUms8EkY3l1rD1vodpuUhCxPEJcBcRNJPNJcOFQatopCni1EloEAATKkAG3SVls9kcSJyOFkPABnjxWKmlxYsmk0jRdxBjxYcReRkpNPpaA+X2y7mwHOkXHwhV5jEEKnwuNkkzBJKikphaBldIZ3QObJVfHRas8Fw5BKEvkNxIhJvWZuQVPSRl2zJtyo53Ld3gu0j+om8J1F4IexM0uhSAFctJYAGYwJBoJDpGCMLrpzMhzgcyRVYUlPkiAqyfxE0nGqHkox+gPyjLlnDRoT4oW17XUHgTQX4WtGr1tqVoTtGa2s5XR6SiXDq4eCDksAV+KeepMt02bZAF4tB-bLzjRyQnAlblHr-FCUQJ1tkudn9LFhW97AsDwuDSBIxQXEEsZCga74zp+vpIOe8KIkqfbDjePAyOIsg1HygG4K+aK8tOR7emAqYZtmubdp8JYUSGOCFEMOCAdIvhVm+fKiGOngGrMMEkVC5GZjmeY5sWQmWPRdSMbangYVwLCYosh7inECCMIw1jiaWlGiUWtFlsukSsUx2CSFcuLoo+AFAQREj8apzTqZp2kUSJ1FWjpUmKEIgy2uZwFVhi4FiHicgei2sESk5GlaeaX4IT+SH-uZ0j4Oqtx1mIwH4RxxGOdozlxe286Jb+PbXjg5mSAa+STCOdq7sUhL5cmMUufF8GIZeLJKpw+CcopohFCF45pQekUCWSRXFiVC7JZV2ADbIeqiDV2JATxTatce7XFQl-pGH+i0DYp+GyPwDXRrIsYsPGzb3AVlKxa5wlUQW+kSf+A08bG90NS6+Hug5bWFS9nWnkgh2MnsvU-DgA2+HIaXAnweo8RFj2g89HUlRacpLn11C8EIr43UQfJBAKQoig9YrYzNEMUtSloef+G58GtxQUw1OI8i1KkM+DeMs3KPXs7wYRqriqPKZNT2MyVcKE-DeBBGiYyxiF1yiJlO2kTj+1mnCx1E2raN3pITpZbM8whCDu1g7jc5wuLRl1Lgl25CIQiFPqqMVFU1QOwbitzu0nQq8ieAiAKinB5TwShAL8tC87ZoR6kFVm-h5R6gSWqCCI4hSOcdOJgrwvh8kMPBk4ThAA">
-  <img src="/ergogen-import-result.png" alt="Ergogen layout import result">
-</a>
+[Open in editor →](https://editor.keyboard-tools.xyz/#share=NobwRAzgDghgxgSwHYHMD6APMAuAjATgBpJZFU0BPHAgX0NDACdqBWYxrbABgDo2mq2AEw8AbC1wAOACwBmYpwC0vfoOV86YALYwALowQY0UZAGsKaAEYB7XbutawAXXrgOOXgHYWkyQXaCuGKSLPhSCjjqqpEqmjr6hsZmFgAWDgCmzq5MnEFcuJ6ispIBHjyeBPj4QhHYUcRqscTxBkYmSOZo9lBZDMzCXOy5YviiXELyAjgisp74xfxKKg0xGs16rWgG5DZ2Dr1unCJcxVxypXg8cqPztfVgjWvaG4nb6GlamS59RzynXKJpBdlmAlnwVnUms8EkY3l1rD1vodpuUhCxPEJcBcRNJPNJcOFQatopCni1EloEAATKkAG3SVls9kcSJyOFkPABnjxWKmlxYsmk0jRdxBjxYcReRkpNPpaA+X2y7mwHOkXHwhV5jEEKnwuNkkzBJKikphaBldIZ3QObJVfHRas8Fw5BKEvkNxIhJvWZuQVPSRl2zJtyo53Ld3gu0j+om8J1F4IexM0uhSAFctJYAGYwJBoJDpGCMLrpzMhzgcyRVYUlPkiAqyfxE0nGqHkox+gPyjLlnDRoT4oW17XUHgTQX4WtGr1tqVoTtGa2s5XR6SiXDq4eCDksAV+KeepMt02bZAF4tB-bLzjRyQnAlblHr-FCUQJ1tkudn9LFhW97AsDwuDSBIxQXEEsZCga74zp+vpIOe8KIkqfbDjePAyOIsg1HygG4K+aK8tOR7emAqYZtmubdp8JYUSGOCFEMOCAdIvhVm+fKiGOngGrMMEkVC5GZjmeY5sWQmWPRdSMbangYVwLCYosh7inECCMIw1jiaWlGiUWtFlsukSsUx2CSFcuLoo+AFAQREj8apzTqZp2kUSJ1FWjpUmKEIgy2uZwFVhi4FiHicgei2sESk5GlaeaX4IT+SH-uZ0j4Oqtx1mIwH4RxxGOdozlxe286Jb+PbXjg5mSAa+STCOdq7sUhL5cmMUufF8GIZeLJKpw+CcopohFCF45pQekUCWSRXFiVC7JZV2ADbIeqiDV2JATxTatce7XFQl-pGH+i0DYp+GyPwDXRrIsYsPGzb3AVlKxa5wlUQW+kSf+A08bG90NS6+Hug5bWFS9nWnkgh2MnsvU-DgA2+HIaXAnweo8RFj2g89HUlRacpLn11C8EIr43UQfJBAKQoig9YrYzNEMUtSloef+G58GtxQUw1OI8i1KkM+DeMs3KPXs7wYRqriqPKZNT2MyVcKE-DeBBGiYyxiF1yiJlO2kTj+1mnCx1E2raN3pITpZbM8whCDu1g7jc5wuLRl1Lgl25CIQiFPqqMVFU1QOwbitzu0nQq8ieAiAKinB5TwShAL8tC87ZoR6kFVm-h5R6gSWqCCI4hSOcdOJgrwvh8kMPBk4ThAA")
 
 </td>
 </tr></tbody>
