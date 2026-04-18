@@ -11,11 +11,12 @@ The Plate Generator does **not** prevent usage of settings which are not manufac
 
 ## Overview {#overview}
 
-Open the **Plate Generator** panel. The settings section is organized into three tabs:
+Open the **Plate Generator** panel. The settings section is organized into four tabs:
 
 - **Switch Cutouts** — Select switch type, stabilizer style, fillet radius, and kerf compensation
 - **Holes** — Add corner mounting holes or custom holes at arbitrary positions
 - **Outline** — Generate a border around the key cluster
+- **JSON** — Edit, download, and upload plate settings as JSON for scripting and sharing configurations
 
 ## Typical Workflow
 
@@ -93,6 +94,76 @@ The **Tight** outline is useful for non-rectangular layouts or split keyboards. 
 | **Fillet Radius**      | Rounds corners of the outline                                                                                                      |
 | **Plate Thickness**    | Thickness of the plate in STL export                                                                                               |
 | **Merge with Cutouts** | Place cutouts and outline in a single file; if separate, the outline file shares the same (0,0) origin for easier CAD/CAM handling |
+
+## JSON Settings {#json-settings}
+
+The **JSON** tab provides direct access to plate settings as formatted JSON. This is useful for power users who want to:
+
+- Edit multiple settings at once
+- Share or version-control configurations as files
+- Build or modify settings programmatically
+
+### Editor Interface
+
+The JSON editor displays the current settings in real-time. Use it to:
+
+- **Edit settings directly** — Modify values and click **Apply** (or press Ctrl+Enter) to apply changes to the preview
+- **Reset** — Discard unsaved edits and revert to the last applied settings
+- **Download** — Save the current settings as a `plate-settings.json` file
+- **Upload** — Load a previously saved `plate-settings.json` file. If valid JSON is provided, it applies immediately; if there are syntax errors, the editor loads the file so you can fix it
+- **Resize** — Drag the handle below the editor to adjust its height
+
+A status bar at the bottom shows:
+
+- `In sync` when the editor matches applied settings
+- `Modified — press Apply or Ctrl+Enter to apply` when unsaved changes exist
+- Error or warning messages if the JSON is invalid
+
+### JSON Format
+
+All sections and fields are optional — omitted fields fall back to defaults. Here is a representative example showing all available sections:
+
+```json
+{
+  "cutout": {
+    "switchType": "cherry-mx-basic",
+    "stabilizerType": "mx-basic",
+    "switchFilletRadius": 0.5,
+    "stabilizerFilletRadius": 0.5,
+    "kerf": 0,
+    "merge": false
+  },
+  "holes": {
+    "mounting": {
+      "diameter": 3,
+      "edgeDistance": 3
+    },
+    "custom": [{ "diameter": 3, "offsetX": 0, "offsetY": 0 }]
+  },
+  "outline": {
+    "outlineType": "rectangular",
+    "marginTop": 5,
+    "marginBottom": 5,
+    "marginLeft": 5,
+    "marginRight": 5,
+    "filletRadius": 1,
+    "mergeWithCutouts": true
+  },
+  "thickness": 1.5
+}
+```
+
+**Switch types:** `"cherry-mx-basic"`, `"cherry-mx-openable"`, `"alps-skcm"`, `"alps-skcp"`, `"kailh-choc-cpg1350"`, `"kailh-choc-cpg1232"`, `"custom-rectangle"` (for custom-rectangle, add `"width"` and `"height"` fields inside `cutout`)
+
+**Stabilizer types:** `"mx-basic"`, `"mx-bidirectional"`, `"mx-tight"`, `"mx-spec"`, `"mx-spec-narrow"`, `"none"`
+
+**Outline types:** `"none"` (no outline), `"rectangular"` (axis-aligned with independent margins), `"tight"` (convex hull with single margin — use `"tightMargin"` instead of the four directional margins)
+
+**Presence rules:**
+
+- `holes.mounting` present implies corner mounting holes are enabled
+- `holes.custom` present implies custom holes are enabled
+- `stabilizerFilletRadius` is omitted when `stabilizerType` is `"none"`
 
 ## JSCAD Format
 
