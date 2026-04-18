@@ -62,7 +62,11 @@ The downloaded ZIP archive contains two files:
 - **`.kicad_sch`** — Schematic with the switch matrix
 - **`.kicad_pcb`** — Board file with switch footprints placed according to key positions and matrix coordinates, diode footprints for each switch, routed connections (if routing was enabled)
 
-Extract the ZIP and open the `.kicad_pcb` file in KiCad 9+ to continue PCB design. Typical next steps:
+Extract the ZIP and open the `.kicad_pcb` file in KiCad 9+ to continue PCB design.
+
+### Next Steps in KiCad
+
+Typical next steps after downloading:
 
 1. **Add a microcontroller** — Place your MCU footprint (e.g., Pro Micro, RP2040) and connect row/column lines.
 2. **Add a USB connector** — Route the data lines from the MCU to the connector.
@@ -70,18 +74,29 @@ Extract the ZIP and open the `.kicad_pcb` file in KiCad 9+ to continue PCB desig
 4. **Add the edge cut** — Generator does not include PCB outline; create it to match your intended case.
 5. **Run DRC** — Use KiCad's Design Rule Check to catch errors before sending to fabrication.
 
-## Tips
+## Tips and Best Practices
+
+### Download and Service Limits
 
 - **Download expiration** — Generated PCB files expire after **1 hour**.
 - **Rate limiting** — There is a 5-second cooldown between generation requests.
 - **Worker status** — The PCB generator runs on a remote worker. If the service is temporarily unavailable, try again later.
-- **KiCad compatibility** — Generated files are compatible with **KiCad 9+**. Open the file in KiCad to add mounting holes, USB connector, microcontroller, and other components.
+
+### KiCad Compatibility
+
+Generated files are compatible with **KiCad 9+**. Open the file in KiCad to add mounting holes, USB connector, microcontroller, and other components.
 
 ## Troubleshooting
 
+### Missing VIA JSON Export
+
 **"Download VIA JSON" option is missing** — This is a separate export from **Import & Export**. For PCB generation, you only need matrix coordinates on the keys, not a full VIA metadata block.
 
+### Missing Keys in Output
+
 **Keys are missing from the generated PCB** — Only keys with valid matrix coordinates (`row,col` in the top-left label) are included. Use [Add Switch Matrix Coordinates](./layout-editor#add-switch-matrix-coordinates) to assign coordinates to all keys, then verify none are missing.
+
+### Service Unavailability
 
 **The PCB worker is unavailable** — The generator uses a remote server. If requests fail, try again after a few minutes. Your layout data is not lost — regenerate from the same layout.
 

@@ -61,7 +61,9 @@ See [PCB Generator](./pcb-generator) for full details.
 
 ## The Unit System
 
-All key positions and sizes in kle-ng are expressed in **U** (keyboard units). One U is the width of a standard alphanumeric key (for example, `A`, `S`, `D`). Common key sizes:
+All key positions and sizes in kle-ng are expressed in **U** (keyboard units). One U is the width of a standard alphanumeric key (for example, `A`, `S`, `D`).
+
+### Common Key Sizes
 
 | Size  | Example keys                      |
 | ----- | --------------------------------- |
@@ -71,20 +73,26 @@ All key positions and sizes in kle-ng are expressed in **U** (keyboard units). O
 | 2U    | Numpad `0`, some `Backspace` keys |
 | 6.25U | Standard spacebar                 |
 
+### Physical Spacing
+
 The physical size of 1U is **19.05 mm** by default (Cherry MX standard). You can change the mm/U ratio in the **Keyboard Metadata** panel if your layout uses a different switch pitch (for example, Kailh Choc low-profile at 18mm). This is important when using kle-ng's plate or PCB generators.
 
 ## Quick Start
 
+### Starting Out
+
 1. **New layout** — The editor starts with a sample layout. Use the toolbar to import an existing layout or start editing.
 2. **Select keys** — Click a key on the canvas to select it. Click and drag to select multiple keys.
 3. **Edit properties** — With a key selected, adjust its properties (size, color, labels) in the **Key Properties** panel.
+
+### Saving Your Work
 
 4. **Undo** — Press <kbd>Ctrl</kbd>+<kbd>Z</kbd> to undo. The editor maintains up to 50 undo steps.
 5. **Export** — Click **Export** in the toolbar to download your layout in the desired format.
 
 ## Common Workflows
 
-### Design a layout from scratch
+### Design a Layout from Scratch
 
 1. The editor opens with a sample layout. To start fresh, select all keys with <kbd>Ctrl</kbd>+<kbd>A</kbd> and delete them with <kbd>Del</kbd>.
 2. Press <kbd>A</kbd> to add a key. A 1U key appears at position (0, 0).
@@ -92,14 +100,14 @@ The physical size of 1U is **19.05 mm** by default (Cherry MX standard). You can
 4. Continue adding keys and arranging them. Use dedicated tools from right side toolbar to apply rotations or to duplicate symmetric halves of split layouts.
 5. Export as KLE JSON to save your work.
 
-### Edit an existing layout
+### Edit an Existing Layout
 
 1. Click **Import** in the toolbar and choose **From File**, or drag a JSON file onto the canvas.
 2. Select keys to modify their labels, colors, or dimensions.
 3. Use **Extra Tools → Add Switch Matrix Coordinates** if you need VIA matrix assignments.
 4. Export in the format you need.
 
-### Generate a plate for manufacturing
+### Generate a Plate for Manufacturing
 
 1. Complete your layout design and verify key positions.
 2. Open the **Plate Generator** panel and configure switch type and outline.

@@ -35,6 +35,8 @@ You can edit the current theme directly in the JSON editor within the Theme Tool
 
 Each rule can have a `matchers` string that determines which keys it applies to. The `?` button in the panel shows a quick reference.
 
+### Matcher Types
+
 | Category           | Syntax                                                                                  |
 | ------------------ | --------------------------------------------------------------------------------------- |
 | Numeric properties | `width`, `height`, `x`, `y`, `rotation` with operators `>`, `>=`, `<`, `<=`, `==`, `!=` |
@@ -42,7 +44,7 @@ Each rule can have a `matchers` string that determines which keys it applies to.
 | Label check        | `label == "Esc"`, `label[0] matches "^F\d+$"`, `label contains "Shift"`                 |
 | Logic              | `and`, `or`, `not`, `( )`                                                               |
 
-**Examples:**
+### Matcher Examples
 
 ```
 width >= 1.5

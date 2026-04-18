@@ -5,7 +5,7 @@ The **Key Properties** panel is enabled whenever one or more keys are selected. 
 <img src="/key-properties-panel-light.png" class="docs-screenshot light-only" alt="Key Properties panel" />
 <img src="/key-properties-panel-dark.png" class="docs-screenshot dark-only" alt="Key Properties panel" />
 
-### Position & Rotation
+## Position & Rotation
 
 | Field                   | Description                                                       |
 | ----------------------- | ----------------------------------------------------------------- |
@@ -14,11 +14,15 @@ The **Key Properties** panel is enabled whenever one or more keys are selected. 
 | **Rotation**            | Rotation angle in degrees. Positive values rotate clockwise       |
 | **Rotation Origin X/Y** | The point around which the key rotates, in absolute U coordinates |
 
+### Rotation Origin Modes
+
 **Absolute vs. Relative rotation origin:** Use the **A/R** toggle to switch between absolute (default) and relative rotation origin modes. In relative mode, the X/Y offsets are measured from the key's own top-left corner rather than from the canvas origin.
 
-**Advanced Position Mode:** Click the **Advanced** button to expose secondary position and size fields (X2, Y2, Width2, Height2). These define a second rectangular region combined with the primary one to produce non-rectangular key shapes such as ISO Enter and Big-Ass Enter. Most users do not need to use these directly.
+### Advanced Position Mode
 
-### Labels
+Click the **Advanced** button to expose secondary position and size fields (X2, Y2, Width2, Height2). These define a second rectangular region combined with the primary one to produce non-rectangular key shapes such as ISO Enter and Big-Ass Enter. Most users do not need to use these directly.
+
+## Labels
 
 Each key has up to **12 label positions**: 9 positions on the **top face** of the keycap (the part you see when looking down) and 3 positions on the **front face** (the vertical edge facing you when typing).
 
@@ -32,17 +36,19 @@ The 9 top-label positions map to a 3×3 grid:
 
 Front labels appear on the front face of the key, useful for representing secondary or shine-through legends.
 
+### Label Colors
+
 Each label position has an independent **color picker** next to the input field. The color applies only to that label position. The global **Text Color** field sets a default color for all labels that don't have a per-label color override.
 
 Use **Clear all** to remove all labels at once from either the top or front face.
 
-### Text Size
+## Text Size
 
 **Default Text Size** applies to all labels on the selected key(s) that don't have a per-label size set. Values range from 1 (smallest) to 9 (largest).
 
 **Per-Label Text Size** lets you set individual sizes for each label position using the same 3×3 grid layout. Leave a position empty to inherit the default size.
 
-### Key Options
+## Key Options
 
 | Option             | Description                                                                                                                  |
 | ------------------ | ---------------------------------------------------------------------------------------------------------------------------- |
@@ -52,16 +58,16 @@ Use **Clear all** to remove all labels at once from either the top or front face
 | **Decal**          | Marks the key as a decorative element only — no switch cutout is generated in the plate                                      |
 | **Rotary Encoder** | Marks the key as a rotary encoder. Height cannot be edited for encoders                                                      |
 
-### Colors
+## Colors
 
 - **Key Color** — Background color of the keycap
 - **Text Color** — Default color for all labels on this key
 
 Both fields accept hex color values and provide a color picker. Type directly in the text field or click the color swatch.
 
-::: info
+:::: info
 The **Key Color** value represents the color of the **shaded part** (sides/border) of the keycap. The top face color is not configurable directly — it is derived automatically via a color transformation (brightening) applied to the Key Color. To convert between the stored key color and the rendered key-top color, use the **Color Calculator** available in the [Theme Tools panel](./color-themes#color-calculator).
-:::
+::::
 
 ## Image and SVG Labels
 
@@ -128,8 +134,6 @@ Key labels support embedding images and SVG graphics. Images align to the inner 
 ## Manufacturing Properties {#switch-orientation}
 
 Manufacturing properties control how switches and stabilizers are physically mounted. These settings are used by the [Plate Generator](./plate-generator) and [PCB Generator](./pcb-generator).
-
-### What are Manufacturing Properties?
 
 The **Switch orientation** and **Stabilizer orientation** properties allow you to define the mounting orientation of physical switches and their stabilizers.
 

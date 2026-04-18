@@ -39,9 +39,13 @@ If you already have matrix coordinates (from a QMK or VIA import), they will app
 
 To import a VIA layout file (e.g., from the [VIA keyboards repository](https://github.com/the-via/keyboards)):
 
+### Steps
+
 1. Click the **Import** button in the toolbar
 2. Select **From File** and choose a VIA JSON file (or use **From URL** with a direct link)
 3. The layout will be displayed and VIA metadata will appear in the **VIA Metadata** field of the **Keyboard Metadata** panel
+
+### Format Conversion
 
 On import, kle-ng converts the VIA format to KLE format and preserves the VIA-specific metadata in a `_kleng_via_data` field within the KLE JSON, maintaining full KLE compatibility.
 
@@ -49,8 +53,12 @@ On import, kle-ng converts the VIA format to KLE format and preserves the VIA-sp
 
 Layouts that contain VIA metadata can be exported back to VIA format:
 
+### Steps
+
 1. Click the **Export** button in the toolbar
 2. Select **Download VIA JSON**
+
+### Availability
 
 ::: info
 The **Download VIA JSON** option is only available when VIA metadata is present in the layout.

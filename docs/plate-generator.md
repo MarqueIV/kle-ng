@@ -36,7 +36,7 @@ If specific keys need a different switch or stabilizer orientation (e.g., rotate
 
 Configure the shape and size of switch cutouts.
 
-**Supported switch types:**
+### Supported Switch Types
 
 - Cherry MX
 - Alps
@@ -54,7 +54,7 @@ Kerf is the total width of material removed by the cutting tool (e.g., the laser
 
 This is an **advanced** option and can often be left at 0. Negative values expand cutouts, which is useful for small adjustments in 3D printing.
 
-### Merge Cutouts {#stabilizer-settings}
+### Merging Cutouts {#stabilizer-settings}
 
 Combines overlapping shapes into single paths. Useful when stabilizer cutouts overlap with switch cutouts.
 
@@ -76,7 +76,7 @@ Add holes at arbitrary positions using keyboard units (U). The reference positio
 
 Generate a border around the key cluster.
 
-### Outline Type
+### Outline Types
 
 | Type            | Description                                                                      |
 | --------------- | -------------------------------------------------------------------------------- |
@@ -86,7 +86,7 @@ Generate a border around the key cluster.
 
 The **Tight** outline is useful for non-rectangular layouts or split keyboards. **Ghost keys** (keys with the _Ghost_ property enabled) are included in the hull calculation without producing switch cutouts — place them at the edges of the layout to fine-tune the outline shape.
 
-### Outline Settings
+### Configuring the Outline
 
 | Setting                | Description                                                                                                                        |
 | ---------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
@@ -103,7 +103,7 @@ The **JSON** tab provides direct access to plate settings as formatted JSON. Thi
 - Share or version-control configurations as files
 - Build or modify settings programmatically
 
-### Editor Interface
+### Using the JSON Editor
 
 The JSON editor displays the current settings in real-time. Use it to:
 
@@ -113,7 +113,7 @@ The JSON editor displays the current settings in real-time. Use it to:
 - **Upload** — Load a previously saved `plate-settings.json` file. If valid JSON is provided, it applies immediately; if there are syntax errors, the editor loads the file so you can fix it
 - **Resize** — Drag the handle below the editor to adjust its height
 
-A status bar at the bottom shows:
+The status bar at the bottom shows:
 
 - `In sync` when the editor matches applied settings
 - `Modified — press Apply or Ctrl+Enter to apply` when unsaved changes exist
@@ -186,11 +186,19 @@ Ghost keys appear as faint transparent rectangles on the canvas so they remain v
 
 ## Troubleshooting
 
+### Cutouts at Wrong Positions
+
 **Cutouts appear at wrong positions** — Verify that your layout uses the correct mm/U spacing in **Keyboard Metadata**. Cherry MX standard is 19.05 mm/U. Kailh Choc is 18 mm/U. A mismatch here causes cutouts to be placed at wrong physical distances.
+
+### Stabilizer Orientation Issues
 
 **Stabilizer cutout is the wrong orientation** — Set the **Stabilizer orientation** on individual keys in **Key Properties**. Values must be a multiple of 90°. See [Manufacturing Properties](./key-properties#switch-orientation) for guidance.
 
+### Outline Coverage
+
 **Outline doesn't wrap closely enough** — Switch to the **Tight** outline type. Use ghost keys to extend coverage to areas the key cluster doesn't reach.
+
+### Kerf Settings
 
 **Kerf value to use** — 0 is correct for many laser cutters where you want to program exact dimensions. Ask your cutting service for the actual kerf (typically 0.1–0.5 mm for laser cutting). Use negative kerf to expand cutouts (sometimes useful for FDM 3D printing where plastic shrinks slightly).
 

@@ -92,6 +92,8 @@ For precise movement use the **Move Exactly** tool (<kbd>Shift</kbd>+<kbd>M</kbd
 
 The tool allows movement to any position, not limited to the step size. It also supports movement in **millimeters** by specifying the spacing (mm per U). The default spacing is **19.05 mm/U** for both X and Y axes, which is standard for Cherry MX style switches.
 
+### Using the Tool
+
 <div style="display:flex;gap:1.5rem;align-items:flex-start">
 <img src="/move-with-tool.gif" alt="Move exactly tool animation" style="flex:2;min-width:0;max-width:66%" />
 <img src="/move-exactly-mm-light.png" alt="Move exactly mm panel" class="docs-screenshot light-only" style="flex:1;min-width:0;max-width:34%" />
@@ -102,11 +104,15 @@ The tool allows movement to any position, not limited to the step size. It also 
 
 Rotate selected keys around anchor points (key corners and centers) using the **Rotate Selection** tool (<kbd>Shift</kbd>+<kbd>R</kbd>).
 
+### Using the Tool
+
 ![Rotate tool animation](/rotate-tool.gif)
 
 ## Mirror Tool
 
 Create mirrored copies of selected keys with the **Mirror Tool**. Choose a mirror axis position — the axis snaps to multiples of the step size. Supports both vertical (default) and horizontal mirroring from the tool dropdown.
+
+### Using the Tool
 
 ![Mirror tool animation](/mirror-tool.gif)
 
@@ -182,8 +188,6 @@ The **Theme Tools** panel applies color themes to the entire layout in bulk. Ope
 <img src="/theme-tools-modal-light.png" class="light-only" alt="Theme tools modal" />
 <img src="/theme-tools-modal-dark.png" class="dark-only" alt="Theme tools modal" />
 
-#### Selecting a theme
-
 Choose from several built-in themes in the dropdown:
 
 | Theme          | Description                                                               |
@@ -192,8 +196,6 @@ Choose from several built-in themes in the dropdown:
 | Dark           | Dark gray keys on a near-black background                                 |
 | VIA            | Light gray alphas with darker modifiers, similar to VIA's default display |
 | Gruvbox (dark) | Gruvbox color palette with dark background                                |
-
-#### Custom themes
 
 Themes are defined as JSON objects with named rules and matcher expressions that target specific keys. You can edit the current theme directly in the JSON editor within the panel, or load and save theme files using **Load JSON** and **Save JSON**.
 

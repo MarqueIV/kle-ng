@@ -24,11 +24,15 @@ All other CSS expressions are ignored and have no effect.
 
 ## Adding a Custom Font
 
+### Adding a Font from Google Fonts
+
 1. Open the **Keyboard Metadata** panel
 2. In the **CSS** field, add an `@import` statement with your Google Fonts URL
 3. The font name is automatically extracted and applied to canvas rendering
 
-**Example — adding Noto Sans JP:**
+### Example
+
+**Adding Noto Sans JP:**
 
 ```css
 @import url(https://fonts.googleapis.com/css2?family=Noto+Sans+JP);
@@ -53,9 +57,15 @@ The font loads from Google's servers when the layout is opened. If the browser c
 
 ## Troubleshooting
 
+### Font Not Appearing
+
 **Font doesn't appear after adding the CSS** — The font is applied when the CSS field loses focus (on blur). Click outside the CSS text area to trigger the load. A notification appears when the font is applied successfully.
 
+### System Font Still Showing
+
 **Labels still show the system font** — Check that the `@import` URL is correct and that the family name in the URL matches exactly. If you typed the font name manually, ensure capitalization and spacing match the Google Fonts URL format (e.g., `Noto+Sans+JP` not `Noto Sans JP`).
+
+### Mixed Fonts
 
 **Different fonts for different keys are not possible** — kle-ng applies one font globally. If you need mixed scripts (e.g., Latin and Japanese on the same layout), choose a font that supports both character ranges, such as Noto Sans.
 

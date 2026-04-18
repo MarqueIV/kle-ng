@@ -14,6 +14,8 @@ Different key profiles (keycap shapes/appearance) are not supported. kle-ng uses
 
 The original editor supported arbitrary HTML content in key labels with full CSS customization. kle-ng supports only a small subset of HTML tags:
 
+### Supported HTML Tags
+
 | Supported              | Not Supported                                        |
 | ---------------------- | ---------------------------------------------------- |
 | `<br>`                 | `<h1>`–`<h6>` (use text size key properties instead) |
@@ -42,6 +44,8 @@ The `'ta'` property follows the same semantics as the text size property `'fa'`.
 
 The original Keyboard Layout Editor supported two sets of internal icons usable as labels:
 
+### Unsupported Icon Formats
+
 - **Font Awesome Icons** (v4.4.0) — e.g., `<i class='fa fa-github'></i>`
 - **Keyboard-Layout-Editor Icons** — e.g., `<i class='kb kb-logo-windows-8'></i>`
 
@@ -55,8 +59,22 @@ These icon formats are **not supported** in kle-ng. This method limits the icon 
 
 If you have existing layouts from the original KLE, here is what to expect when opening them in kle-ng:
 
-- **Standard alphanumeric layouts** — Import and render correctly with no changes needed.
-- **Layouts using Font Awesome or KLE icons** — The icon tags (`<i class='fa ...'/>`, `<i class='kb ...'/>`) will appear as literal text in the label. Replace them with [inline SVG labels](./key-properties#image-and-svg-labels) to restore the visual.
-- **Layouts relying on heavy CSS customization** — Custom colors, borders, and shadows defined in the `css` field will not take effect. Only `@import` font rules are processed.
-- **Layouts using heading tags** (`<h1>` through `<h6>`) — These render as plain text. Use the **Default Text Size** or per-label text size controls in **Key Properties** to achieve size variation.
-- **Layouts with key profiles** — Profile names are preserved in the JSON but not rendered. All keys use kle-ng's default keycap style.
+### Compatible Layouts
+
+**Standard alphanumeric layouts** — Import and render correctly with no changes needed.
+
+### Layouts with Icons
+
+**Layouts using Font Awesome or KLE icons** — The icon tags (`<i class='fa ...'/>`, `<i class='kb ...'/>`) will appear as literal text in the label. Replace them with [inline SVG labels](./key-properties#image-and-svg-labels) to restore the visual.
+
+### Layouts with Custom CSS
+
+**Layouts relying on heavy CSS customization** — Custom colors, borders, and shadows defined in the `css` field will not take effect. Only `@import` font rules are processed.
+
+### Layouts with Heading Tags
+
+**Layouts using heading tags** (`<h1>` through `<h6>`) — These render as plain text. Use the **Default Text Size** or per-label text size controls in **Key Properties** to achieve size variation.
+
+### Layouts with Key Profiles
+
+**Layouts with key profiles** — Profile names are preserved in the JSON but not rendered. All keys use kle-ng's default keycap style.

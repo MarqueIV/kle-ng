@@ -182,12 +182,14 @@ kle-ng supports multiple import methods:
 
 Click the **Import** button in the toolbar and select:
 
-- **From File** — Browse for a file on your computer. Supported formats: JSON (KLE, VIA/Vial, QMK), PNG (with embedded layout data), Ergogen YAML
-- **From URL** — Enter any of the supported URL formats:
-  - Direct JSON URL (any publicly accessible JSON file)
-  - GitHub Gist URL
-  - Ergogen share link (`https://ergogen.xyz/#...`)
-  - Existing kle-ng share link
+**From File** — Browse for a file on your computer. Supported formats: JSON (KLE, VIA/Vial, QMK), PNG (with embedded layout data), Ergogen YAML
+
+**From URL** — Enter any of the supported URL formats:
+
+- Direct JSON URL (any publicly accessible JSON file)
+- GitHub Gist URL
+- Ergogen share link (`https://ergogen.xyz/#...`)
+- Existing kle-ng share link
 
 ### Drag and Drop
 
@@ -226,6 +228,8 @@ GitHub API has rate limits for unauthenticated requests. If you encounter rate l
 
 Click the **Export** button in the toolbar to access all export options:
 
+### Available Export Formats
+
 | Option            | Format        | Notes                                          |
 | ----------------- | ------------- | ---------------------------------------------- |
 | Download JSON     | KLE JSON      | Standard KLE format                            |
@@ -237,10 +241,18 @@ Click the **Export** button in the toolbar to access all export options:
 
 ## Troubleshooting Import/Export Issues
 
+### JSON Parse Errors
+
 **Import fails with a parse error** — Verify the file is valid JSON. Common causes: trailing commas, single quotes instead of double quotes, or a file saved with non-JSON content. Try opening the file in a text editor to inspect it.
+
+### GitHub Gist Issues
 
 **GitHub Gist import fails** — GitHub API rate limits unauthenticated requests to 60 per hour per IP. If you hit the limit, wait about an hour before trying again. Alternatively, download the raw JSON and import **From File**.
 
+### Ergogen Compatibility
+
 **Ergogen import produces unexpected positions** — Ergogen's coordinate origin and key rotation conventions differ from KLE. kle-ng aims to preserve positions faithfully, but always cross-check the result against Ergogen's own preview before using the output for manufacturing.
+
+### VIA Export Unavailable
 
 **"Download VIA JSON" is greyed out** — VIA export is only available after importing a VIA file or manually adding VIA metadata in the **Keyboard Metadata** panel. See [VIA & Vial Format](./via-and-metadata) for details.
