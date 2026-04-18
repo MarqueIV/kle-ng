@@ -205,3 +205,7 @@ Ghost keys appear as faint transparent rectangles on the canvas so they remain v
 ## Credits
 
 Based on [ai03 Plate Generator](https://kbplate.ai03.com/) and [swillkb Plate & Case Builder](http://builder.swillkb.com/).
+
+## External References
+
+- [3D printed keyboard prototype with FreeCAD](https://adamws.github.io/3d-printed-keyboard-prototype-with-freecad/)
