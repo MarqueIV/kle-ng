@@ -42,9 +42,18 @@ The easiest way to assign matrix coordinates is to use [Add Switch Matrix Coordi
 7. Once complete, preview renders will be displayed
 8. Click **Download ZIP** to save the archive, or **New Task** to start over
 
-::: warning
+:::: warning
 The preview does not support displaying traces for **Routing** option enabled.
-:::
+::::
+
+:::: warning Automatic Routing Limitations
+The automatic router attempts to connect switches to diodes using a basic algorithm that finds the shortest path with 45° angles. **Important limitations:**
+
+- **Incomplete routing** — The router may leave connections unrouted if it encounters layout obstacles. It does not try alternative paths; it simply skips difficult connections.
+- **DRC required** — Always run KiCad's Design Rule Check after generation to identify unrouted nets.
+- **Manual finishing needed** — The generated PCB is a starting point and requires manual review and completion in KiCad.
+
+::::
 
 ## After Downloading the PCB
 
