@@ -27,7 +27,11 @@ If you only need a visual layout for documentation or plate generation, you do n
 
 Matrix coordinates identify where each physical switch connects in the keyboard's electrical matrix. Each coordinate is written as `row,col` (e.g., `0,0`, `0,1`, `1,0`).
 
-The easiest way to assign coordinates is **Extra Tools → Add Switch Matrix Coordinates**. This tool lets you annotate your layout automatically or draw rows and columns manually. See [Add Switch Matrix Coordinates](./layout-editor#extra-tools) for detailed instructions.
+The easiest way to assign coordinates is **Extra Tools → Add Switch Matrix Coordinates**. This tool lets you annotate your layout automatically or draw rows and columns manually. See [Add Switch Matrix Coordinates](./layout-editor#add-switch-matrix-coordinates) for detailed instructions.
+
+::: warning
+Automatic annotations may not produce correct results for certain keyboard layouts, particularly **ergonomic layouts with significant column splay**. Manual correction may be required for complex designs. See [issue #51](https://github.com/adamws/kle-ng/issues/51) for details.
+:::
 
 If you already have matrix coordinates (from a QMK or VIA import), they will appear in the top-left label position of each key.
 

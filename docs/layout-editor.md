@@ -147,6 +147,10 @@ This tool assigns VIA-style `row,column` labels (e.g., `0,0`) to each key, enabl
 
 The tool provides an **Annotate Automatically** option that assigns coordinates intelligently based on key positions. You can also draw rows and columns manually:
 
+::: warning
+Automatic annotations may not produce correct results for certain keyboard layouts. **Ergonomic layouts with significant column splay** (angled columns) are particularly affected and may require manual correction of row/column assignments. Standard rectangular layouts typically produce good results. See [issue #51](https://github.com/adamws/kle-ng/issues/51) for details.
+:::
+
 |                   Draw Rows                   |                     Draw Columns                     |                      Remove                       |
 | :-------------------------------------------: | :--------------------------------------------------: | :-----------------------------------------------: |
 | ![Draw rows](/manual-annotation-draw-row.gif) | ![Draw columns](/manual-annotation-draw-columns.gif) | ![Remove](/manual-annotation-remove-elements.gif) |
