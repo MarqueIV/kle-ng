@@ -21,6 +21,7 @@ const fileInputRef = ref<HTMLInputElement>()
 
 let editorView: EditorView | null = null
 let themeObserver: MutationObserver | null = null
+let isProgrammaticUpdate = false
 
 // ---------------------------------------------------------------------------
 // Editor state
@@ -81,7 +82,11 @@ function validate(text: string): void {
 function setEditorContent(text: string): void {
   getCodeMirror()
     .then((cm) => {
-      if (editorView) cm.updateContent(editorView, text)
+      if (editorView) {
+        isProgrammaticUpdate = true
+        cm.updateContent(editorView, text)
+        isProgrammaticUpdate = false
+      }
     })
     .catch((err) => console.error('Failed to update plate JSON view:', err))
 }
@@ -90,6 +95,7 @@ function setEditorContent(text: string): void {
 // Editor callbacks
 // ---------------------------------------------------------------------------
 function onEditorChange(text: string): void {
+  if (isProgrammaticUpdate) return
   editorText.value = text
   isDirty.value = true
   validate(text)
