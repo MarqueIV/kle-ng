@@ -47,8 +47,16 @@
       <h6 class="help-section-title">Generating a PCB</h6>
       <div class="help-content">
         <img
+          v-show="!isDarkTheme"
           align="right"
           src="/pcb-generator-footprints-preview.png"
+          alt="Example of footprint preview in PCB Generator"
+          class="help-image"
+        />
+        <img
+          v-show="isDarkTheme"
+          align="right"
+          src="/pcb-generator-footprints-preview-dark.png"
           alt="Example of footprint preview in PCB Generator"
           class="help-image"
         />
@@ -99,7 +107,9 @@
 </template>
 
 <script setup lang="ts">
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import BaseHelpModal from './BaseHelpModal.vue'
+import { useTheme } from '@/composables/useTheme'
 
 import BiExclamationTriangle from 'bootstrap-icons/icons/exclamation-triangle.svg'
 import BiLightbulb from 'bootstrap-icons/icons/lightbulb.svg'
@@ -114,6 +124,31 @@ interface Emits {
 
 defineProps<Props>()
 const emit = defineEmits<Emits>()
+
+const { theme } = useTheme()
+const systemDark = ref(
+  typeof window !== 'undefined' && window.matchMedia('(prefers-color-scheme: dark)').matches,
+)
+
+let mq: MediaQueryList | null = null
+const onSystemChange = (e: MediaQueryListEvent) => {
+  systemDark.value = e.matches
+}
+
+onMounted(() => {
+  mq = window.matchMedia('(prefers-color-scheme: dark)')
+  mq.addEventListener('change', onSystemChange)
+})
+
+onUnmounted(() => {
+  mq?.removeEventListener('change', onSystemChange)
+})
+
+const isDarkTheme = computed(() => {
+  if (theme.value === 'dark') return true
+  if (theme.value === 'light') return false
+  return systemDark.value
+})
 
 const close = () => {
   emit('close')
