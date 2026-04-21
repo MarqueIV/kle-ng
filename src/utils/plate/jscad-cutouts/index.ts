@@ -28,3 +28,11 @@ export {
   type StabType,
 } from './stabilizer-cutouts'
 export { createCircleHoleGeom, buildCircleHoleScript } from './hole-cutouts'
+export {
+  createCherryMxSnapNotchCuts,
+  createStabBacksideCut,
+  STAB_BACKSIDE_OVERHANGS,
+  type StabBacksideOverhang,
+  type BacksideCut3D,
+  type Geom3,
+} from './backside-features'

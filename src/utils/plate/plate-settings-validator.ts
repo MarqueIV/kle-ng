@@ -1,5 +1,9 @@
-import { CUTOUT_TYPE_VALUES, STABILIZER_TYPE_VALUES } from '@/types/plate'
-import type { CutoutType, StabilizerType } from '@/types/plate'
+import {
+  CUTOUT_TYPE_VALUES,
+  STABILIZER_TYPE_VALUES,
+  BACKSIDE_FEATURE_TYPE_VALUES,
+} from '@/types/plate'
+import type { CutoutType, StabilizerType, BacksideFeatureType } from '@/types/plate'
 import type { PlateSettingsJson } from './plate-settings-serializer'
 
 export type ValidationResult =
@@ -40,7 +44,10 @@ const KNOWN_HOLES_KEYS = new Set(['mounting', 'custom'])
 const KNOWN_MOUNTING_KEYS = new Set(['diameter', 'edgeDistance'])
 const KNOWN_HOLE_KEYS = new Set(['diameter', 'offsetX', 'offsetY'])
 
-const KNOWN_TOP_LEVEL_KEYS = new Set(['cutout', 'thickness', 'outline', 'holes'])
+const KNOWN_THREED_KEYS = new Set(['backsideFeatures', 'backsideDepth'])
+const KNOWN_BACKSIDE_FEATURE_KEYS = new Set(['type'])
+
+const KNOWN_TOP_LEVEL_KEYS = new Set(['cutout', 'thickness', 'outline', 'holes', 'threed'])
 
 function isFiniteNumber(v: unknown): v is number {
   return typeof v === 'number' && isFinite(v)
@@ -242,6 +249,48 @@ export function validatePlateSettingsJson(text: string): ValidationResult {
 
     for (const key of Object.keys(holes)) {
       if (!KNOWN_HOLES_KEYS.has(key)) warnings.push(`Unknown field: holes.${key}`)
+    }
+  }
+
+  // Validate threed sub-object
+  if ('threed' in obj) {
+    if (obj.threed === null || typeof obj.threed !== 'object' || Array.isArray(obj.threed)) {
+      return { valid: false, error: "'threed' must be an object" }
+    }
+    const threed = obj.threed as Record<string, unknown>
+
+    if ('backsideFeatures' in threed) {
+      if (!Array.isArray(threed.backsideFeatures)) {
+        return { valid: false, error: "'threed.backsideFeatures' must be an array" }
+      }
+      for (let i = 0; i < threed.backsideFeatures.length; i++) {
+        const feat = threed.backsideFeatures[i]
+        if (feat === null || typeof feat !== 'object' || Array.isArray(feat)) {
+          return { valid: false, error: `'threed.backsideFeatures[${i}]' must be an object` }
+        }
+        const f = feat as Record<string, unknown>
+        if (!('type' in f)) {
+          return { valid: false, error: `'threed.backsideFeatures[${i}].type' is required` }
+        }
+        if (!BACKSIDE_FEATURE_TYPE_VALUES.includes(f.type as BacksideFeatureType)) {
+          return {
+            valid: false,
+            error: `Invalid value for 'threed.backsideFeatures[${i}].type': ${JSON.stringify(f.type)}`,
+          }
+        }
+        for (const key of Object.keys(f)) {
+          if (!KNOWN_BACKSIDE_FEATURE_KEYS.has(key))
+            warnings.push(`Unknown field: threed.backsideFeatures[${i}].${key}`)
+        }
+      }
+    }
+
+    if ('backsideDepth' in threed && !isFiniteNumber(threed.backsideDepth)) {
+      return { valid: false, error: "'threed.backsideDepth' must be a finite number" }
+    }
+
+    for (const key of Object.keys(threed)) {
+      if (!KNOWN_THREED_KEYS.has(key)) warnings.push(`Unknown field: threed.${key}`)
     }
   }
 

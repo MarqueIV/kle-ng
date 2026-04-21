@@ -17,6 +17,21 @@ export const CUTOUT_TYPE_VALUES = [
 export type CutoutType = (typeof CUTOUT_TYPE_VALUES)[number]
 
 /**
+ * Available backside feature types for 3D export.
+ */
+export const BACKSIDE_FEATURE_TYPE_VALUES = ['cherry-mx-snap-notch'] as const
+export type BacksideFeatureType = (typeof BACKSIDE_FEATURE_TYPE_VALUES)[number]
+
+/**
+ * A single backside (back-face) feature applied during 3D generation.
+ */
+export interface BacksideFeature {
+  type: BacksideFeatureType
+  /** Whether this feature is active */
+  enabled: boolean
+}
+
+/**
  * Available stabilizer cutout types.
  */
 export const STABILIZER_TYPE_VALUES = [
@@ -116,6 +131,10 @@ export interface PlateSettings {
   mountingHoles: MountingHolesSettings
   /** Custom holes settings */
   customHoles: CustomHolesSettings
+  /** Backside (back-face) features for 3D export */
+  backsideFeatures: BacksideFeature[]
+  /** Cut depth in mm from the back face for all backside features (must be less than plate thickness) */
+  backsideDepth: number
 }
 
 /**

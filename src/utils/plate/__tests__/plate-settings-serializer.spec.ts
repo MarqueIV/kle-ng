@@ -28,6 +28,8 @@ const baseDefaults: PlateSettings = {
   },
   mountingHoles: { enabled: false, diameter: 3, edgeDistance: 3 },
   customHoles: { enabled: false, holes: [] },
+  backsideFeatures: [{ type: 'cherry-mx-snap-notch', enabled: false }],
+  backsideDepth: 1.0,
 }
 
 function makeSettings(overrides: Partial<PlateSettings> = {}): PlateSettings {

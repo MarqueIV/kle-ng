@@ -1,6 +1,11 @@
 import { defineStore } from 'pinia'
 import { ref, watch } from 'vue'
-import type { PlateSettings, GenerationState, PlateGenerationResult } from '@/types/plate'
+import type {
+  PlateSettings,
+  GenerationState,
+  PlateGenerationResult,
+  BacksideFeature,
+} from '@/types/plate'
 import {
   validateFilletRadius,
   validateStabilizerFilletRadius,
@@ -50,6 +55,8 @@ const defaultSettings: PlateSettings = {
     enabled: false,
     holes: [],
   },
+  backsideFeatures: [{ type: 'cherry-mx-snap-notch', enabled: false } satisfies BacksideFeature],
+  backsideDepth: 1.0,
 }
 
 export const usePlateGeneratorStore = defineStore('plateGenerator', () => {
@@ -112,6 +119,8 @@ export const usePlateGeneratorStore = defineStore('plateGenerator', () => {
       outline: settings.value.outline,
       mountingHoles: settings.value.mountingHoles,
       customHoles: settings.value.customHoles,
+      backsideFeatures: settings.value.backsideFeatures,
+      backsideDepth: settings.value.backsideDepth,
       spacingX,
       spacingY,
     })

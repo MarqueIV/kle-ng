@@ -17,6 +17,7 @@ import type {
   OutlineSettings,
   MountingHolesSettings,
   CustomHolesSettings,
+  BacksideFeature,
 } from '@/types/plate'
 import { getMakerJs } from '@/utils/makerjs-loader'
 import { getKeyCenterMm } from '@/utils/keyboard-geometry'
@@ -30,6 +31,8 @@ import {
 } from './cutout-generator'
 import {
   type Geom2,
+  type Geom3,
+  type BacksideCut3D,
   placeGeom2,
   extractGeom2Points,
   fmt,
@@ -46,6 +49,9 @@ import {
   type StabType,
   createCircleHoleGeom,
   buildCircleHoleScript,
+  createCherryMxSnapNotchCuts,
+  createStabBacksideCut,
+  STAB_BACKSIDE_OVERHANGS,
 } from './jscad-cutouts'
 
 /**
@@ -80,6 +86,10 @@ export interface PlateBuilderOptions {
   customHoles?: CustomHolesSettings
   /** Plate thickness in mm for 3D export (default: 1.5) */
   thickness?: number
+  /** Backside (back-face) features applied during 3D generation only */
+  backsideFeatures?: BacksideFeature[]
+  /** Cut depth in mm from back face for all backside features (default: 1.0) */
+  backsideDepth?: number
 }
 
 /**
@@ -517,7 +527,12 @@ function outlineToGeom2(makerjs: typeof MakerJs, outlineModel: MakerJs.IModel): 
  * Build an ASCII STL string using pure @jscad/modeling v2 booleans.
  * No maker.js chain extraction — all geometry is pre-built as Geom2.
  */
-function buildStl(outlineGeom: Geom2, cutoutGeoms: Geom2[], thickness: number): string | undefined {
+function buildStl(
+  outlineGeom: Geom2,
+  cutoutGeoms: Geom2[],
+  thickness: number,
+  backsideCuts: Geom3[] = [],
+): string | undefined {
   const { extrudeLinear } = jscadModeling.extrusions
   const { subtract, union } = jscadModeling.booleans
 
@@ -527,7 +542,11 @@ function buildStl(outlineGeom: Geom2, cutoutGeoms: Geom2[], thickness: number): 
     plate2D = subtract(outlineGeom, allCutouts) as Geom2
   }
 
-  const solid = extrudeLinear({ height: thickness }, plate2D)
+  let solid = extrudeLinear({ height: thickness }, plate2D)
+  if (backsideCuts.length > 0) {
+    solid = subtract(solid, ...backsideCuts)
+  }
+
   const output = serializeStl({ binary: false }, solid)
   return Array.isArray(output) ? output.join('') : String(output)
 }
@@ -548,9 +567,17 @@ function buildJscadScript(
     stabilizerType: StabilizerType
     outlineScriptLines?: string[]
     registry?: ScriptShapeRegistry
+    backsideCuts?: BacksideCut3D[]
   },
 ): string {
-  const { thickness, cutoutType, stabilizerType, outlineScriptLines, registry } = options
+  const {
+    thickness,
+    cutoutType,
+    stabilizerType,
+    outlineScriptLines,
+    registry,
+    backsideCuts = [],
+  } = options
   const date = new Date().toISOString().split('T')[0]
 
   const registryLines = registry?.getDefinitionLines() ?? []
@@ -560,12 +587,14 @@ function buildJscadScript(
     ...(outlineNamedGeom.scriptLines ?? outlineScriptLines ?? []),
     ...registryLines,
     ...cutouts.flatMap((c) => c.scriptLines ?? []),
+    ...backsideCuts.flatMap((b) => b.scriptLines),
   ]
 
   const usesRectangle = allLines.some((l) => /\brectangle\(/.test(l))
   const usesRoundedRectangle = allLines.some((l) => /\broundedRectangle\(/.test(l))
   const usesCircle = allLines.some((l) => /\bcircle\(/.test(l))
   const usesPolygon = allLines.some((l) => /\bpolygon\(/.test(l))
+  const usesCuboid = allLines.some((l) => /\bcuboid\(/.test(l))
   const usesTranslate = allLines.some((l) => /\btranslate\(/.test(l))
   const usesRotateZ = allLines.some((l) => /\brotateZ\(/.test(l))
 
@@ -573,6 +602,7 @@ function buildJscadScript(
   if (usesRectangle && !primitiveNames.includes('rectangle')) primitiveNames.push('rectangle')
   if (usesRoundedRectangle) primitiveNames.push('roundedRectangle')
   if (usesCircle) primitiveNames.push('circle')
+  if (usesCuboid) primitiveNames.push('cuboid')
   if (!usesPolygon) {
     // polygon may not be used if no fallback extraction needed; still include for safety
   }
@@ -693,6 +723,15 @@ function buildJscadScript(
     lines.push(``)
   }
 
+  // Backside cuts (3D only)
+  if (backsideCuts.length > 0) {
+    lines.push(`// --- Backside features ---`)
+    for (const cut of backsideCuts) {
+      lines.push(...cut.scriptLines)
+    }
+    lines.push(``)
+  }
+
   // Assembly
   const outlineVar = outlineNamedGeom.varName
   lines.push(`// --- Assembly ---`)
@@ -707,8 +746,18 @@ function buildJscadScript(
     lines.push(`const plate2d = subtract(${outlineVar}, allCutouts)`)
   }
   lines.push(`const plate3d = extrudeLinear({ height: THICKNESS }, plate2d)`)
+  if (backsideCuts.length === 0) {
+    lines.push(`const finalPlate = plate3d`)
+  } else if (backsideCuts.length === 1) {
+    lines.push(`const finalPlate = subtract(plate3d, ${backsideCuts[0]!.varName})`)
+  } else {
+    lines.push(`const allBacksideCuts = union(`)
+    lines.push(`  ${backsideCuts.map((b) => b.varName).join(',\n  ')}`)
+    lines.push(`)`)
+    lines.push(`const finalPlate = subtract(plate3d, allBacksideCuts)`)
+  }
   lines.push(``)
-  lines.push(`const main = () => plate3d`)
+  lines.push(`const main = () => finalPlate`)
   lines.push(``)
   lines.push(`module.exports = { main }`)
 
@@ -742,6 +791,8 @@ export async function buildPlate(
     mountingHoles,
     customHoles,
     thickness = 1.5,
+    backsideFeatures = [],
+    backsideDepth = 1.0,
   } = options
 
   // Load maker.js
@@ -793,6 +844,7 @@ export async function buildPlate(
   // Create cutout models (maker.js — for SVG/DXF) and JSCAD native geoms (for STL/script)
   const cutoutModels: Record<string, MakerJs.IModel> = {}
   const namedGeoms: JscadNamedGeom[] = []
+  const stabBacksideCuts: BacksideCut3D[] = []
 
   for (let i = 0; i < cutoutPositions.length; i++) {
     const position = cutoutPositions[i]
@@ -926,6 +978,14 @@ export async function buildPlate(
       const stabGeomPair = createStabGeoms(stabilizerType as StabType, stabOpts)
       if (stabGeomPair) {
         const [leftGeom, rightGeom] = stabGeomPair
+
+        // Measure local bbox before placement for the backside clearance cut
+        const localUnion = jscadModeling.booleans.union(leftGeom, rightGeom) as Geom2
+        const localBbox = jscadModeling.measurements.measureBoundingBox(localUnion) as [
+          [number, number, number],
+          [number, number, number],
+        ]
+
         const placedLeft = placeGeom2(leftGeom, stabKeyCenterX, stabKeyCenterY, totalStabRotation)
         const placedRight = placeGeom2(rightGeom, stabKeyCenterX, stabKeyCenterY, totalStabRotation)
         const stabGeom = jscadModeling.booleans.union(placedLeft, placedRight) as Geom2
@@ -944,6 +1004,17 @@ export async function buildPlate(
           geom: stabGeom,
           scriptLines: stabScriptLines ?? undefined,
         })
+
+        const stabBacksideCut = createStabBacksideCut(
+          i,
+          stabKeyCenterX,
+          stabKeyCenterY,
+          totalStabRotation,
+          backsideDepth,
+          localBbox,
+          STAB_BACKSIDE_OVERHANGS[stabilizerType as StabType],
+        )
+        if (stabBacksideCut) stabBacksideCuts.push(stabBacksideCut)
       }
     }
   }
@@ -1189,11 +1260,35 @@ export async function buildPlate(
   let stlData: string | undefined
 
   if (outlineNamedGeom) {
+    // Build backside 3D cuts from enabled features + unconditional stab clearances
+    const backsideCuts: BacksideCut3D[] = [...stabBacksideCuts]
+    for (const feature of backsideFeatures) {
+      if (!feature.enabled) continue
+      if (feature.type === 'cherry-mx-snap-notch') {
+        for (let i = 0; i < cutoutPositions.length; i++) {
+          const position = cutoutPositions[i]
+          if (!position) continue
+          const keyCenterX = position.centerX + position.width / 2
+          const keyCenterY = position.centerY + position.height / 2
+          backsideCuts.push(
+            createCherryMxSnapNotchCuts(
+              i,
+              keyCenterX,
+              keyCenterY,
+              position.rotationAngle,
+              backsideDepth,
+            ),
+          )
+        }
+      }
+    }
+
     jscadScript = buildJscadScript(outlineNamedGeom, namedGeoms, {
       thickness,
       cutoutType,
       stabilizerType,
       registry: scriptShapeRegistry,
+      backsideCuts,
     })
 
     try {
@@ -1201,6 +1296,7 @@ export async function buildPlate(
         outlineNamedGeom.geom,
         namedGeoms.map((g) => g.geom),
         thickness,
+        backsideCuts.map((b) => b.geom),
       )
     } catch (err) {
       console.warn('STL generation failed:', err)

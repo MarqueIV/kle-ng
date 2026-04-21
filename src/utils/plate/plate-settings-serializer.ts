@@ -5,6 +5,8 @@ import type {
   CustomHolesSettings,
   CutoutType,
   StabilizerType,
+  BacksideFeatureType,
+  BacksideFeature,
 } from '@/types/plate'
 
 // ---------------------------------------------------------------------------
@@ -69,11 +71,23 @@ export type PlateSettingsJsonOutline =
   | PlateSettingsJsonOutlineRectangular
   | PlateSettingsJsonOutlineTight
 
+export interface PlateSettingsJsonBacksideFeature {
+  type: BacksideFeatureType
+}
+
+export interface PlateSettingsJsonThreed {
+  /** Enabled backside features (presence of a feature entry implies enabled: true) */
+  backsideFeatures?: PlateSettingsJsonBacksideFeature[]
+  /** Cut depth in mm from back face for all backside features */
+  backsideDepth?: number
+}
+
 export interface PlateSettingsJson {
   cutout?: PlateSettingsJsonCutout
   holes?: PlateSettingsJsonHoles
   outline?: PlateSettingsJsonOutline
   thickness?: number
+  threed?: PlateSettingsJsonThreed
 }
 
 // ---------------------------------------------------------------------------
@@ -141,7 +155,15 @@ export function serializePlateSettings(s: PlateSettings): PlateSettingsJson {
     outline = { outlineType: 'none' }
   }
 
-  const result: PlateSettingsJson = { cutout, outline, thickness: s.thickness }
+  // Threed section — always present so backsideDepth is persisted (stab clearances are
+  // unconditional and depend on this value regardless of whether a feature is enabled)
+  const enabledFeatures = s.backsideFeatures.filter((f) => f.enabled)
+  const threed: PlateSettingsJsonThreed = { backsideDepth: s.backsideDepth }
+  if (enabledFeatures.length > 0) {
+    threed.backsideFeatures = enabledFeatures.map((f) => ({ type: f.type }))
+  }
+
+  const result: PlateSettingsJson = { cutout, outline, thickness: s.thickness, threed }
   if (holes !== undefined) result.holes = holes
   return result
 }
@@ -204,6 +226,33 @@ export function deserializePlateSettings(
     })),
   }
 
+  // Backside features — merge JSON enabled features over the defaults list
+  const defaultFeatureMap = new Map<BacksideFeatureType, BacksideFeature>(
+    defaults.backsideFeatures.map((f) => [f.type, f]),
+  )
+  const jsonFeatureMap = new Map<BacksideFeatureType, PlateSettingsJsonBacksideFeature>(
+    (json.threed?.backsideFeatures ?? []).map((f) => [f.type, f]),
+  )
+  const backsideFeatures: BacksideFeature[] = defaults.backsideFeatures.map((def) => {
+    const fromJson = jsonFeatureMap.get(def.type)
+    if (fromJson) {
+      return { type: def.type, enabled: true }
+    }
+    return { ...def }
+  })
+  // Include any JSON features not present in defaults (forward compat)
+  for (const [type] of jsonFeatureMap) {
+    if (!defaultFeatureMap.has(type)) {
+      backsideFeatures.push({ type, enabled: true })
+    }
+  }
+  // Migration: old format stored depth per-feature; new format uses shared backsideDepth.
+  // If the new field is absent, use the first feature's depth as fallback.
+  const legacyFeatureDepth = (
+    json.threed?.backsideFeatures?.[0] as Record<string, unknown> | undefined
+  )?.depth as number | undefined
+  const backsideDepth = json.threed?.backsideDepth ?? legacyFeatureDepth ?? defaults.backsideDepth
+
   return {
     cutoutType: c?.switchType ?? defaults.cutoutType,
     stabilizerType: c?.stabilizerType ?? defaults.stabilizerType,
@@ -217,5 +266,7 @@ export function deserializePlateSettings(
     outline,
     mountingHoles,
     customHoles,
+    backsideFeatures,
+    backsideDepth,
   }
 }

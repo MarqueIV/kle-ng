@@ -9,6 +9,7 @@ import PlateGeneratorControls from './PlateGeneratorControls.vue'
 import PlateGeneratorResults from './PlateGeneratorResults.vue'
 import PlateDownloadButtons from './PlateDownloadButtons.vue'
 import PlateJsonView from './PlateJsonView.vue'
+import Plate3DSettings from './Plate3DSettings.vue'
 import BiChevronLeft from 'bootstrap-icons/icons/chevron-left.svg'
 import BiChevronRight from 'bootstrap-icons/icons/chevron-right.svg'
 
@@ -16,6 +17,7 @@ const tabs = [
   { id: 'cutouts', label: 'Switch Cutouts' },
   { id: 'holes', label: 'Holes' },
   { id: 'outline', label: 'Outline' },
+  { id: '3d', label: '3D' },
   { id: 'json', label: 'JSON' },
 ] as const
 
@@ -124,6 +126,11 @@ onMounted(() => {
             <!-- Outline Tab -->
             <div class="tab-pane-content" :class="{ 'tab-pane-hidden': activeTab !== 'outline' }">
               <PlateOutlineSettings />
+            </div>
+
+            <!-- 3D Tab -->
+            <div class="tab-pane-content" :class="{ 'tab-pane-hidden': activeTab !== '3d' }">
+              <Plate3DSettings />
             </div>
 
             <!-- JSON Tab -->
