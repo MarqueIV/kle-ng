@@ -38,8 +38,9 @@ export class PresetComponent {
     await this.waitHelpers.waitForDoubleAnimationFrame()
 
     // Find and click the preset item (exact match)
+    const escaped = presetName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
     const presetItem = this.page.locator('.preset-dropdown .dropdown-item', {
-      hasText: new RegExp(`^${presetName}$`),
+      hasText: new RegExp(`^${escaped}$`),
     })
     await expect(presetItem).toBeVisible()
     await presetItem.click()

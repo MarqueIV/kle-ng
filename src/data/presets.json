@@ -6,7 +6,7 @@
     { "name": "Default 60%", "file": "default-60.json" },
     { "name": "Default 60% (VIA)", "file": "default-60-via.json" },
     { "name": "ISO 60%", "file": "iso-60.json" },
-    { "name": "JD40", "file": "jd40.json" },
+    { "name": "JD40 (QMK)", "file": "jd40.json" },
     { "name": "ErgoDox", "file": "ergodox.json" },
     { "name": "Absolem (ergogen)", "file": "absolem.json" },
     { "name": "Planck", "file": "planck.json" },
