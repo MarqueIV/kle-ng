@@ -138,15 +138,22 @@
       <div class="col-lg-6 col-md-12 d-flex flex-column gap-3">
         <!-- QMK Metadata -->
         <div class="property-group d-flex flex-column" style="flex: 1 1 0">
-          <div class="d-flex justify-content-between mb-2">
+          <div class="d-flex justify-content-between align-items-center mb-2">
             <h6 class="property-group-title mb-0">QMK Metadata</h6>
-            <div>
+            <div class="d-flex align-items-center gap-1">
               <div v-if="qmkJsonError" class="text-danger small">
                 <BiExclamationTriangle /> Invalid JSON
               </div>
               <div v-else-if="qmkMetadataJson.trim()" class="text-success small">
                 <BiCheck /> Valid JSON
               </div>
+              <button
+                @click="showQmkHelp"
+                class="btn btn-sm btn-outline-secondary help-btn"
+                title="Help"
+              >
+                <BiQuestionCircle />
+              </button>
             </div>
           </div>
           <textarea
@@ -165,9 +172,9 @@
 
         <!-- VIA Metadata -->
         <div class="property-group d-flex flex-column" style="flex: 1 1 0">
-          <div class="d-flex justify-content-between mb-2">
+          <div class="d-flex justify-content-between align-items-center mb-2">
             <h6 class="property-group-title mb-0">VIA Metadata</h6>
-            <div>
+            <div class="d-flex align-items-center gap-1">
               <div v-if="viaJsonError" class="text-danger small">
                 <BiExclamationTriangle /> Invalid JSON
               </div>
@@ -177,7 +184,6 @@
               <button
                 @click="showViaHelp"
                 class="btn btn-sm btn-outline-secondary help-btn"
-                style="margin: -4px 1px"
                 title="Help"
               >
                 <BiQuestionCircle />
@@ -202,6 +208,9 @@
 
     <!-- CSS Help Modal -->
     <CssHelpModal :is-visible="isCssHelpVisible" @close="closeCssHelp" />
+
+    <!-- QMK Help Modal -->
+    <QmkHelpModal :is-visible="isQmkHelpVisible" @close="closeQmkHelp" />
 
     <!-- VIA Help Modal -->
     <ViaHelpModal :is-visible="isViaHelpVisible" @close="closeViaHelp" />
@@ -229,6 +238,7 @@ import ColorPicker from './ColorPicker.vue'
 import CustomNumberInput from './CustomNumberInput.vue'
 import CssHelpModal from './CssHelpModal.vue'
 import ViaHelpModal from './ViaHelpModal.vue'
+import QmkHelpModal from './QmkHelpModal.vue'
 import LZString from 'lz-string'
 import BiQuestionCircle from 'bootstrap-icons/icons/question-circle.svg'
 import BiExclamationTriangle from 'bootstrap-icons/icons/exclamation-triangle.svg'
@@ -240,6 +250,7 @@ const fontStore = useFontStore()
 // Help modals state
 const isCssHelpVisible = ref(false)
 const isViaHelpVisible = ref(false)
+const isQmkHelpVisible = ref(false)
 
 const showCssHelp = () => {
   isCssHelpVisible.value = true
@@ -255,6 +266,14 @@ const showViaHelp = () => {
 
 const closeViaHelp = () => {
   isViaHelpVisible.value = false
+}
+
+const showQmkHelp = () => {
+  isQmkHelpVisible.value = true
+}
+
+const closeQmkHelp = () => {
+  isQmkHelpVisible.value = false
 }
 
 // Reactive property values

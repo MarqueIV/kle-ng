@@ -117,9 +117,9 @@ Imported keys receive:
 
 After importing a QMK layout, you can use the [PCB Generator](./pcb-generator) immediately since matrix coordinates are already assigned.
 
-::: info
-kle-ng does **not** support export to QMK format.
-:::
+**On export**, layouts with matrix-annotated keys can be exported back to QMK `info.json` format using **Export → Download QMK JSON**. The reconstructed layout includes all original QMK metadata (keyboard_name, manufacturer, processor, USB config, etc.) merged with your updated key positions and dimensions.
+
+See [QMK Export](#qmk-export) below for detailed information.
 
 ### Ergogen Format {#ergogen-format}
 
@@ -227,14 +227,55 @@ Click the **Export** button in the toolbar to access all export options:
 
 ### Available Export Formats
 
-| Option            | Format        | Notes                                          |
-| ----------------- | ------------- | ---------------------------------------------- |
-| Download JSON     | KLE JSON      | Standard KLE format                            |
-| Download PNG      | PNG           | Canvas-quality image with embedded layout data |
-| Download HTML     | HTML          | Self-contained keyboard render                 |
-| Download SVG      | SVG           | Vector graphics                                |
-| Download VIA JSON | VIA/Vial JSON | Only available when VIA metadata is present    |
-| Copy share link   | URL           | Generates a shareable `#share=` URL            |
+| Option            | Format        | Notes                                            |
+| ----------------- | ------------- | ------------------------------------------------ |
+| Download JSON     | KLE JSON      | Standard KLE format                              |
+| Download PNG      | PNG           | Canvas-quality image with embedded layout data   |
+| Download HTML     | HTML          | Self-contained keyboard render                   |
+| Download SVG      | SVG           | Vector graphics                                  |
+| Download QMK JSON | QMK info.json | Only available when keys have matrix coordinates |
+| Download VIA JSON | VIA/Vial JSON | Only available when VIA metadata is present      |
+| Copy share link   | URL           | Generates a shareable `#share=` URL              |
+
+## QMK Export {#qmk-export}
+
+Layouts with matrix-annotated keys can be exported to QMK `info.json` format.
+
+### Requirements
+
+- Keys must have **matrix coordinates** in the top-left label (format: `row,col`)
+- Keyboard must have a **name** set in the Keyboard Metadata panel
+
+If these are missing, **Download QMK JSON** will be unavailable in the Export menu.
+
+### Export Process
+
+When you export to QMK format:
+
+1. Current keyboard name and author (from Keyboard Metadata) are used as `keyboard_name` and `manufacturer`
+2. All matrix-annotated keys are reconstructed with their current positions, dimensions, and rotations
+3. Original QMK metadata (processor, USB config, url, etc.) is preserved from the imported `_kleng_qmk_data` if available
+4. Key positions are rounded to 6 decimal places to remove floating-point noise
+
+### Alternative Layouts
+
+If your layout has **alternative layouts**, they are detected by scanning for option/choice labels (format `option,choice`):
+
+- **Shared keys** — Keys without an option/choice label appear in all layouts
+- **Layout-specific keys** — Keys with label `0,0` go in the first layout; label `0,1` in the second layout, etc.
+- **Layout names** — Names are preserved from the original QMK `info.json` if available; otherwise auto-generated as `LAYOUT`, `LAYOUT_0`, `LAYOUT_1`, etc.
+
+The option number is ignored, so keys marked `1,0` and `5,0` are both grouped into choice 0 and appear in the same layout.
+
+### Example
+
+Suppose you imported a QMK file with two layouts (ISO and ANSI). After editing:
+
+- Keys at matrix [0,0] through [4,11] have no option label → appear in both layouts
+- Keys at matrix [3,12] through [4,14] have label `0,0` (ISO variant) → appear only in ISO layout
+- Keys at matrix [3,12] through [4,14] have label `0,1` (ANSI variant) → appear only in ANSI layout
+
+When exported, you get two separate layout definitions in the QMK `info.json`, each with all shared keys plus their specific variant keys.
 
 ## Troubleshooting Import/Export Issues
 
