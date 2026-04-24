@@ -79,6 +79,50 @@ function rd(v: number): number {
   return parseFloat(v.toFixed(6))
 }
 
+function isQmkKey(val: unknown): val is QmkKey {
+  return (
+    typeof val === 'object' &&
+    val !== null &&
+    !Array.isArray(val) &&
+    'matrix' in val &&
+    'x' in val &&
+    'y' in val
+  )
+}
+
+function compactQmkKey(key: QmkKey): string {
+  const parts: string[] = [`"matrix": [${key.matrix.join(', ')}]`]
+  for (const [k, v] of Object.entries(key)) {
+    if (k !== 'matrix') parts.push(`${JSON.stringify(k)}: ${JSON.stringify(v)}`)
+  }
+  return `{${parts.join(', ')}}`
+}
+
+function stringifyValue(val: unknown, depth: number): string {
+  if (val === null || typeof val !== 'object') return JSON.stringify(val)
+  if (Array.isArray(val)) {
+    if (val.length === 0) return '[]'
+    const pad = '  '.repeat(depth + 1)
+    const close = '  '.repeat(depth)
+    return `[\n${val.map((item) => `${pad}${stringifyValue(item, depth + 1)}`).join(',\n')}\n${close}]`
+  }
+  if (isQmkKey(val)) return compactQmkKey(val)
+  const keys = Object.keys(val as object)
+  if (keys.length === 0) return '{}'
+  const pad = '  '.repeat(depth + 1)
+  const close = '  '.repeat(depth)
+  const entries = keys.map(
+    (k) =>
+      `${pad}${JSON.stringify(k)}: ${stringifyValue((val as Record<string, unknown>)[k], depth + 1)}`,
+  )
+  return `{\n${entries.join(',\n')}\n${close}}`
+}
+
+/** Serialize QMK info.json with layout key entries compacted to one line each. */
+export function formatQmkJson(data: unknown): string {
+  return stringifyValue(data, 0)
+}
+
 function reconstructQmkKey(key: Key): QmkKey {
   const label = key.labels[0] ?? ''
   const parts = label.split(',').map(Number)

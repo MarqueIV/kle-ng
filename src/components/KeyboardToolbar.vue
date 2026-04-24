@@ -217,7 +217,7 @@ import { toast } from '@/composables/useToast'
 import { parseBorderRadius, createRoundedRectanglePath } from '@/utils/border-radius'
 import { createPngWithKleLayout, extractKleLayout, hasKleMetadata } from '@/utils/png-metadata'
 import { isViaFormat, convertViaToKle, convertKleToVia } from '@/utils/via-import'
-import { convertKleToQmk } from '@/utils/qmk-export'
+import { convertKleToQmk, formatQmkJson } from '@/utils/qmk-export'
 import { isQmkFormat, convertQmkToKle } from '@/utils/qmk-import'
 import { stringifyWithRounding } from '@/utils/serialization'
 import { decodeLayoutFromUrl, fetchGistLayout, loadErgogenKeyboard } from '@/utils/url-sharing'
@@ -452,7 +452,7 @@ const downloadQmkJson = () => {
     return
   }
 
-  const blob = new Blob([JSON.stringify(qmkData, null, 2)], { type: 'application/json' })
+  const blob = new Blob([formatQmkJson(qmkData)], { type: 'application/json' })
   const url = URL.createObjectURL(blob)
   const a = document.createElement('a')
   a.href = url
