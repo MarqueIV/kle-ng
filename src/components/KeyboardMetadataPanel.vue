@@ -134,9 +134,37 @@
         </div>
       </div>
 
-      <!-- Right Column: VIA Metadata -->
-      <div class="col-lg-6 col-md-12">
-        <div class="property-group d-flex flex-column">
+      <!-- Right Column: QMK Metadata + VIA Metadata stacked -->
+      <div class="col-lg-6 col-md-12 d-flex flex-column gap-3">
+        <!-- QMK Metadata -->
+        <div class="property-group d-flex flex-column" style="flex: 1 1 0">
+          <div class="d-flex justify-content-between mb-2">
+            <h6 class="property-group-title mb-0">QMK Metadata</h6>
+            <div>
+              <div v-if="qmkJsonError" class="text-danger small">
+                <BiExclamationTriangle /> Invalid JSON
+              </div>
+              <div v-else-if="qmkMetadataJson.trim()" class="text-success small">
+                <BiCheck /> Valid JSON
+              </div>
+            </div>
+          </div>
+          <textarea
+            v-model="qmkMetadataJson"
+            @input="updateQmkMetadata"
+            class="form-control form-control-sm flex-grow-1 font-monospace"
+            :class="{ 'is-invalid': qmkJsonError }"
+            placeholder="QMK metadata JSON (keyboard_name, manufacturer, url, ...)..."
+            spellcheck="false"
+            style="min-height: 0; resize: none; font-size: 0.65rem"
+          ></textarea>
+          <div v-if="qmkJsonError" class="invalid-feedback d-block mt-1">
+            {{ qmkJsonErrorMessage }}
+          </div>
+        </div>
+
+        <!-- VIA Metadata -->
+        <div class="property-group d-flex flex-column" style="flex: 1 1 0">
           <div class="d-flex justify-content-between mb-2">
             <h6 class="property-group-title mb-0">VIA Metadata</h6>
             <div>
@@ -239,6 +267,11 @@ const currentRadii = ref('')
 const currentSpacingX = ref<number>(19.05)
 const currentSpacingY = ref<number>(19.05)
 
+// QMK metadata state
+const qmkMetadataJson = ref('')
+const qmkJsonError = ref(false)
+const qmkJsonErrorMessage = ref('')
+
 // VIA metadata state
 const viaMetadataJson = ref('')
 const viaJsonError = ref(false)
@@ -246,8 +279,63 @@ const viaJsonErrorMessage = ref('')
 
 // Extended metadata interface
 interface ExtendedMetadata {
+  _kleng_qmk_data?: string
   _kleng_via_data?: string
   [key: string]: unknown
+}
+
+// Parse QMK metadata from compressed string
+const parseQmkMetadata = () => {
+  try {
+    const metadata = keyboardStore.metadata as unknown as ExtendedMetadata
+    if (metadata._kleng_qmk_data) {
+      const decompressed = LZString.decompressFromBase64(metadata._kleng_qmk_data)
+      if (decompressed) {
+        qmkMetadataJson.value = JSON.stringify(JSON.parse(decompressed), null, 2)
+      } else {
+        qmkMetadataJson.value = ''
+      }
+    } else {
+      qmkMetadataJson.value = ''
+    }
+  } catch (error) {
+    console.error('Error parsing QMK metadata:', error)
+    qmkMetadataJson.value = ''
+  }
+}
+
+const validateQmkJson = (): boolean => {
+  try {
+    if (!qmkMetadataJson.value.trim()) {
+      qmkJsonError.value = false
+      qmkJsonErrorMessage.value = ''
+      return true
+    }
+    JSON.parse(qmkMetadataJson.value)
+    qmkJsonError.value = false
+    qmkJsonErrorMessage.value = ''
+    return true
+  } catch (error) {
+    qmkJsonError.value = true
+    qmkJsonErrorMessage.value = error instanceof Error ? error.message : 'Invalid JSON format'
+    return false
+  }
+}
+
+const updateQmkMetadata = () => {
+  if (!validateQmkJson()) return
+  try {
+    const metadata = keyboardStore.metadata as unknown as ExtendedMetadata
+    if (!qmkMetadataJson.value.trim()) {
+      delete metadata._kleng_qmk_data
+      keyboardStore.saveState()
+      return
+    }
+    metadata._kleng_qmk_data = LZString.compressToBase64(qmkMetadataJson.value)
+    keyboardStore.saveState()
+  } catch (error) {
+    console.error('Error saving QMK metadata:', error)
+  }
 }
 
 // Parse VIA metadata from compressed string
@@ -330,7 +418,8 @@ const updateCurrentValues = () => {
   currentSpacingX.value = metadata.spacing_x || 19.05
   currentSpacingY.value = metadata.spacing_y || 19.05
 
-  // Parse VIA metadata
+  // Parse QMK and VIA metadata
+  parseQmkMetadata()
   parseViaMetadata()
 }
 

@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest'
+import LZString from 'lz-string'
 import { isQmkFormat, convertQmkToKle, extractQmkMetadata } from '../qmk-import'
 
 describe('QMK Import', () => {
@@ -259,6 +260,76 @@ describe('QMK Import', () => {
 
     it('should throw error for invalid format', () => {
       expect(() => convertQmkToKle({ invalid: 'data' })).toThrow()
+    })
+
+    it('should embed _kleng_qmk_data in keyboard.meta', () => {
+      const qmkData = {
+        keyboard_name: 'Test',
+        manufacturer: 'Tester',
+        layouts: {
+          LAYOUT: {
+            layout: [{ matrix: [0, 0], x: 0, y: 0 }],
+          },
+        },
+      }
+      const keyboard = convertQmkToKle(qmkData)
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      expect((keyboard.meta as any)._kleng_qmk_data).toBeDefined()
+    })
+
+    it('should store layout names but not key definitions in _kleng_qmk_data', () => {
+      const qmkData = {
+        keyboard_name: 'Test',
+        layouts: {
+          LAYOUT_default: {
+            layout: [
+              { matrix: [0, 0], x: 0, y: 0 },
+              { matrix: [0, 1], x: 1, y: 0 },
+            ],
+          },
+        },
+      }
+      const keyboard = convertQmkToKle(qmkData)
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const compressed = (keyboard.meta as any)._kleng_qmk_data as string
+      const stored = JSON.parse(LZString.decompressFromBase64(compressed)!)
+
+      expect(Object.keys(stored.layouts)).toContain('LAYOUT_default')
+      expect(stored.layouts.LAYOUT_default).toEqual({}) // no key definitions
+    })
+
+    it('should store all layout names when multiple layouts present', () => {
+      const qmkData = {
+        layouts: {
+          LAYOUT_ansi: { layout: [{ matrix: [0, 0], x: 0, y: 0, w: 2.25 }] },
+          LAYOUT_iso: { layout: [{ matrix: [0, 0], x: 0, y: 0, w: 1.25 }] },
+        },
+      }
+      const keyboard = convertQmkToKle(qmkData)
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const compressed = (keyboard.meta as any)._kleng_qmk_data as string
+      const stored = JSON.parse(LZString.decompressFromBase64(compressed)!)
+
+      expect(Object.keys(stored.layouts)).toEqual(['LAYOUT_ansi', 'LAYOUT_iso'])
+    })
+
+    it('should preserve extra QMK fields in _kleng_qmk_data', () => {
+      const qmkData = {
+        keyboard_name: 'Test',
+        manufacturer: 'Tester',
+        url: 'https://example.com',
+        maintainer: 'testuser',
+        layouts: {
+          LAYOUT: { layout: [{ matrix: [0, 0], x: 0, y: 0 }] },
+        },
+      }
+      const keyboard = convertQmkToKle(qmkData)
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const compressed = (keyboard.meta as any)._kleng_qmk_data as string
+      const stored = JSON.parse(LZString.decompressFromBase64(compressed)!)
+
+      expect(stored.url).toBe('https://example.com')
+      expect(stored.maintainer).toBe('testuser')
     })
 
     it('should handle real Corne-like layout', () => {

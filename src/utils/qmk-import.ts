@@ -1,5 +1,6 @@
 import { Key, Keyboard, KeyboardMetadata } from '@adamws/kle-serial'
 import { createEmptyLabels } from '@/utils/array-helpers'
+import LZString from 'lz-string'
 
 /**
  * QMK key definition from info.json layout
@@ -301,5 +302,16 @@ export function convertQmkToKle(qmkData: unknown): Keyboard {
   })
 
   keyboard.keys = allKeys
+
+  // Embed QMK metadata (with layout key definitions stripped, names preserved)
+  const qmkMetadataForStorage = {
+    ...data,
+    layouts: Object.fromEntries(Object.keys(data.layouts).map((name) => [name, {}])),
+  }
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  ;(keyboard.meta as any)._kleng_qmk_data = LZString.compressToBase64(
+    JSON.stringify(qmkMetadataForStorage),
+  )
+
   return keyboard
 }

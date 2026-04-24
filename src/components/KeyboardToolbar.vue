@@ -85,6 +85,11 @@
               </a>
             </li>
             <li>
+              <a class="dropdown-item" href="#" @click.prevent="downloadQmkJson">
+                Download QMK JSON
+              </a>
+            </li>
+            <li>
               <a
                 class="dropdown-item"
                 data-testid="export-download-png"
@@ -212,6 +217,7 @@ import { toast } from '@/composables/useToast'
 import { parseBorderRadius, createRoundedRectanglePath } from '@/utils/border-radius'
 import { createPngWithKleLayout, extractKleLayout, hasKleMetadata } from '@/utils/png-metadata'
 import { isViaFormat, convertViaToKle, convertKleToVia } from '@/utils/via-import'
+import { convertKleToQmk } from '@/utils/qmk-export'
 import { isQmkFormat, convertQmkToKle } from '@/utils/qmk-import'
 import { stringifyWithRounding } from '@/utils/serialization'
 import { decodeLayoutFromUrl, fetchGistLayout, loadErgogenKeyboard } from '@/utils/url-sharing'
@@ -430,6 +436,27 @@ const downloadViaJson = () => {
   const a = document.createElement('a')
   a.href = url
   a.download = `${keyboardStore.filename || keyboardStore.metadata.name || 'keyboard-layout'}-via.json`
+  a.click()
+  URL.revokeObjectURL(url)
+}
+
+const downloadQmkJson = () => {
+  const kleData = keyboardStore.getSerializedData('kle')
+  const qmkData = convertKleToQmk(kleData)
+
+  if (!qmkData) {
+    toast.showError(
+      'All regular keys must have matrix coordinates (row,col) in label position 0.',
+      'Cannot export QMK JSON',
+    )
+    return
+  }
+
+  const blob = new Blob([JSON.stringify(qmkData, null, 2)], { type: 'application/json' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = `${keyboardStore.filename || keyboardStore.metadata.name || 'keyboard-layout'}-qmk.json`
   a.click()
   URL.revokeObjectURL(url)
 }
