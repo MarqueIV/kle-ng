@@ -79,15 +79,37 @@
                 Download KLE Internal JSON
               </a>
             </li>
-            <li>
-              <a class="dropdown-item" href="#" @click.prevent="downloadViaJson">
+            <li
+              :title="
+                !canExportVia
+                  ? 'VIA metadata not found. Import a VIA layout or add VIA metadata in the Keyboard Metadata tab.'
+                  : undefined
+              "
+            >
+              <button
+                class="dropdown-item"
+                type="button"
+                :disabled="!canExportVia"
+                @click="downloadViaJson"
+              >
                 Download VIA JSON
-              </a>
+              </button>
             </li>
-            <li>
-              <a class="dropdown-item" href="#" @click.prevent="downloadQmkJson">
+            <li
+              :title="
+                !canExportQmk
+                  ? 'All regular keys must have matrix coordinates (row,col) in label position 0.'
+                  : undefined
+              "
+            >
+              <button
+                class="dropdown-item"
+                type="button"
+                :disabled="!canExportQmk"
+                @click="downloadQmkJson"
+              >
                 Download QMK JSON
-              </a>
+              </button>
             </li>
             <li>
               <a
@@ -208,7 +230,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, nextTick, watch } from 'vue'
+import { ref, computed, onMounted, nextTick, watch } from 'vue'
 import { useKeyboardStore, Keyboard } from '@/stores/keyboard'
 import { useMatrixDrawingStore } from '@/stores/matrix-drawing'
 import presetsMetadata from '@/data/presets.json'
@@ -230,6 +252,11 @@ import BiBoxArrowUpRight from 'bootstrap-icons/icons/box-arrow-up-right.svg'
 // Store
 const keyboardStore = useKeyboardStore()
 const matrixDrawingStore = useMatrixDrawingStore()
+
+const canExportVia = computed(
+  () => !!(keyboardStore.metadata as ExtendedKeyboardMetadata)._kleng_via_data,
+)
+const canExportQmk = computed(() => keyboardStore.isViaAnnotated)
 
 // Component state
 const selectedPreset = ref('')
