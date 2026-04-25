@@ -8,6 +8,8 @@ import type { PlateSettingsJson } from '@/utils/plate/plate-settings-serializer'
 import type { EditorView } from '@codemirror/view'
 import BiUpload from 'bootstrap-icons/icons/upload.svg'
 import BiDownload from 'bootstrap-icons/icons/download.svg'
+import BiArrowsFullscreen from 'bootstrap-icons/icons/arrows-fullscreen.svg'
+import JsonExpandModal from './JsonExpandModal.vue'
 
 const plateStore = usePlateGeneratorStore()
 
@@ -227,27 +229,36 @@ onMounted(async () => {
 })
 
 // ---------------------------------------------------------------------------
-// Resize handle
+// Expand modal
 // ---------------------------------------------------------------------------
-const editorHeight = ref(250)
-let dragStartY = 0
-let dragStartHeight = 0
+const isExpandModalOpen = ref(false)
 
-function onDragMouseMove(e: MouseEvent): void {
-  editorHeight.value = Math.max(100, dragStartHeight + (e.clientY - dragStartY))
+function openExpandModal(): void {
+  isExpandModalOpen.value = true
 }
 
-function onDragMouseUp(): void {
-  document.removeEventListener('mousemove', onDragMouseMove)
-  document.removeEventListener('mouseup', onDragMouseUp)
+function closeExpandModal(): void {
+  isExpandModalOpen.value = false
 }
 
-function onResizeHandleMouseDown(e: MouseEvent): void {
-  dragStartY = e.clientY
-  dragStartHeight = editorHeight.value
-  document.addEventListener('mousemove', onDragMouseMove)
-  document.addEventListener('mouseup', onDragMouseUp)
-  e.preventDefault()
+function applyExpandModal(value: string): void {
+  const result = validatePlateSettingsJson(value)
+  if (result.valid) {
+    isDirty.value = false
+    validationError.value = null
+    validationWarnings.value = result.warnings
+    parsedJson.value = null
+    plateStore.applySettings(result.json)
+    setEditorContent(getCanonicalJson())
+  } else {
+    editorText.value = value
+    isDirty.value = true
+    validationError.value = result.error
+    validationWarnings.value = []
+    parsedJson.value = null
+    setEditorContent(value)
+  }
+  isExpandModalOpen.value = false
 }
 
 onUnmounted(() => {
@@ -263,8 +274,6 @@ onUnmounted(() => {
   }
   themeObserver?.disconnect()
   themeObserver = null
-  document.removeEventListener('mousemove', onDragMouseMove)
-  document.removeEventListener('mouseup', onDragMouseUp)
 })
 </script>
 
@@ -322,31 +331,41 @@ onUnmounted(() => {
     </div>
 
     <!-- Editor area -->
-    <div
-      v-if="!editorReady && !loadError"
-      class="editor-placeholder"
-      :style="{ height: editorHeight + 'px' }"
-    >
-      <span class="text-muted small">Loading editor...</span>
+    <div class="editor-wrapper">
+      <div v-if="!editorReady && !loadError" class="editor-placeholder">
+        <span class="text-muted small">Loading editor...</span>
+      </div>
+      <div v-else-if="loadError" class="editor-placeholder">
+        <span class="text-danger small">Failed to load editor.</span>
+      </div>
+      <div
+        v-show="editorReady && !loadError"
+        ref="editorContainer"
+        class="cm-editor-container"
+      ></div>
+      <button
+        class="expand-editor-btn"
+        title="Expand editor"
+        type="button"
+        @click="openExpandModal"
+      >
+        <BiArrowsFullscreen aria-hidden="true" />
+      </button>
     </div>
-    <div v-else-if="loadError" class="editor-placeholder" :style="{ height: editorHeight + 'px' }">
-      <span class="text-danger small">Failed to load editor.</span>
-    </div>
-    <div
-      v-show="editorReady && !loadError"
-      ref="editorContainer"
-      class="cm-editor-container"
-      :style="{ height: editorHeight + 'px' }"
-    ></div>
-
-    <!-- Resize handle -->
-    <div class="resize-handle" @mousedown="onResizeHandleMouseDown"></div>
 
     <!-- Status bar -->
     <div class="status-bar">
       <span class="small" :class="statusClass">{{ statusText }}</span>
     </div>
   </div>
+
+  <JsonExpandModal
+    v-if="isExpandModalOpen"
+    title="Plate Settings JSON"
+    :initial-value="isDirty ? editorText : getCanonicalJson()"
+    @close="closeExpandModal"
+    @apply="applyExpandModal"
+  />
 </template>
 
 <style scoped>
@@ -376,42 +395,21 @@ onUnmounted(() => {
   gap: 0.25rem;
 }
 
+.editor-wrapper {
+  position: relative;
+  height: 350px;
+}
+
 .editor-placeholder {
   display: flex;
   align-items: center;
   justify-content: center;
+  height: 100%;
 }
 
 .cm-editor-container {
+  height: 100%;
   overflow: auto;
-}
-
-.resize-handle {
-  height: 8px;
-  cursor: ns-resize;
-  background: var(--bs-tertiary-bg);
-  border-top: 1px solid var(--bs-border-color);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  user-select: none;
-}
-
-.resize-handle::after {
-  content: '';
-  width: 2rem;
-  border-top: 1px solid var(--bs-secondary-color);
-  box-shadow: 0 2px 0 var(--bs-secondary-color);
-  opacity: 0.35;
-}
-
-.resize-handle:hover {
-  background: var(--bs-secondary-bg);
-}
-
-.resize-handle:hover::after {
-  opacity: 0.6;
 }
 
 .cm-editor-container :deep(.cm-editor) {
@@ -421,6 +419,32 @@ onUnmounted(() => {
 .cm-editor-container :deep(.cm-scroller) {
   height: 100%;
   overflow: auto;
+}
+
+.expand-editor-btn {
+  position: absolute;
+  bottom: 4px;
+  right: 4px;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bs-secondary-bg);
+  border: 1px solid var(--bs-border-color);
+  border-radius: 3px;
+  opacity: 0.4;
+  cursor: pointer;
+  padding: 2px;
+  font-size: 0.65rem;
+  color: var(--bs-secondary-color);
+  z-index: 2;
+  transition: opacity 0.15s;
+}
+
+.expand-editor-btn:hover {
+  opacity: 1;
+  color: var(--bs-body-color);
 }
 
 .status-bar {

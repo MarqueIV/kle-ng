@@ -156,15 +156,21 @@
               </button>
             </div>
           </div>
-          <textarea
-            v-model="qmkMetadataJson"
-            @input="updateQmkMetadata"
-            class="form-control form-control-sm flex-grow-1 font-monospace"
-            :class="{ 'is-invalid': qmkJsonError }"
-            placeholder="QMK metadata JSON (keyboard_name, manufacturer, url, ...)..."
-            spellcheck="false"
-            style="min-height: 0; resize: none; font-size: 0.65rem"
-          ></textarea>
+          <div class="json-field-wrapper flex-grow-1">
+            <div
+              ref="qmkEditorContainer"
+              class="json-editor-cm"
+              :class="{ 'is-invalid': qmkJsonError }"
+            ></div>
+            <button
+              class="expand-field-btn"
+              @click.stop="openExpandModal('qmk')"
+              type="button"
+              title="Expand editor"
+            >
+              <BiArrowsFullscreen />
+            </button>
+          </div>
           <div v-if="qmkJsonError" class="invalid-feedback d-block mt-1">
             {{ qmkJsonErrorMessage }}
           </div>
@@ -190,15 +196,21 @@
               </button>
             </div>
           </div>
-          <textarea
-            v-model="viaMetadataJson"
-            @input="updateViaMetadata"
-            class="form-control form-control-sm flex-grow-1 font-monospace"
-            :class="{ 'is-invalid': viaJsonError }"
-            placeholder="VIA metadata JSON..."
-            spellcheck="false"
-            style="min-height: 0; resize: none; font-size: 0.65rem"
-          ></textarea>
+          <div class="json-field-wrapper flex-grow-1">
+            <div
+              ref="viaEditorContainer"
+              class="json-editor-cm"
+              :class="{ 'is-invalid': viaJsonError }"
+            ></div>
+            <button
+              class="expand-field-btn"
+              @click.stop="openExpandModal('via')"
+              type="button"
+              title="Expand editor"
+            >
+              <BiArrowsFullscreen />
+            </button>
+          </div>
           <div v-if="viaJsonError" class="invalid-feedback d-block mt-1">
             {{ viaJsonErrorMessage }}
           </div>
@@ -214,6 +226,15 @@
 
     <!-- VIA Help Modal -->
     <ViaHelpModal :is-visible="isViaHelpVisible" @close="closeViaHelp" />
+
+    <!-- JSON Expand Modal -->
+    <JsonExpandModal
+      v-if="isExpandModalOpen"
+      :title="expandModalTitle"
+      :initial-value="expandModalValue"
+      @close="closeExpandModal"
+      @apply="applyExpandModal"
+    />
   </div>
 </template>
 
@@ -231,7 +252,9 @@
 </style>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { ref, watch, onMounted, onUnmounted } from 'vue'
+import { getCodeMirror, getLoadedCodeMirror } from '@/utils/codemirror-loader'
+import type { EditorView } from '@codemirror/view'
 import { useKeyboardStore } from '@/stores/keyboard'
 import { useFontStore } from '@/stores/font'
 import ColorPicker from './ColorPicker.vue'
@@ -239,10 +262,12 @@ import CustomNumberInput from './CustomNumberInput.vue'
 import CssHelpModal from './CssHelpModal.vue'
 import ViaHelpModal from './ViaHelpModal.vue'
 import QmkHelpModal from './QmkHelpModal.vue'
+import JsonExpandModal from './JsonExpandModal.vue'
 import LZString from 'lz-string'
 import BiQuestionCircle from 'bootstrap-icons/icons/question-circle.svg'
 import BiExclamationTriangle from 'bootstrap-icons/icons/exclamation-triangle.svg'
 import BiCheck from 'bootstrap-icons/icons/check.svg'
+import BiArrowsFullscreen from 'bootstrap-icons/icons/arrows-fullscreen.svg'
 
 const keyboardStore = useKeyboardStore()
 const fontStore = useFontStore()
@@ -274,6 +299,34 @@ const showQmkHelp = () => {
 
 const closeQmkHelp = () => {
   isQmkHelpVisible.value = false
+}
+
+// Expand modal state
+const isExpandModalOpen = ref(false)
+const expandModalTitle = ref('')
+const expandModalValue = ref('')
+const expandModalTarget = ref<'qmk' | 'via' | null>(null)
+
+const openExpandModal = (target: 'qmk' | 'via') => {
+  expandModalTarget.value = target
+  expandModalTitle.value = target === 'qmk' ? 'QMK Metadata' : 'VIA Metadata'
+  expandModalValue.value = target === 'qmk' ? qmkMetadataJson.value : viaMetadataJson.value
+  isExpandModalOpen.value = true
+}
+
+const closeExpandModal = () => {
+  isExpandModalOpen.value = false
+}
+
+const applyExpandModal = (value: string) => {
+  if (expandModalTarget.value === 'qmk') {
+    qmkMetadataJson.value = value
+    updateQmkMetadata()
+  } else if (expandModalTarget.value === 'via') {
+    viaMetadataJson.value = value
+    updateViaMetadata()
+  }
+  isExpandModalOpen.value = false
 }
 
 // Reactive property values
@@ -497,6 +550,111 @@ const updateBackcolor = () => {
   }
   keyboardStore.saveState()
 }
+
+// ── CodeMirror editors for QMK and VIA fields ─────────────────────────────
+
+const qmkEditorContainer = ref<HTMLElement | null>(null)
+const viaEditorContainer = ref<HTMLElement | null>(null)
+let qmkEditorView: EditorView | null = null
+let viaEditorView: EditorView | null = null
+let isQmkProgrammaticUpdate = false
+let isViaProgrammaticUpdate = false
+let themeObserver: MutationObserver | null = null
+
+function getTheme(): 'dark' | 'light' {
+  return document.documentElement.getAttribute('data-bs-theme') === 'dark' ? 'dark' : 'light'
+}
+
+async function rebuildQmkEditor(): Promise<void> {
+  if (!qmkEditorContainer.value) return
+  const cm = await getCodeMirror()
+  if (!qmkEditorContainer.value) return
+
+  if (qmkEditorView) {
+    cm.destroyEditor(qmkEditorView)
+    qmkEditorView = null
+    qmkEditorContainer.value.innerHTML = ''
+  }
+
+  qmkEditorView = cm.createJsonEditor(qmkEditorContainer.value, qmkMetadataJson.value, getTheme(), {
+    onChange: (content) => {
+      if (isQmkProgrammaticUpdate) return
+      qmkMetadataJson.value = content
+      updateQmkMetadata()
+    },
+  })
+}
+
+async function rebuildViaEditor(): Promise<void> {
+  if (!viaEditorContainer.value) return
+  const cm = await getCodeMirror()
+  if (!viaEditorContainer.value) return
+
+  if (viaEditorView) {
+    cm.destroyEditor(viaEditorView)
+    viaEditorView = null
+    viaEditorContainer.value.innerHTML = ''
+  }
+
+  viaEditorView = cm.createJsonEditor(viaEditorContainer.value, viaMetadataJson.value, getTheme(), {
+    onChange: (content) => {
+      if (isViaProgrammaticUpdate) return
+      viaMetadataJson.value = content
+      updateViaMetadata()
+    },
+  })
+}
+
+// Push external changes (store watcher, undo/redo) into the CodeMirror editors
+watch(qmkMetadataJson, (newVal) => {
+  if (!qmkEditorView) return
+  getCodeMirror().then((cm) => {
+    isQmkProgrammaticUpdate = true
+    cm.updateContent(qmkEditorView!, newVal)
+    isQmkProgrammaticUpdate = false
+  })
+})
+
+watch(viaMetadataJson, (newVal) => {
+  if (!viaEditorView) return
+  getCodeMirror().then((cm) => {
+    isViaProgrammaticUpdate = true
+    cm.updateContent(viaEditorView!, newVal)
+    isViaProgrammaticUpdate = false
+  })
+})
+
+onMounted(async () => {
+  try {
+    await Promise.all([rebuildQmkEditor(), rebuildViaEditor()])
+  } catch (err) {
+    console.error('Failed to load CodeMirror for metadata editors:', err)
+  }
+
+  themeObserver = new MutationObserver(() => {
+    rebuildQmkEditor().catch(console.error)
+    rebuildViaEditor().catch(console.error)
+  })
+  themeObserver.observe(document.documentElement, {
+    attributes: true,
+    attributeFilter: ['data-bs-theme'],
+  })
+})
+
+onUnmounted(() => {
+  themeObserver?.disconnect()
+  themeObserver = null
+
+  const cm = getLoadedCodeMirror()
+  if (qmkEditorView) {
+    if (cm) cm.destroyEditor(qmkEditorView)
+    qmkEditorView = null
+  }
+  if (viaEditorView) {
+    if (cm) cm.destroyEditor(viaEditorView)
+    viaEditorView = null
+  }
+})
 </script>
 
 <style scoped>
@@ -586,5 +744,60 @@ const updateBackcolor = () => {
   justify-content: center;
   border: none;
   padding: 4px;
+}
+
+/* JSON field wrapper with expand button */
+.json-field-wrapper {
+  position: relative;
+  min-height: 80px;
+}
+
+/* Absolute fill so CodeMirror doesn't inflate the wrapper's layout height */
+.json-editor-cm {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  border: 1px solid var(--bs-border-color);
+  border-radius: var(--bs-border-radius-sm);
+  transition: border-color 0.15s ease;
+}
+
+.json-editor-cm.is-invalid {
+  border-color: var(--bs-danger);
+}
+
+.json-editor-cm :deep(.cm-editor) {
+  height: 100%;
+}
+
+.json-editor-cm :deep(.cm-scroller) {
+  height: 100%;
+  overflow: auto;
+}
+
+.expand-field-btn {
+  position: absolute;
+  bottom: 4px;
+  right: 4px;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bs-secondary-bg);
+  border: 1px solid var(--bs-border-color);
+  border-radius: 3px;
+  opacity: 0.4;
+  cursor: pointer;
+  padding: 2px;
+  font-size: 0.65rem;
+  color: var(--bs-secondary-color);
+  z-index: 2;
+  transition: opacity 0.15s;
+}
+
+.expand-field-btn:hover {
+  opacity: 1;
+  color: var(--bs-body-color);
 }
 </style>
