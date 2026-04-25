@@ -55,7 +55,23 @@
         ref="editorContainer"
         class="cm-editor-container"
       ></div>
+      <button
+        class="expand-editor-btn"
+        title="Expand editor"
+        type="button"
+        @click="isExpandModalOpen = true"
+      >
+        <BiArrowsFullscreen aria-hidden="true" />
+      </button>
     </div>
+
+    <JsonExpandModal
+      v-if="isExpandModalOpen"
+      title="KLE JSON Editor"
+      :initial-value="jsonContent"
+      @close="isExpandModalOpen = false"
+      @apply="applyExpandModal"
+    />
 
     <div v-if="hasJsonError" class="invalid-feedback d-block mt-1">
       {{ jsonError }}
@@ -88,6 +104,8 @@ import BiExclamationTriangle from 'bootstrap-icons/icons/exclamation-triangle.sv
 import BiPencil from 'bootstrap-icons/icons/pencil.svg'
 import BiCheck from 'bootstrap-icons/icons/check.svg'
 import BiTrash from 'bootstrap-icons/icons/trash.svg'
+import BiArrowsFullscreen from 'bootstrap-icons/icons/arrows-fullscreen.svg'
+import JsonExpandModal from './JsonExpandModal.vue'
 
 const keyboardStore = useKeyboardStore()
 
@@ -311,14 +329,51 @@ onUnmounted(() => {
   themeObserver?.disconnect()
   themeObserver = null
 })
+
+// ── Expand modal ──────────────────────────────────────────────────────────────
+
+const isExpandModalOpen = ref(false)
+
+const applyExpandModal = (value: string) => {
+  setEditorContent(value)
+  applyChanges()
+  isExpandModalOpen.value = false
+}
 </script>
 
 <style scoped>
 .editor-wrapper {
+  position: relative;
   border: 1px solid var(--bs-border-color);
   border-radius: 0.375rem;
   overflow: hidden;
   transition: border-color 0.15s ease;
+}
+
+.expand-editor-btn {
+  position: absolute;
+  bottom: 4px;
+  right: 4px;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bs-secondary-bg);
+  border: 1px solid var(--bs-border-color);
+  border-radius: 3px;
+  opacity: 0.4;
+  cursor: pointer;
+  padding: 2px;
+  font-size: 0.65rem;
+  color: var(--bs-secondary-color);
+  z-index: 2;
+  transition: opacity 0.15s;
+}
+
+.expand-editor-btn:hover {
+  opacity: 1;
+  color: var(--bs-body-color);
 }
 
 .editor-wrapper.is-invalid {
