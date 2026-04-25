@@ -153,6 +153,15 @@ async function setupScene() {
   // Cache runtime module for theme color helpers
   runtimeTHREE = THREE
 
+  // Save current camera state before disposal so we can restore it after rebuild
+  let savedCameraPosition: [number, number, number] | null = null
+  let savedTarget: [number, number, number] | null = null
+  const savedControlsActive = controlsActive.value
+  if (camera && controls) {
+    savedCameraPosition = [camera.position.x, camera.position.y, camera.position.z]
+    savedTarget = [controls.target.x, controls.target.y, controls.target.z]
+  }
+
   // Dispose previous scene
   disposeScene()
 
@@ -215,23 +224,35 @@ async function setupScene() {
   const size = new THREE.Vector3()
   box.getSize(size)
   const maxDim = Math.max(size.x, size.y, size.z)
-  camera.position.set(center.x, center.y, center.z + maxDim * 1.5)
-  camera.lookAt(center)
 
-  // Store initial state for reset
+  // Store initial state for reset button (always the auto-fit view)
   initialCameraPosition = [center.x, center.y, center.z + maxDim * 1.5]
   initialTarget = [center.x, center.y, center.z]
 
   // Orbit controls
   controls = new OrbitControls(camera, renderer.domElement)
-  controls.target.copy(center)
   controls.enableDamping = true
   controls.dampingFactor = 0.05
+
+  if (savedCameraPosition && savedTarget) {
+    // Restore user's previous navigation state
+    camera.position.set(...savedCameraPosition)
+    controls.target.set(...savedTarget)
+  } else {
+    // First load: use auto-fit
+    camera.position.set(...initialCameraPosition)
+    camera.lookAt(center)
+    controls.target.copy(center)
+  }
   controls.update()
 
-  // Start disabled until user clicks canvas
-  controls.enabled = false
-  canvasRef.value!.style.touchAction = 'auto'
+  // Restore controls active state; disable if user hadn't activated yet
+  if (savedControlsActive) {
+    activateControls()
+  } else {
+    controls.enabled = false
+    canvasRef.value!.style.touchAction = 'auto'
+  }
 
   canvasActivateHandler = () => activateControls()
   canvasRef.value!.addEventListener('pointerdown', canvasActivateHandler)
