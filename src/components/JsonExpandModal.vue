@@ -19,18 +19,23 @@
           <div ref="editorContainer" class="expand-editor-container" />
         </div>
         <div class="modal-footer">
-          <div class="me-auto validation-status">
-            <span v-if="hasError" class="text-danger small">
-              <BiExclamationTriangle /> Invalid JSON
-            </span>
-            <span v-else-if="currentContent.trim()" class="text-success small">
-              <BiCheck /> Valid JSON
-            </span>
-          </div>
-          <button type="button" class="btn btn-secondary" @click="handleClose">Cancel</button>
-          <button type="button" class="btn btn-primary" :disabled="hasError" @click="handleApply">
-            Apply
-          </button>
+          <template v-if="!readOnly">
+            <div class="me-auto validation-status">
+              <span v-if="hasError" class="text-danger small">
+                <BiExclamationTriangle /> Invalid JSON
+              </span>
+              <span v-else-if="currentContent.trim()" class="text-success small">
+                <BiCheck /> Valid JSON
+              </span>
+            </div>
+            <button type="button" class="btn btn-secondary" @click="handleClose">Cancel</button>
+            <button type="button" class="btn btn-primary" :disabled="hasError" @click="handleApply">
+              Apply
+            </button>
+          </template>
+          <template v-else>
+            <button type="button" class="btn btn-secondary" @click="handleClose">Close</button>
+          </template>
         </div>
       </div>
     </div>
@@ -48,6 +53,7 @@ import BiCheck from 'bootstrap-icons/icons/check.svg'
 interface Props {
   title: string
   initialValue: string
+  readOnly?: boolean
 }
 
 interface Emits {
@@ -94,15 +100,19 @@ async function initEditor(): Promise<void> {
   }
 
   currentContent.value = props.initialValue
-  validateJson(currentContent.value)
 
-  editorView = cm.createJsonEditor(editorContainer.value, currentContent.value, getTheme(), {
-    onChange: (content) => {
-      currentContent.value = content
-      validateJson(content)
-    },
-    onSubmit: handleApply,
-  })
+  if (props.readOnly) {
+    editorView = cm.createReadOnlyEditor(editorContainer.value, currentContent.value, getTheme())
+  } else {
+    validateJson(currentContent.value)
+    editorView = cm.createJsonEditor(editorContainer.value, currentContent.value, getTheme(), {
+      onChange: (content) => {
+        currentContent.value = content
+        validateJson(content)
+      },
+      onSubmit: handleApply,
+    })
+  }
 
   editorView.focus()
 }

@@ -4,6 +4,8 @@ import { getCodeMirror } from '@/utils/codemirror-loader'
 import type { EditorView } from '@codemirror/view'
 import BiClipboard from 'bootstrap-icons/icons/clipboard.svg'
 import BiClipboardCheck from 'bootstrap-icons/icons/clipboard-check.svg'
+import BiArrowsFullscreen from 'bootstrap-icons/icons/arrows-fullscreen.svg'
+import JsonExpandModal from './JsonExpandModal.vue'
 
 const props = defineProps<{
   jscadScript: string | undefined
@@ -17,6 +19,8 @@ const copied = ref(false)
 let editorView: EditorView | null = null
 let themeObserver: MutationObserver | null = null
 let copyTimeout: ReturnType<typeof setTimeout> | null = null
+
+const isExpandModalOpen = ref(false)
 
 function getTheme(): 'dark' | 'light' {
   return document.documentElement.getAttribute('data-bs-theme') === 'dark' ? 'dark' : 'light'
@@ -133,8 +137,25 @@ async function copyToClipboard() {
         <p class="text-muted small mb-0">Loading editor...</p>
       </div>
       <div v-show="editorReady && !loadError" ref="containerRef" class="cm-container"></div>
+      <button
+        v-if="editorReady && !loadError"
+        class="expand-editor-btn"
+        title="Expand editor"
+        type="button"
+        @click="isExpandModalOpen = true"
+      >
+        <BiArrowsFullscreen aria-hidden="true" />
+      </button>
     </div>
   </div>
+
+  <JsonExpandModal
+    v-if="isExpandModalOpen"
+    title="JSCAD Script"
+    :initial-value="jscadScript ?? ''"
+    :read-only="true"
+    @close="isExpandModalOpen = false"
+  />
 </template>
 
 <style scoped>
@@ -211,6 +232,33 @@ async function copyToClipboard() {
   border: 1px solid var(--bs-border-color);
   border-radius: 0 0 0.375rem 0.375rem;
   overflow: hidden;
+  position: relative;
+}
+
+.expand-editor-btn {
+  position: absolute;
+  bottom: 4px;
+  right: 4px;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bs-secondary-bg);
+  border: 1px solid var(--bs-border-color);
+  border-radius: 3px;
+  opacity: 0.4;
+  cursor: pointer;
+  padding: 2px;
+  font-size: 0.65rem;
+  color: var(--bs-secondary-color);
+  z-index: 2;
+  transition: opacity 0.15s;
+}
+
+.expand-editor-btn:hover {
+  opacity: 1;
+  color: var(--bs-body-color);
 }
 
 .editor-placeholder {
