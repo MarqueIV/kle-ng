@@ -1013,6 +1013,7 @@ export async function buildPlate(
           backsideDepth,
           localBbox,
           STAB_BACKSIDE_OVERHANGS[stabilizerType as StabType],
+          scriptShapeRegistry,
         )
         if (stabBacksideCut) stabBacksideCuts.push(stabBacksideCut)
       }
@@ -1277,6 +1278,7 @@ export async function buildPlate(
               keyCenterY,
               position.rotationAngle,
               backsideDepth,
+              scriptShapeRegistry,
             ),
           )
         }

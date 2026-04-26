@@ -5,7 +5,7 @@
  * appear in 2D SVG/DXF output.
  */
 import * as jscadModeling from '@jscad/modeling'
-import { fmt } from './geom-utils'
+import { fmt, ScriptShapeRegistry } from './geom-utils'
 import type { StabType } from './stabilizer-cutouts'
 
 /** Width of the snap notch rectangle (mm). */
@@ -66,6 +66,7 @@ export function createCherryMxSnapNotchCuts(
   keyCenterY: number,
   rotationDeg: number,
   depth: number,
+  registry?: ScriptShapeRegistry,
 ): BacksideCut3D {
   const { cuboid } = jscadModeling.primitives
   const { translate, rotateZ } = jscadModeling.transforms
@@ -88,8 +89,18 @@ export function createCherryMxSnapNotchCuts(
   const cy = fmt(keyCenterY)
 
   const cuboidExpr = `translate([0, 0, ${dHalf}], cuboid({ size: [${w}, ${nh}, ${d}] }))`
-  const rotExpr = rotationDeg !== 0 ? `rotateZ(${fmt(rotRad)}, ${cuboidExpr})` : cuboidExpr
-  const finalExpr = `translate([${cx}, ${cy}, 0], ${rotExpr})`
+  const localExprFull = rotationDeg !== 0 ? `rotateZ(${fmt(rotRad)}, ${cuboidExpr})` : cuboidExpr
+
+  let localExpr: string
+  if (registry) {
+    const shapeKey = `snap_notch:${w}:${nh}:${d}:${rotationDeg}`
+    localExpr = registry.getOrCreate(shapeKey, 'snap_notch_shape', localExprFull)
+  } else {
+    localExpr = localExprFull
+  }
+
+  const finalExpr =
+    keyCenterX !== 0 || keyCenterY !== 0 ? `translate([${cx}, ${cy}, 0], ${localExpr})` : localExpr
 
   return {
     varName,
@@ -127,6 +138,7 @@ export function createStabBacksideCut(
   depth: number,
   localBbox: [[number, number, number], [number, number, number]],
   overhang: StabBacksideOverhang,
+  registry?: ScriptShapeRegistry,
 ): BacksideCut3D {
   const { cuboid } = jscadModeling.primitives
   const { translate, rotateZ } = jscadModeling.transforms
@@ -148,8 +160,21 @@ export function createStabBacksideCut(
 
   const varName = `stab_backside_${index}`
   const rectExpr = `translate([${fmt(centerX)}, ${fmt(centerY)}, ${fmt(depth / 2)}], cuboid({ size: [${fmt(totalWidth)}, ${fmt(totalHeight)}, ${fmt(depth)}] }))`
-  const rotExpr = totalStabRotationDeg !== 0 ? `rotateZ(${fmt(rotRad)}, ${rectExpr})` : rectExpr
-  const finalExpr = `translate([${fmt(keyCenterX)}, ${fmt(keyCenterY)}, 0], ${rotExpr})`
+  const localExprFull =
+    totalStabRotationDeg !== 0 ? `rotateZ(${fmt(rotRad)}, ${rectExpr})` : rectExpr
+
+  let localExpr: string
+  if (registry) {
+    const shapeKey = `stab_backside:${fmt(centerX)}:${fmt(centerY)}:${fmt(totalWidth)}:${fmt(totalHeight)}:${fmt(depth)}:${totalStabRotationDeg}`
+    localExpr = registry.getOrCreate(shapeKey, 'stab_backside_shape', localExprFull)
+  } else {
+    localExpr = localExprFull
+  }
+
+  const finalExpr =
+    keyCenterX !== 0 || keyCenterY !== 0
+      ? `translate([${fmt(keyCenterX)}, ${fmt(keyCenterY)}, 0], ${localExpr})`
+      : localExpr
 
   return {
     varName,
