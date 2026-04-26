@@ -31,11 +31,11 @@ export interface StabBacksideOverhang {
 
 /** Per-stabilizer-type overhang offsets. Values are placeholders — set to 0 until tuned. */
 export const STAB_BACKSIDE_OVERHANGS: Record<StabType, StabBacksideOverhang> = {
-  'mx-basic': { left: 0, right: 0, top: 0, bottom: 0 },
-  'mx-tight': { left: 0, right: 0, top: 0, bottom: 0 },
-  'mx-bidirectional': { left: 0, right: 0, top: 0, bottom: 0 },
-  'mx-spec': { left: 0, right: 0, top: 0, bottom: 0 },
-  'mx-spec-narrow': { left: 0, right: 0, top: 0, bottom: 0 },
+  'mx-basic': { left: 0, right: 0, top: 3.5, bottom: 1.75 },
+  'mx-tight': { left: 0, right: 0, top: 3.5, bottom: 1.75 },
+  'mx-bidirectional': { left: 0, right: 0, top: 1.75, bottom: 1.75 },
+  'mx-spec': { left: 0, right: 0, top: 1.31, bottom: 3 },
+  'mx-spec-narrow': { left: 0, right: 0, top: 1.31, bottom: 3 },
   'alps-aek': { left: 0, right: 0, top: 0, bottom: 0 },
   'alps-at101': { left: 0, right: 0, top: 0, bottom: 0 },
 }
