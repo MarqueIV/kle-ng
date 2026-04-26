@@ -15,6 +15,7 @@ const canvasRef = ref<HTMLCanvasElement>()
 const threeReady = ref(false)
 const webglError = ref(false)
 const controlsActive = ref(false)
+const viewMode = ref<'solid' | 'wireframe'>('solid')
 
 // Three.js scene state
 let renderer: THREE.WebGLRenderer | null = null
@@ -69,6 +70,13 @@ function applyThemeColors() {
   })
 }
 
+function applyViewMode() {
+  if (!currentMesh) return
+  const mat = currentMesh.material as THREE.MeshPhongMaterial
+  mat.wireframe = viewMode.value === 'wireframe'
+  mat.needsUpdate = true
+}
+
 // Load Three.js eagerly
 onMounted(async () => {
   await getThree()
@@ -101,6 +109,8 @@ watch(
     }
   },
 )
+
+watch(viewMode, applyViewMode)
 
 // Watch visible prop — pause/resume RAF
 watch(
@@ -215,6 +225,7 @@ async function setupScene() {
   })
   currentMesh = new THREE.Mesh(geometry, material)
   scene.add(currentMesh)
+  applyViewMode()
 
   // Auto-fit camera to bounding box
   geometry.computeBoundingBox()
@@ -397,15 +408,36 @@ function disposeScene() {
       <span class="activate-hint">Click to navigate</span>
     </div>
 
-    <!-- Reset view button -->
-    <button
-      v-if="threeReady && !webglError && !!stlData"
-      class="btn btn-secondary btn-sm reset-view-btn d-flex align-items-center"
-      title="Reset view"
-      @click="resetView"
-    >
-      <BiArrowCounterclockwise />
-    </button>
+    <!-- View mode toggle + reset view -->
+    <div v-if="threeReady && !webglError && !!stlData" class="canvas-controls">
+      <div class="btn-group btn-group-sm" role="group" aria-label="3D view controls">
+        <input
+          id="view-solid"
+          v-model="viewMode"
+          type="radio"
+          class="btn-check"
+          value="solid"
+          autocomplete="off"
+        />
+        <label class="btn btn-secondary" for="view-solid">Solid</label>
+        <input
+          id="view-wireframe"
+          v-model="viewMode"
+          type="radio"
+          class="btn-check"
+          value="wireframe"
+          autocomplete="off"
+        />
+        <label class="btn btn-secondary" for="view-wireframe">Wireframe</label>
+        <button
+          class="btn btn-secondary d-flex align-items-center"
+          title="Reset view"
+          @click="resetView"
+        >
+          <BiArrowCounterclockwise />
+        </button>
+      </div>
+    </div>
 
     <!-- Regenerating overlay -->
     <div v-if="generating && stlData" class="regenerating-overlay">
@@ -440,11 +472,10 @@ function disposeScene() {
   height: 100%;
 }
 
-.reset-view-btn {
+.canvas-controls {
   position: absolute;
   bottom: 8px;
   right: 8px;
-  padding: 4px 4px;
 }
 
 .activate-overlay {
