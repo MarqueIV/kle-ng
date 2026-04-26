@@ -11,11 +11,12 @@ The Plate Generator does **not** prevent usage of settings which are not manufac
 
 ## Overview {#overview}
 
-Open the **Plate Generator** panel. The settings section is organized into four tabs:
+Open the **Plate Generator** panel. The settings section is organized into five tabs:
 
 - **Switch Cutouts** — Select switch type, stabilizer style, fillet radius, and kerf compensation
 - **Holes** — Add corner mounting holes or custom holes at arbitrary positions
 - **Outline** — Generate a border around the key cluster
+- **3D** — Plate thickness, backside features for 3D export
 - **JSON** — Edit, download, and upload plate settings as JSON for scripting and sharing configurations
 
 ## Typical Workflow
@@ -25,8 +26,9 @@ Open the **Plate Generator** panel. The settings section is organized into four 
 3. On the **Switch Cutouts** tab, select the switch type and any stabilizer options for your layout.
 4. On the **Outline** tab, choose an outline type and set your margins.
 5. If you need mounting holes, configure them on the **Holes** tab.
-6. Review the live preview. The preview updates automatically as you change settings.
-7. Click **Download** to export in your preferred format (SVG or DXF for laser cutting; STL or JSCAD for 3D printing).
+6. If exporting to STL or JSCAD, configure the **3D** tab: set plate thickness and enable any backside features as needed.
+7. Review the live preview. The preview updates automatically as you change settings.
+8. Click **Download** to export in your preferred format (SVG or DXF for laser cutting; STL or JSCAD for 3D printing).
 
 ::: tip
 If specific keys need a different switch or stabilizer orientation (e.g., rotated stabilizers on a split spacebar), set the **Switch orientation** or **Stabilizer orientation** per key in the **Key Properties** panel before generating. See [Manufacturing Properties](./key-properties#switch-orientation) for details.
@@ -92,8 +94,43 @@ The **Tight** outline is useful for non-rectangular layouts or split keyboards. 
 | ---------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
 | **Margin / Margins**   | Distance from cutout bounds to outline edge (switch and stabilizer cutouts are considered; holes are not)                          |
 | **Fillet Radius**      | Rounds corners of the outline                                                                                                      |
-| **Plate Thickness**    | Thickness of the plate in STL export                                                                                               |
 | **Merge with Cutouts** | Place cutouts and outline in a single file; if separate, the outline file shares the same (0,0) origin for easier CAD/CAM handling |
+
+## 3D Settings {#3d-settings}
+
+Configure plate thickness and backside features for 3D export formats (STL, JSCAD). All 3D tab controls are disabled when outline is set to **None**.
+
+### Plate Thickness
+
+Thickness of the plate in millimeters. This value is used in STL and JSCAD exports. Maximum practical thickness depends on your intended manufacturing method and backside feature depths.
+
+### Backside Features
+
+#### Cut Depth
+
+Sets the depth in millimeters of all backside cuts from the back face. This applies to all enabled backside features. The maximum value is `thickness − 0.1 mm`.
+
+#### Cherry MX Snap Notch
+
+When enabled, a 7 mm × 17 mm rectangular notch centered on each switch cutout is subtracted from the back face of the plate. This allows Cherry MX switches to snap into a thick plate for mechanical retention. This feature is 3D-only and does not appear in SVG or DXF output.
+
+### Stabilizer Clearance Pockets
+
+When any backside feature is enabled, the generator automatically cuts stabilizer clearance pockets on the back face. These are always generated alongside enabled backside features and require no configuration. The pocket shape depends on the stabilizer type. Stabilizer clearances are 3D-only and do not affect SVG or DXF output.
+
+::: warning
+Alps stabilizer backside clearances have not been validated. Verify the pocket geometry against your actual stabilizer hardware before manufacturing.
+:::
+
+## 3D Preview {#3d-preview}
+
+The 3D preview displays a rendered view of the plate geometry. The bottom-right corner contains controls for visualization:
+
+- **Solid** — Renders the plate as a solid mesh (default view)
+- **Wireframe** — Renders the plate in wireframe mode, useful for inspecting internal geometry and backside features
+- **Reset view** — Button to reset the camera to the auto-fit position
+
+The camera position is preserved across plate regenerations. Click **Reset view** to return to the default auto-fit view after panning or rotating.
 
 ## JSON Settings {#json-settings}
 
@@ -149,7 +186,11 @@ All sections and fields are optional — omitted fields fall back to defaults. H
     "filletRadius": 1,
     "mergeWithCutouts": true
   },
-  "thickness": 1.5
+  "thickness": 1.5,
+  "threed": {
+    "backsideFeatures": [{ "type": "cherry-mx-snap-notch" }],
+    "backsideDepth": 1.2
+  }
 }
 ```
 
@@ -164,10 +205,18 @@ All sections and fields are optional — omitted fields fall back to defaults. H
 - `holes.mounting` present implies corner mounting holes are enabled
 - `holes.custom` present implies custom holes are enabled
 - `stabilizerFilletRadius` is omitted when `stabilizerType` is `"none"`
+- `threed` section is omitted when no backside features are enabled (all default to disabled)
+
+**3D section fields:**
+
+- `backsideFeatures` — Array of enabled 3D features. Presence in the array means enabled. Currently supported types: `"cherry-mx-snap-notch"`
+- `backsideDepth` — Shared cut depth in millimeters for all backside features
 
 ## JSCAD Format
 
 The exported JSCAD file uses **OpenJSCAD v2** format. Open it in the online viewer at [openjscad.xyz](https://openjscad.xyz/).
+
+After generating a plate, the JSCAD script is shown in the results area. The script preview editor includes an expand button in its bottom-right corner. Click it to open the full script in a read-only modal dialog — useful for inspecting longer scripts or copying the script text.
 
 ## Using Ghost Keys to Shape the Outline
 
