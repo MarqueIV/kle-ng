@@ -25,6 +25,7 @@ let controls: InstanceType<
   typeof import('three/examples/jsm/controls/OrbitControls.js').OrbitControls
 > | null = null
 let currentMesh: THREE.Mesh | null = null
+let currentEdgeLines: THREE.LineSegments | null = null
 let rafId: number | null = null
 let resizeObserver: ResizeObserver | null = null
 let themeObserver: MutationObserver | null = null
@@ -67,14 +68,30 @@ function applyThemeColors() {
       mat.specular.set(specular)
       mat.needsUpdate = true
     }
+    if (currentEdgeLines) {
+      const mat = currentEdgeLines.material as THREE.LineBasicMaterial
+      mat.color.set(primary)
+      mat.needsUpdate = true
+    }
   })
 }
 
 function applyViewMode() {
-  if (!currentMesh) return
-  const mat = currentMesh.material as THREE.MeshPhongMaterial
-  mat.wireframe = viewMode.value === 'wireframe'
-  mat.needsUpdate = true
+  if (!currentMesh || !scene) return
+  if (viewMode.value === 'wireframe') {
+    currentMesh.visible = false
+    if (!currentEdgeLines) {
+      const { primary } = getThemeColors()
+      const edgesGeo = new runtimeTHREE!.EdgesGeometry(currentMesh.geometry, 10)
+      const edgesMat = new runtimeTHREE!.LineBasicMaterial({ color: primary })
+      currentEdgeLines = new runtimeTHREE!.LineSegments(edgesGeo, edgesMat)
+      scene.add(currentEdgeLines)
+    }
+    currentEdgeLines.visible = true
+  } else {
+    currentMesh.visible = true
+    if (currentEdgeLines) currentEdgeLines.visible = false
+  }
 }
 
 // Load Three.js eagerly
@@ -318,6 +335,12 @@ function stopRaf() {
 }
 
 function disposeMesh() {
+  if (currentEdgeLines) {
+    currentEdgeLines.geometry.dispose()
+    ;(currentEdgeLines.material as THREE.Material).dispose()
+    scene?.remove(currentEdgeLines)
+    currentEdgeLines = null
+  }
   if (currentMesh) {
     currentMesh.geometry.dispose()
     ;(currentMesh.material as THREE.Material).dispose()
