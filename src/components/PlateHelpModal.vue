@@ -39,7 +39,15 @@
           <li>
             <strong>Outline</strong> - Generate a border around the key cluster. Choose between a
             rectangular bounding box or a tight hull that follows the cluster shape. Required for
-            STL generation.
+            STL and JSCAD export.
+          </li>
+          <li>
+            <strong>3D</strong> - Set plate thickness and configure backside features for STL and
+            JSCAD export.
+          </li>
+          <li>
+            <strong>JSON</strong> - Edit, download, and upload plate settings as JSON for scripting
+            and sharing configurations.
           </li>
         </ul>
       </div>
@@ -120,7 +128,36 @@
             switch and stabilizer cutouts are considered, but holes are not.
           </li>
           <li><strong>Fillet Radius</strong> - Rounds corners of the outline.</li>
-          <li><strong>Plate Thickness</strong> - Thickness of a plate in STL export file.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="help-section">
+      <h6 class="help-section-title">3D Settings</h6>
+      <div class="help-content">
+        <ul class="tips-list">
+          <li>
+            <strong>Plate Thickness</strong> - Thickness of the plate in millimeters, used in STL
+            and JSCAD exports. Requires outline to be enabled.
+          </li>
+          <li>
+            <strong>Cut Depth</strong> - Depth of all backside cuts from the back face in
+            millimeters. Applies to enabled backside features and stabilizer clearance pockets.
+            Maximum value is <code>thickness − 1 mm</code>. Set to <code>0</code> to disable all
+            backside cuts — recommended for thin plates (1–1.5 mm) where backside features are not
+            needed.
+          </li>
+          <li>
+            <strong>Cherry MX Snap Notch</strong> - Subtracts a 7 × 17 mm rectangular notch centered
+            on each switch cutout from the back face, allowing Cherry MX switches to snap into a
+            thick plate for mechanical retention. 3D export only — no effect on SVG or DXF.
+          </li>
+          <li>
+            <strong>Stabilizer Clearance Pockets</strong> - When Cut Depth is greater than 0, the
+            generator automatically adds clearance pockets on the back face for stabilizers.
+            Requires no configuration. The pocket shape depends on the stabilizer type. 3D export
+            only — no effect on SVG or DXF.
+          </li>
         </ul>
         <div class="info-box">
           <div class="d-flex align-items-center gap-2">
