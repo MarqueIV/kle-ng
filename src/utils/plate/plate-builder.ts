@@ -792,7 +792,7 @@ export async function buildPlate(
     customHoles,
     thickness = 1.5,
     backsideFeatures = [],
-    backsideDepth = 1.0,
+    backsideDepth = 0,
   } = options
 
   // Load maker.js
@@ -1005,17 +1005,19 @@ export async function buildPlate(
           scriptLines: stabScriptLines ?? undefined,
         })
 
-        const stabBacksideCut = createStabBacksideCut(
-          i,
-          stabKeyCenterX,
-          stabKeyCenterY,
-          totalStabRotation,
-          backsideDepth,
-          localBbox,
-          STAB_BACKSIDE_OVERHANGS[stabilizerType as StabType],
-          scriptShapeRegistry,
-        )
-        if (stabBacksideCut) stabBacksideCuts.push(stabBacksideCut)
+        if (backsideDepth > 0) {
+          const stabBacksideCut = createStabBacksideCut(
+            i,
+            stabKeyCenterX,
+            stabKeyCenterY,
+            totalStabRotation,
+            backsideDepth,
+            localBbox,
+            STAB_BACKSIDE_OVERHANGS[stabilizerType as StabType],
+            scriptShapeRegistry,
+          )
+          if (stabBacksideCut) stabBacksideCuts.push(stabBacksideCut)
+        }
       }
     }
   }
@@ -1263,24 +1265,26 @@ export async function buildPlate(
   if (outlineNamedGeom) {
     // Build backside 3D cuts from enabled features + unconditional stab clearances
     const backsideCuts: BacksideCut3D[] = [...stabBacksideCuts]
-    for (const feature of backsideFeatures) {
-      if (!feature.enabled) continue
-      if (feature.type === 'cherry-mx-snap-notch') {
-        for (let i = 0; i < cutoutPositions.length; i++) {
-          const position = cutoutPositions[i]
-          if (!position) continue
-          const keyCenterX = position.centerX + position.width / 2
-          const keyCenterY = position.centerY + position.height / 2
-          backsideCuts.push(
-            createCherryMxSnapNotchCuts(
-              i,
-              keyCenterX,
-              keyCenterY,
-              position.rotationAngle,
-              backsideDepth,
-              scriptShapeRegistry,
-            ),
-          )
+    if (backsideDepth > 0) {
+      for (const feature of backsideFeatures) {
+        if (!feature.enabled) continue
+        if (feature.type === 'cherry-mx-snap-notch') {
+          for (let i = 0; i < cutoutPositions.length; i++) {
+            const position = cutoutPositions[i]
+            if (!position) continue
+            const keyCenterX = position.centerX + position.width / 2
+            const keyCenterY = position.centerY + position.height / 2
+            backsideCuts.push(
+              createCherryMxSnapNotchCuts(
+                i,
+                keyCenterX,
+                keyCenterY,
+                position.rotationAngle,
+                backsideDepth,
+                scriptShapeRegistry,
+              ),
+            )
+          }
         }
       }
     }

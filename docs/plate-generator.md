@@ -108,7 +108,7 @@ Thickness of the plate in millimeters. This value is used in STL and JSCAD expor
 
 #### Cut Depth
 
-Sets the depth in millimeters of all backside cuts from the back face. This applies to all enabled backside features. The maximum value is `thickness − 0.1 mm`.
+Sets the depth in millimeters of all backside cuts from the back face. This applies to all enabled backside features and stabilizer clearance pockets. The maximum value is `thickness − 1 mm`. Set to `0` to disable all backside cuts (useful for thin plates, e.g. 1–1.5 mm, where backside features are not needed).
 
 #### Cherry MX Snap Notch
 
@@ -116,7 +116,7 @@ When enabled, a 7 mm × 17 mm rectangular notch centered on each switch cutout i
 
 ### Stabilizer Clearance Pockets
 
-When any backside feature is enabled, the generator automatically cuts stabilizer clearance pockets on the back face. These are always generated alongside enabled backside features and require no configuration. The pocket shape depends on the stabilizer type. Stabilizer clearances are 3D-only and do not affect SVG or DXF output.
+When **Cut Depth** is greater than 0, the generator automatically cuts stabilizer clearance pockets on the back face. These require no configuration and are generated regardless of whether any named backside feature (e.g. Snap Notch) is enabled. The pocket shape depends on the stabilizer type. Stabilizer clearances are 3D-only and do not affect SVG or DXF output.
 
 ::: warning
 Alps stabilizer backside clearances have not been validated. Verify the pocket geometry against your actual stabilizer hardware before manufacturing.
@@ -205,12 +205,12 @@ All sections and fields are optional — omitted fields fall back to defaults. H
 - `holes.mounting` present implies corner mounting holes are enabled
 - `holes.custom` present implies custom holes are enabled
 - `stabilizerFilletRadius` is omitted when `stabilizerType` is `"none"`
-- `threed` section is omitted when no backside features are enabled (all default to disabled)
+- `threed` section is omitted when no backside features are enabled and `backsideDepth` is `0` (both default)
 
 **3D section fields:**
 
 - `backsideFeatures` — Array of enabled 3D features. Presence in the array means enabled. Currently supported types: `"cherry-mx-snap-notch"`
-- `backsideDepth` — Shared cut depth in millimeters for all backside features
+- `backsideDepth` — Shared cut depth in millimeters for all backside features and stabilizer clearance pockets. Set to `0` (default) to disable all backside cuts
 
 ## JSCAD Format
 

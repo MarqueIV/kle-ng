@@ -56,7 +56,7 @@ const defaultSettings: PlateSettings = {
     holes: [],
   },
   backsideFeatures: [{ type: 'cherry-mx-snap-notch', enabled: false } satisfies BacksideFeature],
-  backsideDepth: 1.0,
+  backsideDepth: 0,
 }
 
 export const usePlateGeneratorStore = defineStore('plateGenerator', () => {

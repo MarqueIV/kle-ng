@@ -11,7 +11,7 @@ const snapNotchFeature = computed(() =>
   settings.value.backsideFeatures.find((f) => f.type === 'cherry-mx-snap-notch'),
 )
 
-const backsideDepthMax = computed(() => Math.max(0.1, settings.value.thickness - 0.1))
+const backsideDepthMax = computed(() => Math.max(0, settings.value.thickness - 1))
 const outlineEnabled = computed(() => settings.value.outline.outlineType !== 'none')
 </script>
 
@@ -55,7 +55,7 @@ const outlineEnabled = computed(() => settings.value.outline.outlineType !== 'no
           id="backsideDepth"
           v-model="settings.backsideDepth"
           :step="0.1"
-          :min="0.1"
+          :min="0"
           :max="backsideDepthMax"
           :disabled="!outlineEnabled"
           class="form-control form-control-sm"
@@ -65,7 +65,7 @@ const outlineEnabled = computed(() => settings.value.outline.outlineType !== 'no
           <template #suffix>mm</template>
         </CustomNumberInput>
         <div class="form-text small">
-          Applies to all backside features (max: thickness − 0.1 mm)
+          Applies to all backside features (max: thickness − 1 mm). Set to 0 to disable.
         </div>
       </div>
 
